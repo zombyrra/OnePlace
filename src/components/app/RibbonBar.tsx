@@ -1,4 +1,6 @@
-import type { Dispatch, RefObject, SetStateAction } from 'react'
+import { useLayoutEffect, useState, type CSSProperties } from 'react'
+import { createPortal } from 'react-dom'
+import type { Dispatch, ReactNode, RefObject, SetStateAction } from 'react'
 import type {
   Page,
   PageSortMode,
@@ -142,6 +144,100 @@ type RibbonBarProps = {
   setIsReferencesPaneOpen: Dispatch<SetStateAction<boolean>>
   isMarkmapPaneOpen: boolean
   openMarkmapPane: () => void
+}
+
+type FloatingPickerMenuProps = {
+  anchorRef: RefObject<HTMLElement | null>
+  children: ReactNode
+  className?: string
+  isOpen: boolean
+  panelRef: RefObject<HTMLDivElement | null>
+}
+
+type FloatingPickerMenuPosition = {
+  left: number
+  minWidth: number
+  top: number
+}
+
+const FloatingPickerMenu = ({ anchorRef, children, className = '', isOpen, panelRef }: FloatingPickerMenuProps) => {
+  const [position, setPosition] = useState<FloatingPickerMenuPosition | null>(null)
+
+  useLayoutEffect(() => {
+    if (!isOpen) {
+      setPosition(null)
+      return
+    }
+
+    let animationFrame = 0
+
+    const updatePosition = () => {
+      const anchor = anchorRef.current
+      if (!anchor) return
+
+      const anchorRect = anchor.getBoundingClientRect()
+      const panel = panelRef.current
+      const panelWidth = panel?.offsetWidth ?? anchorRect.width
+      const panelHeight = panel?.offsetHeight ?? 0
+      const gap = 6
+      const viewportPadding = 8
+      const belowTop = anchorRect.bottom + gap
+      const aboveTop = anchorRect.top - panelHeight - gap
+      const fitsBelow = belowTop + panelHeight <= window.innerHeight - viewportPadding
+      const left = Math.max(
+        viewportPadding,
+        Math.min(anchorRect.left, window.innerWidth - panelWidth - viewportPadding),
+      )
+      const top = !fitsBelow && aboveTop >= viewportPadding ? aboveTop : belowTop
+
+      setPosition({
+        left,
+        minWidth: anchorRect.width,
+        top: Math.max(viewportPadding, top),
+      })
+    }
+
+    const scheduleUpdate = () => {
+      if (animationFrame) {
+        window.cancelAnimationFrame(animationFrame)
+      }
+      animationFrame = window.requestAnimationFrame(updatePosition)
+    }
+
+    updatePosition()
+    scheduleUpdate()
+    window.addEventListener('resize', scheduleUpdate)
+    window.addEventListener('scroll', scheduleUpdate, true)
+
+    return () => {
+      if (animationFrame) {
+        window.cancelAnimationFrame(animationFrame)
+      }
+      window.removeEventListener('resize', scheduleUpdate)
+      window.removeEventListener('scroll', scheduleUpdate, true)
+    }
+  }, [anchorRef, isOpen, panelRef])
+
+  if (!isOpen) return null
+
+  const style: CSSProperties = position
+    ? {
+        left: position.left,
+        minWidth: position.minWidth,
+        top: position.top,
+      }
+    : {
+        left: 0,
+        top: 0,
+        visibility: 'hidden',
+      }
+
+  return createPortal(
+    <div className={`picker-menu picker-menu-floating ${className}`.trim()} ref={panelRef} style={style}>
+      {children}
+    </div>,
+    document.body,
+  )
 }
 
 export function RibbonBar(props: RibbonBarProps) {
@@ -690,15 +786,13 @@ export function RibbonBar(props: RibbonBarProps) {
                 <span>{selectedFontFamily}</span>
                 <ChevronDownIcon size={12} />
               </button>
-              {isFontMenuOpen ? (
-                <div className="picker-menu picker-menu-floating" ref={fontMenuPanelRef}>
-                  {fontFamilies.map((fontFamily) => (
-                    <button key={fontFamily} onClick={() => applyFontFamily(fontFamily)} type="button">
-                      {fontFamily}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+              <FloatingPickerMenu anchorRef={fontMenuRef} isOpen={isFontMenuOpen} panelRef={fontMenuPanelRef}>
+                {fontFamilies.map((fontFamily) => (
+                  <button key={fontFamily} onClick={() => applyFontFamily(fontFamily)} type="button">
+                    {fontFamily}
+                  </button>
+                ))}
+              </FloatingPickerMenu>
             </div>
             <div className="picker-dropdown" ref={fontSizeMenuRef}>
               <button
@@ -709,19 +803,22 @@ export function RibbonBar(props: RibbonBarProps) {
                 <span>{selectedFontSize}</span>
                 <ChevronDownIcon size={12} />
               </button>
-              {isFontSizeMenuOpen ? (
-                <div className="picker-menu picker-menu-floating tiny" ref={fontSizeMenuPanelRef}>
-                  {fontSizes.map((fontSize) => (
-                    <button
-                      key={fontSize.command}
-                      onClick={() => applyFontSize(fontSize.command, fontSize.label)}
-                      type="button"
-                    >
-                      {fontSize.label}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+              <FloatingPickerMenu
+                anchorRef={fontSizeMenuRef}
+                className="tiny"
+                isOpen={isFontSizeMenuOpen}
+                panelRef={fontSizeMenuPanelRef}
+              >
+                {fontSizes.map((fontSize) => (
+                  <button
+                    key={fontSize.command}
+                    onClick={() => applyFontSize(fontSize.command, fontSize.label)}
+                    type="button"
+                  >
+                    {fontSize.label}
+                  </button>
+                ))}
+              </FloatingPickerMenu>
             </div>
             <button onClick={() => runEditorCommand('fontSize', '4')} type="button">
               <TextSizeUpIcon size={16} />

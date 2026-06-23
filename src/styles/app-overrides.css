@@ -365,6 +365,12 @@
   z-index: 2000;
 }
 
+.picker-menu-floating {
+  max-height: min(420px, calc(100vh - 24px));
+  overflow-y: auto;
+  position: fixed;
+}
+
 .search-results {
   display: grid;
   gap: 0;
