@@ -286,47 +286,53 @@
 }
 
 .ribbon.ribbon-insert {
-  gap: 6px;
-  padding: 5px 6px 6px;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 5px;
+  overflow-x: hidden;
+  overflow-y: visible;
+  padding: 5px 6px 7px;
 }
 
 .ribbon.ribbon-insert .ribbon-cluster {
   gap: 4px;
-  padding: 4px 6px;
+  padding: 4px 6px 5px;
 }
 
 .ribbon.ribbon-insert .ribbon-cluster.styles {
-  grid-auto-rows: 28px;
+  grid-auto-rows: 26px;
 }
 
 .ribbon.ribbon-insert .ribbon-cluster.styles.insert-pages,
 .ribbon.ribbon-insert .ribbon-cluster.styles.insert-media {
-  grid-template-columns: repeat(2, minmax(112px, 120px));
+  grid-template-columns: repeat(2, minmax(104px, 116px));
 }
 
 .ribbon.ribbon-insert .ribbon-cluster.styles.insert-zotero {
-  grid-template-columns: minmax(150px, 164px);
+  grid-template-columns: minmax(138px, 154px);
 }
 
 .ribbon.ribbon-insert .ribbon-cluster.styles.insert-content {
-  grid-template-columns: repeat(5, minmax(106px, 114px));
+  flex: 1 1 520px;
+  grid-template-columns: repeat(5, minmax(96px, 1fr));
 }
 
 .ribbon.ribbon-insert .ribbon-cluster.styles.insert-meeting-tools {
-  grid-template-columns: repeat(4, minmax(116px, 126px));
+  flex: 1 1 430px;
+  grid-template-columns: repeat(4, minmax(98px, 1fr));
 }
 
 .ribbon.ribbon-insert .ribbon-cluster.styles > button {
   border-radius: 5px;
   font-size: 0.7rem;
-  gap: 6px;
-  min-height: 28px;
-  padding: 0 8px;
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 7px;
 }
 
 .ribbon.ribbon-insert .ribbon-cluster.styles > button svg {
-  height: 18px;
-  width: 18px;
+  height: 16px;
+  width: 16px;
 }
 
 .ribbon-home {
