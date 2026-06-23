@@ -1,10 +1,13 @@
-import type {
-  ClipboardEvent as ReactClipboardEvent,
-  DragEvent as ReactDragEvent,
-  KeyboardEvent as ReactKeyboardEvent,
-  MouseEvent as ReactMouseEvent,
-  PointerEvent as ReactPointerEvent,
-  RefObject,
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ClipboardEvent as ReactClipboardEvent,
+  type DragEvent as ReactDragEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
 } from 'react'
 import type { Page, PageWidthMode, SearchScope, Section } from '../../app/appModel'
 import { SidePanes, type SidePanesProps } from './SidePanes'
@@ -69,7 +72,6 @@ export function NotePane(props: NotePaneProps) {
     isTagPaneOpen,
     isTaskPaneOpen,
     isRecordingAudio,
-    drawColor,
     activeTab,
     pageWidthMode,
     showRuleLines,
@@ -108,6 +110,30 @@ export function NotePane(props: NotePaneProps) {
     sidePanes,
   } = props
   const pageRenderKey = page?.id ?? 'no-page'
+  const inkSurfaceRef = useRef<HTMLDivElement | null>(null)
+  const [inkViewport, setInkViewport] = useState({ height: 1120, width: 900 })
+  const showInkLayer = Boolean(page && (activeTab === 'Draw' || page.inkStrokes.length > 0))
+  const isDrawActive = activeTab === 'Draw' && !isCurrentSectionLocked
+
+  useEffect(() => {
+    const surface = inkSurfaceRef.current
+    if (!surface) return
+
+    const syncViewport = () => {
+      setInkViewport({
+        height: Math.max(surface.scrollHeight, surface.clientHeight, 1120),
+        width: Math.max(surface.clientWidth, 900),
+      })
+    }
+
+    syncViewport()
+
+    if (typeof ResizeObserver === 'undefined') return
+
+    const observer = new ResizeObserver(() => syncViewport())
+    observer.observe(surface)
+    return () => observer.disconnect()
+  }, [pageRenderKey, pageWidthMode, showRuleLines, showInkLayer])
 
   return (
     <section className={`note-pane ${hasSidePane ? 'side-pane-open' : 'side-pane-closed'}`}>
@@ -176,22 +202,19 @@ export function NotePane(props: NotePaneProps) {
             </div>
           ) : (
             <>
-              {page && (activeTab === 'Draw' || page.inkStrokes.length > 0) ? (
-                <div className="ink-board-shell">
-                  <div className="ink-board-header">
-                    <strong>Ink Layer</strong>
-                    <span>{drawColor === '#ffe266' ? 'Highlighter' : `Pen ${drawColor}`}</span>
-                  </div>
+              <div className={`note-editor-surface ${isDrawActive ? 'draw-active' : ''}`} ref={inkSurfaceRef}>
+                {showInkLayer ? (
                   <svg
-                    className="ink-board"
+                    className={`ink-page-layer ${isDrawActive ? 'is-active' : ''} ${pageWidthMode === 'wide' ? 'wide' : ''}`}
                     onPointerDown={beginInkStroke}
                     onPointerMove={moveInkStroke}
                     onPointerUp={endInkStroke}
                     onPointerLeave={endInkStroke}
                     ref={drawSurfaceRef}
-                    viewBox="0 0 900 260"
+                    style={{ zoom: editorZoom.toString() }}
+                    viewBox={`0 0 ${inkViewport.width} ${inkViewport.height}`}
                   >
-                    {page.inkStrokes.map((stroke) => (
+                    {page?.inkStrokes.map((stroke) => (
                       <polyline
                         key={stroke.id}
                         fill="none"
@@ -204,9 +227,7 @@ export function NotePane(props: NotePaneProps) {
                       />
                     ))}
                   </svg>
-                </div>
-              ) : null}
-              <div className="note-editor-surface">
+                ) : null}
                 <div
                   className={`editor-canvas ${pageWidthMode === 'wide' ? 'wide' : ''} ${showRuleLines ? 'rule-lines' : ''}`}
                   contentEditable

@@ -7,9 +7,10 @@ use serde::Serialize;
 use serde_json::{Map, Value};
 use std::collections::HashSet;
 use std::fs;
-use std::io::ErrorKind;
-use std::io::BufWriter;
+use std::io::{BufWriter, ErrorKind};
 use std::path::{Path, PathBuf};
+use std::process;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::AppHandle;
 use tauri::Manager;
 
@@ -111,9 +112,119 @@ fn get_str<'a>(value: &'a Value, key: &str) -> Result<&'a str, String> {
         .ok_or_else(|| format!("Missing string field: {key}"))
 }
 
+fn create_parent_dir(path: &Path) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+        }
+    }
+
+    Ok(())
+}
+
+fn unique_suffix() -> String {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or_default();
+    format!("{}-{nanos}", process::id())
+}
+
+fn hidden_sibling_path(path: &Path, marker: &str) -> Result<PathBuf, String> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| format!("Path has no parent: {}", path.display()))?;
+    let name = path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("oneplace");
+    Ok(parent.join(format!(".{name}.{marker}.{}", unique_suffix())))
+}
+
+fn replace_file_with_temp(temp_path: &Path, target_path: &Path) -> Result<(), String> {
+    if target_path.exists() {
+        if target_path.is_dir() {
+            return Err(format!(
+                "Cannot replace directory with file: {}",
+                target_path.display()
+            ));
+        }
+
+        let backup_path = hidden_sibling_path(target_path, "backup")?;
+        fs::rename(target_path, &backup_path).map_err(|err| err.to_string())?;
+
+        match fs::rename(temp_path, target_path) {
+            Ok(()) => {
+                let _ = fs::remove_file(&backup_path);
+                Ok(())
+            }
+            Err(err) => {
+                let restore_result = fs::rename(&backup_path, target_path);
+                let _ = fs::remove_file(temp_path);
+                match restore_result {
+                    Ok(()) => Err(err.to_string()),
+                    Err(restore_err) => Err(format!(
+                        "{}; also failed to restore {}: {}",
+                        err,
+                        target_path.display(),
+                        restore_err
+                    )),
+                }
+            }
+        }
+    } else {
+        fs::rename(temp_path, target_path).map_err(|err| err.to_string())
+    }
+}
+
+fn write_bytes_atomically(path: &Path, bytes: &[u8]) -> Result<(), String> {
+    create_parent_dir(path)?;
+    let temp_path = hidden_sibling_path(path, "tmp")?;
+    fs::write(&temp_path, bytes).map_err(|err| err.to_string())?;
+    replace_file_with_temp(&temp_path, path)
+}
+
+fn replace_dir_with_temp(temp_dir: &Path, target_dir: &Path) -> Result<(), String> {
+    create_parent_dir(target_dir)?;
+
+    if target_dir.exists() {
+        if !target_dir.is_dir() {
+            return Err(format!(
+                "Cannot replace file with notebook folder: {}",
+                target_dir.display()
+            ));
+        }
+
+        let backup_dir = hidden_sibling_path(target_dir, "backup")?;
+        fs::rename(target_dir, &backup_dir).map_err(|err| err.to_string())?;
+
+        match fs::rename(temp_dir, target_dir) {
+            Ok(()) => {
+                let _ = fs::remove_dir_all(&backup_dir);
+                Ok(())
+            }
+            Err(err) => {
+                let restore_result = fs::rename(&backup_dir, target_dir);
+                let _ = fs::remove_dir_all(temp_dir);
+                match restore_result {
+                    Ok(()) => Err(err.to_string()),
+                    Err(restore_err) => Err(format!(
+                        "{}; also failed to restore {}: {}",
+                        err,
+                        target_dir.display(),
+                        restore_err
+                    )),
+                }
+            }
+        }
+    } else {
+        fs::rename(temp_dir, target_dir).map_err(|err| err.to_string())
+    }
+}
+
 fn write_pretty_json(path: &Path, value: &Value) -> Result<(), String> {
     let raw = serde_json::to_vec_pretty(value).map_err(|err| err.to_string())?;
-    fs::write(path, raw).map_err(|err| err.to_string())
+    write_bytes_atomically(path, &raw)
 }
 
 fn read_json_file(path: &Path) -> Result<Value, String> {
@@ -153,12 +264,8 @@ fn section_file_name(group_id: &str, section_id: &str) -> String {
     format!("{group_id}__{section_id}.json")
 }
 
-fn write_notebook_to_dir(notebook: &Value, notebook_dir: &Path, clean_dir: bool) -> Result<(), String> {
+fn write_notebook_contents_to_dir(notebook: &Value, notebook_dir: &Path) -> Result<(), String> {
     let notebook_id = get_str(notebook, "id")?;
-
-    if clean_dir && notebook_dir.exists() {
-        fs::remove_dir_all(notebook_dir).map_err(|err| err.to_string())?;
-    }
 
     let sections_dir = notebook_dir.join("sections");
     fs::create_dir_all(&sections_dir).map_err(|err| err.to_string())?;
@@ -186,13 +293,35 @@ fn write_notebook_to_dir(notebook: &Value, notebook_dir: &Path, clean_dir: bool)
 
             let section_object = as_object_mut(section)?;
             section_object.remove("pages");
-            section_object.insert("pagesFile".to_string(), Value::String(format!("sections/{filename}")));
+            section_object.insert(
+                "pagesFile".to_string(),
+                Value::String(format!("sections/{filename}")),
+            );
         }
     }
 
     let notebook_file = notebook_dir.join("notebook.json");
     write_pretty_json(&notebook_file, &notebook_metadata)?;
     Ok(())
+}
+
+fn write_notebook_to_dir(notebook: &Value, notebook_dir: &Path) -> Result<(), String> {
+    create_parent_dir(notebook_dir)?;
+    let temp_dir = hidden_sibling_path(notebook_dir, "tmp")?;
+
+    if temp_dir.exists() {
+        fs::remove_dir_all(&temp_dir).map_err(|err| err.to_string())?;
+    }
+
+    fs::create_dir_all(&temp_dir).map_err(|err| err.to_string())?;
+
+    match write_notebook_contents_to_dir(notebook, &temp_dir) {
+        Ok(()) => replace_dir_with_temp(&temp_dir, notebook_dir),
+        Err(err) => {
+            let _ = fs::remove_dir_all(&temp_dir);
+            Err(err)
+        }
+    }
 }
 
 fn save_workspace(raw_data: &str, app: &AppHandle) -> Result<PathBuf, String> {
@@ -218,7 +347,7 @@ fn save_workspace(raw_data: &str, app: &AppHandle) -> Result<PathBuf, String> {
             format!("{slug}-{notebook_id}")
         };
         let notebook_dir = notebooks_root.join(&folder_name);
-        write_notebook_to_dir(&notebook, &notebook_dir, true)?;
+        write_notebook_to_dir(&notebook, &notebook_dir)?;
 
         active_dirs.insert(folder_name);
         notebook_refs.push(Value::Object(Map::from_iter([
@@ -258,7 +387,8 @@ fn load_workspace(app: &AppHandle) -> Result<Option<String>, String> {
     let manifest_path = workspace_manifest_path(app)?;
     match fs::read_to_string(&manifest_path) {
         Ok(raw_manifest) => {
-            let mut manifest: Value = serde_json::from_str(&raw_manifest).map_err(|err| err.to_string())?;
+            let mut manifest: Value =
+                serde_json::from_str(&raw_manifest).map_err(|err| err.to_string())?;
             let notebook_refs = manifest
                 .get("notebooks")
                 .and_then(Value::as_array)
@@ -336,7 +466,7 @@ fn export_notebook_dir(path: String, notebook: String) -> Result<SaveResult, Str
         Path::new(&path).join(folder_name)
     };
 
-    write_notebook_to_dir(&notebook_value, &target_dir, true)?;
+    write_notebook_to_dir(&notebook_value, &target_dir)?;
 
     Ok(SaveResult {
         path: target_dir.display().to_string(),
@@ -344,7 +474,14 @@ fn export_notebook_dir(path: String, notebook: String) -> Result<SaveResult, Str
     })
 }
 
-fn export_pdf_file(file_path: &Path, title: &str, created_at: &str, text_contents: &str) -> Result<(), String> {
+fn export_pdf_file(
+    file_path: &Path,
+    title: &str,
+    created_at: &str,
+    text_contents: &str,
+) -> Result<(), String> {
+    create_parent_dir(file_path)?;
+    let temp_path = hidden_sibling_path(file_path, "tmp")?;
     let (doc, page1, layer1) = PdfDocument::new(title, Mm(210.0), Mm(297.0), "Layer 1");
     let layer = doc.get_page(page1).get_layer(layer1);
     let font = doc
@@ -355,7 +492,13 @@ fn export_pdf_file(file_path: &Path, title: &str, created_at: &str, text_content
         .map_err(|err| err.to_string())?;
 
     layer.use_text(title, 20.0, Mm(20.0), Mm(277.0), &title_font);
-    layer.use_text(format!("Created {created_at}"), 10.0, Mm(20.0), Mm(268.0), &font);
+    layer.use_text(
+        format!("Created {created_at}"),
+        10.0,
+        Mm(20.0),
+        Mm(268.0),
+        &font,
+    );
 
     let mut y = 255.0;
     for raw_line in text_contents.lines() {
@@ -372,9 +515,18 @@ fn export_pdf_file(file_path: &Path, title: &str, created_at: &str, text_content
         }
     }
 
-    let file = fs::File::create(file_path).map_err(|err| err.to_string())?;
-    doc.save(&mut BufWriter::new(file))
-        .map_err(|err| err.to_string())
+    let save_result = (|| {
+        let file = fs::File::create(&temp_path).map_err(|err| err.to_string())?;
+        doc.save(&mut BufWriter::new(file))
+            .map_err(|err| err.to_string())
+    })();
+
+    if let Err(err) = save_result {
+        let _ = fs::remove_file(&temp_path);
+        return Err(err);
+    }
+
+    replace_file_with_temp(&temp_path, file_path)
 }
 
 fn is_importable_onenote_extension(extension: &str) -> bool {
@@ -470,16 +622,24 @@ fn import_onenote_export_dir(path: String) -> Result<ImportedOneNoteDirectory, S
 }
 
 #[tauri::command]
-fn read_local_asset_file(path: String) -> Result<ImportedAssetData, String> {
+fn read_local_asset_file(path: String, root_path: String) -> Result<ImportedAssetData, String> {
     let asset_path = PathBuf::from(&path);
-    let bytes = fs::read(&asset_path).map_err(|err| err.to_string())?;
-    let mime_type = mime_guess::from_path(&asset_path)
+    let root = PathBuf::from(&root_path);
+    let canonical_root = root.canonicalize().map_err(|err| err.to_string())?;
+    let canonical_asset_path = asset_path.canonicalize().map_err(|err| err.to_string())?;
+
+    if !canonical_asset_path.starts_with(&canonical_root) {
+        return Err("Referenced asset is outside the selected import folder.".to_string());
+    }
+
+    let bytes = fs::read(&canonical_asset_path).map_err(|err| err.to_string())?;
+    let mime_type = mime_guess::from_path(&canonical_asset_path)
         .first_or_octet_stream()
         .essence_str()
         .to_string();
     let encoded = BASE64_STANDARD.encode(bytes.as_slice());
     let data_url = format!("data:{};base64,{}", mime_type, encoded);
-    let name = asset_path
+    let name = canonical_asset_path
         .file_name()
         .and_then(|value| value.to_str())
         .unwrap_or("attachment")
@@ -503,13 +663,11 @@ fn export_page_file(
     text_contents: String,
 ) -> Result<SaveResult, String> {
     let target_path = PathBuf::from(&file_path);
-    if let Some(parent) = target_path.parent() {
-        fs::create_dir_all(parent).map_err(|err| err.to_string())?;
-    }
+    create_parent_dir(&target_path)?;
 
     match format.as_str() {
-        "html" => fs::write(&target_path, html_contents).map_err(|err| err.to_string())?,
-        "txt" => fs::write(&target_path, text_contents).map_err(|err| err.to_string())?,
+        "html" => write_bytes_atomically(&target_path, html_contents.as_bytes())?,
+        "txt" => write_bytes_atomically(&target_path, text_contents.as_bytes())?,
         "pdf" => export_pdf_file(&target_path, &title, &created_at, &text_contents)?,
         other => return Err(format!("Unsupported export format: {other}")),
     }
@@ -526,7 +684,8 @@ fn main() {
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
             #[cfg(desktop)]
-            app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

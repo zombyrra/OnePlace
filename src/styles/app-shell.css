@@ -1580,6 +1580,31 @@
   margin: 0 0 14px;
 }
 
+.editor-canvas table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: min(100%, 640px);
+}
+
+.editor-canvas th,
+.editor-canvas td {
+  border: 1px solid #cfd7e4;
+  min-width: 120px;
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.editor-canvas th {
+  background: #f4f7fb;
+  color: #1f2430;
+  font-weight: 600;
+}
+
+.editor-canvas td:empty::after,
+.editor-canvas th:empty::after {
+  content: '\00a0';
+}
+
 .editor-canvas h1,
 .editor-canvas h2,
 .editor-canvas h3 {

@@ -79,11 +79,33 @@ export type PageVersion = {
   title: string
 }
 
+export type ReferenceSource = 'BibTeX' | 'CSL JSON' | 'RIS' | 'manual'
+
+export type ReferencePerson = {
+  firstName?: string
+  lastName?: string
+  name?: string
+}
+
+export type ReferenceItem = {
+  authors: ReferencePerson[]
+  containerTitle: string
+  doi: string
+  id: string
+  itemType: string
+  publisher: string
+  source: ReferenceSource
+  title: string
+  url: string
+  year: string
+}
+
 export type AppMeta = {
   assets: Record<string, AppAsset>
   pageSortMode: PageSortMode
   pageVersions: Record<string, PageVersion[]>
   recentPageIds: string[]
+  references: ReferenceItem[]
   searchScope: SearchScope
 }
 

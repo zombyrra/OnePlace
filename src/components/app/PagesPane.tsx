@@ -331,7 +331,7 @@ export function PagesPane(props: PagesPaneProps) {
                 ) : (
                   <span className="page-disclosure-placeholder" />
                 )}
-                <button
+                <div
                   className={`page-card ${entry.page.id === page?.id ? 'active' : ''} ${entry.depth > 0 ? 'subpage-card' : ''} ${hasSelectedChild ? 'has-selected-child' : ''} ${dragState?.type === 'page' && dragState.pageId === entry.page.id ? 'dragging' : ''} ${dropTarget?.type === 'page' && dropTarget.pageId === entry.page.id && dropTarget.position === 'before' ? 'drop-before' : ''} ${dropTarget?.type === 'page' && dropTarget.pageId === entry.page.id && dropTarget.position === 'after' ? 'drop-after' : ''}`}
                   onPointerDown={(event) => beginDrag(event, { type: 'page', pageId: entry.page.id })}
                   onPointerEnter={allowDrop}
@@ -346,6 +346,11 @@ export function PagesPane(props: PagesPaneProps) {
                     selectPage(entry.page.id)
                   }}
                   onDoubleClick={() => startPageRename(entry.page)}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return
+                    event.preventDefault()
+                    selectPage(entry.page.id)
+                  }}
                   onContextMenu={(event) => {
                     selectPage(entry.page.id)
                     openContextMenu(event, [
@@ -380,7 +385,8 @@ export function PagesPane(props: PagesPaneProps) {
                       },
                     ])
                   }}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                 >
                   <span className="page-accent" style={{ backgroundColor: entry.page.accent }} />
                   <div className="page-card-body">
@@ -453,7 +459,7 @@ export function PagesPane(props: PagesPaneProps) {
                       </button>
                     </div>
                   ) : null}
-                </button>
+                </div>
               </div>
             )
           })}

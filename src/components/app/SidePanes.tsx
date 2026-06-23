@@ -1,14 +1,23 @@
-import type { Dispatch, SetStateAction } from 'react'
+import type { ChangeEvent, Dispatch, SetStateAction } from 'react'
 import type {
   CopilotMessage,
   Page,
   PageVersion,
+  ReferenceItem,
   ReviewScope,
   SearchScope,
   TagResult,
   TaskResult,
   TaskStatusFilter,
 } from '../../app/appModel'
+import {
+  getReferenceCreatorSummary,
+  getReferencePreview,
+  referenceStyleOptions,
+} from '../../features/app/referenceManager'
+import { countMarkmapTreeNodes, type MarkmapTreeNode } from '../../features/app/markmapFeature'
+import { MarkmapPreview } from './MarkmapPreview'
+import { MarkmapTreeEditor } from './MarkmapTreeEditor'
 
 type PageTemplate = {
   id: string
@@ -39,6 +48,15 @@ export type SidePanesProps = {
   setSelectedTemplateId: Dispatch<SetStateAction<string>>
   insertSelectedTemplate: () => void
 
+  isMarkmapPaneOpen: boolean
+  setIsMarkmapPaneOpen: Dispatch<SetStateAction<boolean>>
+  markmapTree: MarkmapTreeNode
+  setMarkmapTree: Dispatch<SetStateAction<MarkmapTreeNode>>
+  markmapMarkdown: string
+  canInsertMarkmap: boolean
+  seedMarkmapFromPage: () => void
+  insertMarkmapBlock: () => void
+
   isAudioPaneOpen: boolean
   setIsAudioPaneOpen: Dispatch<SetStateAction<boolean>>
   isRecordingAudio: boolean
@@ -51,6 +69,24 @@ export type SidePanesProps = {
   startAudioRecording: () => Promise<void> | void
   stopAudioRecording: () => Promise<void> | void
   toggleAudioPause: () => void
+
+  isReferencesPaneOpen: boolean
+  setIsReferencesPaneOpen: Dispatch<SetStateAction<boolean>>
+  references: ReferenceItem[]
+  filteredReferences: ReferenceItem[]
+  referenceQuery: string
+  setReferenceQuery: Dispatch<SetStateAction<string>>
+  referenceStyle: string
+  setReferenceStyle: (value: string) => void
+  referenceImportDraft: string
+  setReferenceImportDraft: Dispatch<SetStateAction<string>>
+  referenceImportSummary: string
+  canInsertReference: boolean
+  importReferenceText: (value: string) => void
+  insertReferenceCitation: (item: ReferenceItem) => void
+  insertReferenceEntry: (item: ReferenceItem) => void
+  insertReferenceBibliography: () => void
+  removeReference: (referenceId: string) => void
 
   isMeetingDetailsOpen: boolean
   setIsMeetingDetailsOpen: Dispatch<SetStateAction<boolean>>
@@ -143,6 +179,14 @@ export function SidePanes(props: SidePanesProps) {
     selectedTemplate,
     setSelectedTemplateId,
     insertSelectedTemplate,
+    isMarkmapPaneOpen,
+    setIsMarkmapPaneOpen,
+    markmapTree,
+    setMarkmapTree,
+    markmapMarkdown,
+    canInsertMarkmap,
+    seedMarkmapFromPage,
+    insertMarkmapBlock,
     isAudioPaneOpen,
     setIsAudioPaneOpen,
     isRecordingAudio,
@@ -155,6 +199,23 @@ export function SidePanes(props: SidePanesProps) {
     startAudioRecording,
     stopAudioRecording,
     toggleAudioPause,
+    isReferencesPaneOpen,
+    setIsReferencesPaneOpen,
+    references,
+    filteredReferences,
+    referenceQuery,
+    setReferenceQuery,
+    referenceStyle,
+    setReferenceStyle,
+    referenceImportDraft,
+    setReferenceImportDraft,
+    referenceImportSummary,
+    canInsertReference,
+    importReferenceText,
+    insertReferenceCitation,
+    insertReferenceEntry,
+    insertReferenceBibliography,
+    removeReference,
     isMeetingDetailsOpen,
     setIsMeetingDetailsOpen,
     meetingTitleDraft,
@@ -229,6 +290,12 @@ export function SidePanes(props: SidePanesProps) {
     suggestedPrompts,
     runCopilotPrompt,
   } = props
+  const handleReferenceFileImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    importReferenceText(await file.text())
+  }
 
   if (!hasSidePane) return null
 
@@ -270,6 +337,33 @@ export function SidePanes(props: SidePanesProps) {
               </div>
             </div>
           ) : null}
+        </div>
+      </aside>
+      <aside className="markmap-pane" hidden={!isMarkmapPaneOpen}>
+        <div className="task-pane-toolbar">
+          <strong>Mind Map</strong>
+          <span className="copilot-pane-spacer" />
+          <button onClick={() => setIsMarkmapPaneOpen(false)} type="button">
+            x
+          </button>
+        </div>
+        <div className="markmap-pane-body">
+          <div className="markmap-pane-status">
+            <strong>{markmapTree.label || 'Mind Map'}</strong>
+            <span>{countMarkmapTreeNodes(markmapTree)} nodes</span>
+          </div>
+          <MarkmapTreeEditor disabled={isCurrentSectionLocked} setTree={setMarkmapTree} tree={markmapTree} />
+          <div className="markmap-pane-actions">
+            <button disabled={!page} onClick={seedMarkmapFromPage} type="button">
+              Use Page
+            </button>
+            <button disabled={!canInsertMarkmap || !markmapTree.label.trim()} onClick={insertMarkmapBlock} type="button">
+              Insert Map
+            </button>
+          </div>
+          <div className="markmap-preview-shell">
+            <MarkmapPreview markdown={markmapMarkdown} />
+          </div>
         </div>
       </aside>
       <aside className="audio-pane" hidden={!isAudioPaneOpen}>
@@ -319,6 +413,109 @@ export function SidePanes(props: SidePanesProps) {
           <div className="review-pane-summary">
             <strong>{audioDevices.length || 1}</strong>
             <span>microphone source{audioDevices.length === 1 ? '' : 's'} available</span>
+          </div>
+        </div>
+      </aside>
+      <aside className="references-pane" hidden={!isReferencesPaneOpen}>
+        <div className="task-pane-toolbar">
+          <strong>Zotero</strong>
+          <span className="copilot-pane-spacer" />
+          <button onClick={() => setIsReferencesPaneOpen(false)} type="button">
+            x
+          </button>
+        </div>
+        <div className="references-pane-body">
+          <div className="references-pane-status">
+            <strong>Zotero library</strong>
+            <span>
+              {references.length === 0
+                ? 'Import Zotero BibTeX, RIS, or CSL JSON exports to build a local reference library.'
+                : `${references.length} saved reference${references.length === 1 ? '' : 's'}`}
+            </span>
+          </div>
+          <label className="review-pane-field">
+            <span>Import Zotero Export</span>
+            <textarea
+              onChange={(event) => setReferenceImportDraft(event.target.value)}
+              placeholder="@article{...}, TY  - JOUR, or CSL JSON"
+              rows={5}
+              value={referenceImportDraft}
+            />
+          </label>
+          <div className="references-pane-actions">
+            <button disabled={!referenceImportDraft.trim()} onClick={() => importReferenceText(referenceImportDraft)} type="button">
+              Import Text
+            </button>
+            <label className="references-file-button">
+              File
+              <input accept=".bib,.ris,.json,.csljson,.txt" onChange={handleReferenceFileImport} type="file" />
+            </label>
+          </div>
+          <div className="references-pane-status">
+            <strong>Import status</strong>
+            <span>{referenceImportSummary}</span>
+          </div>
+          <label className="review-pane-field">
+            <span>Search References</span>
+            <input
+              onChange={(event) => setReferenceQuery(event.target.value)}
+              placeholder="Title, creator, or year"
+              type="text"
+              value={referenceQuery}
+            />
+          </label>
+          <label className="review-pane-field">
+            <span>Citation Style</span>
+            <select
+              className="audio-pane-select"
+              onChange={(event) => setReferenceStyle(event.target.value)}
+              value={referenceStyle}
+            >
+              {referenceStyleOptions.map((style) => (
+                <option key={style.id} value={style.id}>
+                  {style.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="references-pane-actions">
+            <button disabled={!canInsertReference || filteredReferences.length === 0} onClick={insertReferenceBibliography} type="button">
+              Insert Bibliography
+            </button>
+          </div>
+          <div className="references-list">
+            {filteredReferences.length === 0 ? (
+              <div className="task-pane-empty">
+                {references.length === 0
+                  ? 'Import references to cite them in your notes.'
+                  : 'No references match this search.'}
+              </div>
+            ) : (
+              filteredReferences.map((item) => (
+                <article key={item.id} className="reference-card">
+                  <div className="reference-card-head">
+                    <strong>{item.title}</strong>
+                    <span>{item.year || item.itemType || 'Reference'}</span>
+                  </div>
+                  <p>{getReferencePreview(item).slice(0, 220)}</p>
+                  <div className="reference-card-meta">
+                    <span>{getReferenceCreatorSummary(item)}</span>
+                    <span>{item.containerTitle || item.publisher || item.source}</span>
+                  </div>
+                  <div className="reference-card-actions">
+                    <button disabled={!canInsertReference} onClick={() => insertReferenceCitation(item)} type="button">
+                      Cite
+                    </button>
+                    <button disabled={!canInsertReference} onClick={() => insertReferenceEntry(item)} type="button">
+                      Reference
+                    </button>
+                    <button onClick={() => removeReference(item.id)} type="button">
+                      Remove
+                    </button>
+                  </div>
+                </article>
+              ))
+            )}
           </div>
         </div>
       </aside>

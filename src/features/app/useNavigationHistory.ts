@@ -85,6 +85,16 @@ export const useNavigationHistory = ({
     }
     setAppState((current) => ({
       ...current,
+      notebooks: current.notebooks.map((item) =>
+        item.id === entry.notebookId
+          ? {
+              ...item,
+              sectionGroups: item.sectionGroups.map((group) =>
+                group.id === entry.groupId ? { ...group, isCollapsed: false } : group,
+              ),
+            }
+          : item,
+      ),
       selectedNotebookId: entry.notebookId,
       selectedPageId: entry.pageId,
       selectedSectionGroupId: entry.groupId,

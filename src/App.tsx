@@ -46,6 +46,14 @@ import { useReviewHistory } from './features/app/useReviewHistory'
 import { useSectionTaskActions } from './features/app/useSectionTaskActions'
 import { useWorkspaceTreeActions } from './features/app/useWorkspaceTreeActions'
 import { renderHighlightedText, useWorkspaceSearch } from './features/app/useWorkspaceSearch'
+import { useReferenceManager } from './features/app/useReferenceManager'
+import {
+  buildMarkmapCardMarkup,
+  buildMarkmapMarkdownFromText,
+  createMarkmapTreeFromMarkdown,
+  serializeMarkmapTreeToMarkdown,
+} from './features/app/markmapFeature'
+import { useMarkmapRenderer } from './features/app/useMarkmapRenderer'
 import type {
   Page,
   InkStroke,
@@ -102,6 +110,8 @@ function App() {
   const [isHistoryPaneOpen, setIsHistoryPaneOpen] = useState(false)
   const [isMeetingDetailsOpen, setIsMeetingDetailsOpen] = useState(false)
   const [isTemplatePaneOpen, setIsTemplatePaneOpen] = useState(false)
+  const [isMarkmapPaneOpen, setIsMarkmapPaneOpen] = useState(false)
+  const [markmapTree, setMarkmapTree] = useState(() => createMarkmapTreeFromMarkdown('', 'Mind Map'))
   const [selectedHistoryVersionId, setSelectedHistoryVersionId] = useState('')
   const [selectedTemplateId, setSelectedTemplateId] = useState(pageTemplates[0]?.id ?? '')
   const [meetingTitleDraft, setMeetingTitleDraft] = useState('')
@@ -177,6 +187,7 @@ function App() {
   const pageSortMode = appState.meta.pageSortMode
   const searchScope = appState.meta.searchScope
   const isCurrentSectionLocked = Boolean(section?.passwordHash && !unlockedSectionIds.includes(section.id))
+  const markmapMarkdown = useMemo(() => serializeMarkmapTreeToMarkdown(markmapTree), [markmapTree])
 
   const { runUpdateCheck } = useAppPersistence({
     appState,
@@ -302,6 +313,8 @@ function App() {
     updatePage,
   })
 
+  useMarkmapRenderer(editorRef, page?.id, page?.content)
+
   const { recentPages, searchResults, tagCatalog, tagResults, taskResults, taskSummary, toggleSearchScope, visiblePages } =
     useWorkspaceSearch({
       appState,
@@ -376,6 +389,64 @@ function App() {
     styleMenuClose: () => setIsStyleMenuOpen(false),
     syncEditorContent,
   })
+
+  const {
+    canInsertReference,
+    filteredReferences,
+    importReferenceText,
+    insertReferenceBibliography,
+    insertReferenceCitation,
+    insertReferenceEntry,
+    isReferencesPaneOpen,
+    referenceImportDraft,
+    referenceImportSummary,
+    referenceQuery,
+    referenceStyle,
+    references,
+    removeReference,
+    setIsReferencesPaneOpen,
+    setReferenceImportDraft,
+    setReferenceQuery,
+    setReferenceStyle,
+  } = useReferenceManager({
+    appState,
+    insertHtmlAtSelection,
+    isCurrentSectionLocked,
+    page,
+    setAppState,
+    setSaveLabel,
+  })
+
+  const getCurrentMarkmapSource = () => {
+    const selectedText =
+      selectionRangeRef.current && editorRef.current?.contains(selectionRangeRef.current.commonAncestorContainer)
+        ? selectionRangeRef.current.toString()
+        : ''
+    return selectedText.trim() || editorRef.current?.innerText || page?.title || ''
+  }
+
+  const buildCurrentMarkmapMarkdown = () =>
+    buildMarkmapMarkdownFromText(page?.title ?? 'Mind Map', getCurrentMarkmapSource())
+
+  const canInsertMarkmap = Boolean(page) && !isCurrentSectionLocked
+
+  const seedMarkmapFromPage = () => {
+    setMarkmapTree(createMarkmapTreeFromMarkdown(buildCurrentMarkmapMarkdown(), page?.title ?? 'Mind Map'))
+  }
+
+  const openMarkmapPane = () => {
+    if (!isMarkmapPaneOpen) {
+      seedMarkmapFromPage()
+    }
+    setIsMarkmapPaneOpen(true)
+  }
+
+  const insertMarkmapBlock = () => {
+    if (!canInsertMarkmap) return
+    insertHtmlAtSelection(buildMarkmapCardMarkup(markmapMarkdown))
+    setIsMarkmapPaneOpen(true)
+    setSaveLabel('Inserted mind map')
+  }
 
   const {
     addAssetsToState,
@@ -662,7 +733,9 @@ function App() {
     isHistoryPaneOpen ||
     isMeetingDetailsOpen ||
     isAudioPaneOpen ||
-    isTemplatePaneOpen
+    isTemplatePaneOpen ||
+    isMarkmapPaneOpen ||
+    isReferencesPaneOpen
   const suggestedPrompts = [
     'Change this bulleted list into full sentences and paragraphs',
     'Draft a plan for a team offsite in Santa Fe',
@@ -678,6 +751,14 @@ function App() {
     selectedTemplate,
     setSelectedTemplateId,
     insertSelectedTemplate,
+    isMarkmapPaneOpen,
+    setIsMarkmapPaneOpen,
+    markmapTree,
+    setMarkmapTree,
+    markmapMarkdown,
+    canInsertMarkmap,
+    seedMarkmapFromPage,
+    insertMarkmapBlock,
     isAudioPaneOpen,
     setIsAudioPaneOpen,
     isRecordingAudio,
@@ -690,6 +771,23 @@ function App() {
     startAudioRecording,
     stopAudioRecording,
     toggleAudioPause,
+    isReferencesPaneOpen,
+    setIsReferencesPaneOpen,
+    references,
+    filteredReferences,
+    referenceQuery,
+    setReferenceQuery,
+    referenceStyle,
+    setReferenceStyle,
+    referenceImportDraft,
+    setReferenceImportDraft,
+    referenceImportSummary,
+    canInsertReference,
+    importReferenceText,
+    insertReferenceCitation,
+    insertReferenceEntry,
+    insertReferenceBibliography,
+    removeReference,
     isMeetingDetailsOpen,
     setIsMeetingDetailsOpen,
     meetingTitleDraft,
@@ -961,11 +1059,14 @@ function App() {
         isReviewPaneOpen,
         isTaskPaneOpen,
         isTranscribing,
+        isReferencesPaneOpen,
+        isMarkmapPaneOpen,
         loadNotebookFromPath,
         openAttachmentPicker,
         openAudioPane,
         openImagePicker,
         openMeetingDetailsPane,
+        openMarkmapPane,
         openNotebook,
         openPrintoutPicker,
         page,
@@ -994,6 +1095,7 @@ function App() {
         setIsPagesPaneVisible,
         setIsReviewPaneOpen,
         setIsTaskPaneOpen,
+        setIsReferencesPaneOpen,
         setPageSortMode,
         setPageWidthMode,
         setQuery,

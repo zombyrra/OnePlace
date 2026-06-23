@@ -300,6 +300,11 @@ export function NotebooksPane(props: NotebooksPaneProps) {
               </div>
               {isSelectedNotebook ? (
                 <div className="notebook-sections">
+                  <div className="notebook-quick-actions">
+                    <button className="notebook-new-group" onClick={startSectionGroupCreate} type="button">
+                      + Group
+                    </button>
+                  </div>
                   {item.sectionGroups.map((group) => {
                     const isGroupInsideDropTarget =
                       dropTarget?.type === 'section' &&
@@ -361,15 +366,34 @@ export function NotebooksPane(props: NotebooksPaneProps) {
                             <div className="section-group-button">{group.name}</div>
                           )}
                           <div className="section-group-actions">
-                            <button onClick={() => startSectionCreate(group.id)} title="New section" type="button">
-                              <SectionBookIcon size={14} />
+                            <button
+                              className="section-group-add-button"
+                              onClick={() => startSectionCreate(group.id)}
+                              title="Add section"
+                              type="button"
+                            >
+                              +
                             </button>
-                            <button onClick={() => startGroupRename(group.id, group.name)} title="Rename group" type="button">
+                            <button
+                              className="section-group-rename-button"
+                              onClick={() => startGroupRename(group.id, group.name)}
+                              title="Rename group"
+                              type="button"
+                            >
                               <EditIcon size={14} />
                             </button>
                           </div>
                         </div>
                         <div className="section-group-sections">
+                          {group.sections.length === 0 && creatingSectionInGroupId !== group.id ? (
+                            <button
+                              className="empty-section-group-action"
+                              onClick={() => startSectionCreate(group.id)}
+                              type="button"
+                            >
+                              + Add section
+                            </button>
+                          ) : null}
                           {group.sections.map((entry) => {
                           const isSectionDropTarget =
                             dropTarget?.type === 'section' &&
@@ -481,15 +505,6 @@ export function NotebooksPane(props: NotebooksPaneProps) {
                       </div>
                     )
                   })}
-                  <button
-                    className="notebook-new-section"
-                    onClick={() => {
-                      if (item.sectionGroups[0]?.id) startSectionCreate(item.sectionGroups[0].id)
-                    }}
-                    type="button"
-                  >
-                    + New section
-                  </button>
                 </div>
               ) : null}
             </div>

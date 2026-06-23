@@ -22,6 +22,8 @@ import type {
   TaskResult,
 } from '../../app/appModel'
 
+const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error))
+
 type UseNavigationActionsArgs = {
   appState: AppState
   navigationHistory: NavigationEntry[]
@@ -113,12 +115,18 @@ export const useNavigationActions = ({
   }
 
   const loadNotebookFromPath = async (path: string) => {
-    const rawNotebook = await openNotebookDirectory(path)
-    const openedNotebook = JSON.parse(rawNotebook) as Notebook
-    setAppState((current) => mergeNotebookIntoState(current, openedNotebook))
-    trackRecentNotebook(path, openedNotebook.name)
-    setActiveTab('Home')
-    setSaveLabel(`Opened ${openedNotebook.name}`)
+    try {
+      const rawNotebook = await openNotebookDirectory(path)
+      const openedNotebook = JSON.parse(rawNotebook) as Notebook
+      setAppState((current) => mergeNotebookIntoState(current, openedNotebook))
+      trackRecentNotebook(path, openedNotebook.name)
+      setActiveTab('Home')
+      setSaveLabel(`Opened ${openedNotebook.name}`)
+    } catch (error) {
+      const message = getErrorMessage(error)
+      setSaveLabel(`Open failed: ${message}`)
+      window.alert(`That folder does not contain a valid notebook.\n\n${message}`)
+    }
   }
 
   const openNotebook = () => {
@@ -127,8 +135,10 @@ export const useNavigationActions = ({
         const path = await pickNotebookDirectory()
         if (!path) return
         await loadNotebookFromPath(path)
-      } catch {
-        window.alert('That folder does not contain a valid notebook.')
+      } catch (error) {
+        const message = getErrorMessage(error)
+        setSaveLabel(`Open failed: ${message}`)
+        window.alert(`Unable to open the folder picker.\n\n${message}`)
       }
     })()
   }
@@ -142,6 +152,16 @@ export const useNavigationActions = ({
       if (!nextSection || !nextPage) return current
       return {
         ...current,
+        notebooks: current.notebooks.map((item) =>
+          item.id === current.selectedNotebookId
+            ? {
+                ...item,
+                sectionGroups: item.sectionGroups.map((group) =>
+                  group.id === groupId ? { ...group, isCollapsed: false } : group,
+                ),
+              }
+            : item,
+        ),
         selectedPageId: nextPage.id,
         selectedSectionGroupId: nextGroup?.id ?? current.selectedSectionGroupId,
         selectedSectionId: nextSection.id,

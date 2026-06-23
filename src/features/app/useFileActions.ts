@@ -1,5 +1,6 @@
 import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from 'react'
 import {
+  escapeHtml,
   extractExportText,
   extractSnippetText,
   formatDate,
@@ -8,15 +9,18 @@ import {
   hydratePageContent,
   normalizeTerminalText,
   plainTextToHtml,
+  saveRecentNotebookEntries,
 } from '../../app/appModel'
 import type { AppAsset, AppState, Notebook, Page, PageUpdate, RecentNotebookEntry, Section } from '../../app/appModel'
 import {
   exportNotebookDirectory,
   exportPageFile,
   pickExportFilePath,
-  pickNotebookDirectory,
+  pickNotebookSaveDirectory,
   saveDesktopData,
 } from '../../lib/desktop'
+
+const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
 type Args = {
   appState: AppState
@@ -61,22 +65,39 @@ export const useFileActions = ({
       return
     }
     setSaveLabel('Saving...')
-    const result = await saveDesktopData(payload)
-    lastSavedPayloadRef.current = payload
-    setIsDirty(false)
-    setSaveLabel(`Saved ${formatDate(result.savedAt)}`)
+    try {
+      const result = await saveDesktopData(payload)
+      lastSavedPayloadRef.current = payload
+      setIsDirty(false)
+      setSaveLabel(`Saved ${formatDate(result.savedAt)}`)
+    } catch (error) {
+      const message = getErrorMessage(error)
+      setIsDirty(true)
+      setSaveLabel(`Save failed: ${message}`)
+      window.alert(`Save failed.\n\n${message}`)
+    }
   }
 
   const saveNotebookAs = async () => {
     if (!notebook) return
 
-    const path = await pickNotebookDirectory()
-    if (!path) return
+    try {
+      const path = await pickNotebookSaveDirectory()
+      if (!path) return
 
-    const result = await exportNotebookDirectory(path, JSON.stringify(notebook))
-    const nextEntries = [{ name: notebook.name, path: result.path }, ...recentNotebookEntries.filter((item) => item.path !== result.path)].slice(0, 8)
-    setRecentNotebookEntries(nextEntries)
-    setSaveLabel(`Saved notebook to ${result.path}`)
+      const result = await exportNotebookDirectory(path, JSON.stringify(notebook))
+      const nextEntries = [
+        { name: notebook.name, path: result.path },
+        ...recentNotebookEntries.filter((item) => item.path !== result.path),
+      ].slice(0, 8)
+      setRecentNotebookEntries(nextEntries)
+      saveRecentNotebookEntries(nextEntries)
+      setSaveLabel(`Saved notebook to ${result.path}`)
+    } catch (error) {
+      const message = getErrorMessage(error)
+      setSaveLabel(`Notebook save failed: ${message}`)
+      window.alert(`Notebook save failed.\n\n${message}`)
+    }
   }
 
   const exportCurrentPage = async () => {
@@ -104,12 +125,14 @@ export const useFileActions = ({
           ? rawPath
           : `${rawPath}.${format}`
 
+      const title = page.title || 'Untitled Page'
+      const escapedTitle = escapeHtml(title)
       const htmlContents = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${page.title || 'Untitled Page'}</title>
+  <title>${escapedTitle}</title>
   <style>
     body { font-family: "Segoe UI", sans-serif; margin: 40px auto; max-width: 860px; color: #1f1f1f; line-height: 1.6; }
     h1 { font-size: 2rem; margin-bottom: 0.35rem; }
@@ -122,7 +145,7 @@ export const useFileActions = ({
   </style>
 </head>
 <body>
-  <h1>${page.title || 'Untitled Page'}</h1>
+  <h1>${escapedTitle}</h1>
   <div class="meta">Created ${formatPageDate(page.createdAt)} at ${formatPageTime(page.createdAt)}</div>
   <main>${hydratedContent}</main>
 </body>
@@ -131,7 +154,7 @@ export const useFileActions = ({
       const result = await exportPageFile(
         normalizedPath,
         format,
-        page.title || 'Untitled Page',
+        title,
         page.createdAt,
         htmlContents,
         plainText,

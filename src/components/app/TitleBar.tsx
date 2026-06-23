@@ -164,11 +164,6 @@ export function TitleBar(props: TitleBarProps) {
           Share
         </button>
         <div className="profile-chip">SJ</div>
-        <div className="window-controls" aria-hidden="true">
-          <button className="window-control" type="button">-</button>
-          <button className="window-control" type="button">[]</button>
-          <button className="window-control close" type="button">x</button>
-        </div>
       </div>
     </header>
   )

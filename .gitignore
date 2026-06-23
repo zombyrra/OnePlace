@@ -13,6 +13,7 @@ dist-ssr
 *.local
 output
 src-tauri/target
+.playwright-mcp
 
 # Editor directories and files
 .vscode/*

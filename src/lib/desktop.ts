@@ -35,15 +35,7 @@ export const loadDesktopData = async (): Promise<string | null> => {
 
 export const saveDesktopData = async (rawData: string): Promise<DesktopSaveResult> => {
   if (isTauriRuntime()) {
-    try {
-      return await invoke<DesktopSaveResult>('save_data', { rawData })
-    } catch {
-      localStorage.setItem(DATA_KEY, rawData)
-      return {
-        path: 'localStorage',
-        savedAt: new Date().toISOString(),
-      }
-    }
+    return await invoke<DesktopSaveResult>('save_data', { rawData })
   }
 
   localStorage.setItem(DATA_KEY, rawData)
@@ -128,6 +120,9 @@ export const pickDirectory = async (title: string): Promise<string | null> => {
 export const pickNotebookDirectory = async (): Promise<string | null> =>
   pickDirectory('Open Notebook Folder')
 
+export const pickNotebookSaveDirectory = async (): Promise<string | null> =>
+  pickDirectory('Choose Notebook Save Location')
+
 export const pickOneNoteExportDirectory = async (): Promise<string | null> =>
   pickDirectory('Import OneNote Export Folder')
 
@@ -153,8 +148,8 @@ export const exportNotebookDirectory = async (
 export const importOneNoteExportDirectory = async (path: string): Promise<ImportedOneNoteDirectory> =>
   invoke<ImportedOneNoteDirectory>('import_onenote_export_dir', { path })
 
-export const readLocalAssetFile = async (path: string): Promise<ImportedAssetData> =>
-  invoke<ImportedAssetData>('read_local_asset_file', { path })
+export const readLocalAssetFile = async (path: string, rootPath: string): Promise<ImportedAssetData> =>
+  invoke<ImportedAssetData>('read_local_asset_file', { path, rootPath })
 
 export const exportPageFile = async (
   filePath: string,

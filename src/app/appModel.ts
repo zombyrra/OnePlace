@@ -11,6 +11,9 @@ import type {
   Notebook,
   Page,
   PageVersion,
+  ReferenceItem,
+  ReferencePerson,
+  ReferenceSource,
   RecentNotebookEntry,
   Section,
   SectionGroup,
@@ -95,6 +98,7 @@ export const sanitizePastedHtml = (value: string) => {
   const allowedTags = new Set([
     'a',
     'audio',
+    'b',
     'blockquote',
     'br',
     'code',
@@ -107,6 +111,7 @@ export const sanitizePastedHtml = (value: string) => {
     'h2',
     'h3',
     'hr',
+    'i',
     'iframe',
     'img',
     'input',
@@ -118,6 +123,8 @@ export const sanitizePastedHtml = (value: string) => {
     'section',
     'span',
     'strong',
+    'sub',
+    'sup',
     'table',
     'tbody',
     'td',
@@ -139,6 +146,16 @@ export const sanitizePastedHtml = (value: string) => {
 
   const scrubNode = (node: Element) => {
     const tag = node.tagName.toLowerCase()
+    if (tag === 'script' || tag === 'style' || tag === 'template') {
+      node.remove()
+      return
+    }
+
+    if (node.classList.contains('markmap-render') || node.getAttribute('data-markmap-generated') === 'true') {
+      node.remove()
+      return
+    }
+
     if (!allowedTags.has(tag)) {
       unwrapNode(node)
       return
@@ -209,13 +226,26 @@ export const sanitizePastedHtml = (value: string) => {
               'attachment-meta',
               'attachment-title',
               'checklist',
+              'csl-bib-body',
+              'csl-entry',
+              'csl-indent',
+              'csl-left-margin',
+              'csl-right-inline',
               'embedded-image',
               'internal-page-link',
+              'markmap-card',
+              'markmap-card-head',
+              'markmap-fallback',
               'page-template-card',
               'printout-caption',
               'printout-card',
               'printout-preview',
               'printout-preview-shell',
+              'reference-bibliography',
+              'reference-citation',
+              'reference-entry',
+              'reference-entry-body',
+              'reference-entry-meta',
               'template-block',
             ].includes(className),
           )
@@ -232,7 +262,10 @@ export const sanitizePastedHtml = (value: string) => {
         attrName === 'data-asset-id' ||
         attrName === 'data-page-id' ||
         attrName === 'data-file-name' ||
-        attrName === 'data-download-url'
+        attrName === 'data-download-url' ||
+        attrName === 'data-markmap-markdown' ||
+        attrName === 'data-reference-key' ||
+        attrName === 'data-reference-style'
       ) {
         continue
       }
@@ -679,6 +712,50 @@ export const normalizeAppState = (input: unknown): AppState => {
     return createStarterState()
   }
 
+  const normalizeReferencePerson = (person: unknown): ReferencePerson | null => {
+    if (!person || typeof person !== 'object') return null
+    const candidate = person as Partial<ReferencePerson>
+    const firstName = typeof candidate.firstName === 'string' ? candidate.firstName : ''
+    const lastName = typeof candidate.lastName === 'string' ? candidate.lastName : ''
+    const name = typeof candidate.name === 'string' ? candidate.name : ''
+    if (!firstName && !lastName && !name) return null
+    return { firstName, lastName, name }
+  }
+
+  const normalizeReferenceSource = (source: unknown): ReferenceSource =>
+    source === 'BibTeX' || source === 'CSL JSON' || source === 'RIS' || source === 'manual'
+      ? source
+      : 'manual'
+
+  const references = Array.isArray(rawState.meta?.references)
+    ? rawState.meta.references
+        .map((reference): ReferenceItem | null => {
+          if (!reference || typeof reference !== 'object') return null
+          const candidate = reference as Partial<ReferenceItem>
+          if (typeof candidate.id !== 'string' || typeof candidate.title !== 'string' || !candidate.title.trim()) {
+            return null
+          }
+
+          return {
+            authors: Array.isArray(candidate.authors)
+              ? candidate.authors
+                  .map(normalizeReferencePerson)
+                  .filter((person): person is ReferencePerson => person !== null)
+              : [],
+            containerTitle: typeof candidate.containerTitle === 'string' ? candidate.containerTitle : '',
+            doi: typeof candidate.doi === 'string' ? candidate.doi : '',
+            id: candidate.id,
+            itemType: typeof candidate.itemType === 'string' ? candidate.itemType : 'reference',
+            publisher: typeof candidate.publisher === 'string' ? candidate.publisher : '',
+            source: normalizeReferenceSource(candidate.source),
+            title: candidate.title,
+            url: typeof candidate.url === 'string' ? candidate.url : '',
+            year: typeof candidate.year === 'string' ? candidate.year : '',
+          }
+        })
+        .filter((reference): reference is ReferenceItem => reference !== null)
+    : []
+
   return ensureSelection({
     meta: {
       assets:
@@ -726,6 +803,7 @@ export const normalizeAppState = (input: unknown): AppState => {
       recentPageIds: Array.isArray(rawState.meta?.recentPageIds)
         ? rawState.meta?.recentPageIds.filter((item: unknown): item is string => typeof item === 'string').slice(0, 8)
         : [],
+      references,
       searchScope:
         rawState.meta?.searchScope && ['section', 'notebook', 'all'].includes(rawState.meta.searchScope)
           ? rawState.meta.searchScope

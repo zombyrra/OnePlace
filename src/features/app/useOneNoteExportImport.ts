@@ -215,7 +215,7 @@ const replaceWithAssetNode = (doc: Document, node: Element, asset: AppAsset) => 
   node.replaceWith(asset.kind === 'printout' ? createPrintoutCard(doc, asset) : createAttachmentCard(doc, asset))
 }
 
-const importHtmlPage = async (file: ImportedOneNoteFile, assetBaseId: string) => {
+const importHtmlPage = async (file: ImportedOneNoteFile, assetBaseId: string, rootPath: string) => {
   const extension = file.extension.toLowerCase()
   const rawHtml =
     extension === 'mht' || extension === 'mhtml'
@@ -230,7 +230,7 @@ const importHtmlPage = async (file: ImportedOneNoteFile, assetBaseId: string) =>
 
     try {
       const resolvedPath = resolveSiblingPath(file.absolutePath, rawPath)
-      const importedAsset = await readLocalAssetFile(resolvedPath)
+      const importedAsset = await readLocalAssetFile(resolvedPath, rootPath)
       const kind = inferAssetKind(importedAsset.mimeType)
       const asset: AppAsset = {
         createdAt: file.modifiedAt,
@@ -313,12 +313,12 @@ const importTextPage = (file: ImportedOneNoteFile) => ({
   content: plainTextToHtml(file.contents.trim() || file.name),
 })
 
-const importPageFile = async (file: ImportedOneNoteFile) => {
+const importPageFile = async (file: ImportedOneNoteFile, rootPath: string) => {
   const extension = file.extension.toLowerCase()
   const pageId = `${EXPORT_PAGE_PREFIX}${sanitizeIdPart(file.relativePath)}`
   const assetBaseId = `${EXPORT_ASSET_PREFIX}${sanitizeIdPart(file.relativePath)}`
   const imported = IMPORTABLE_HTML_EXTENSIONS.has(extension)
-    ? await importHtmlPage(file, assetBaseId)
+    ? await importHtmlPage(file, assetBaseId, rootPath)
     : importTextPage(file)
   const title = file.name.replace(/\.[^.]+$/, '').trim() || 'Imported Page'
 
@@ -368,6 +368,7 @@ const importNotebookBucket = async (
   notebookName: string,
   files: ImportedOneNoteFile[],
   directoryName: string,
+  rootPath: string,
   notebookIndex: number,
   onProgress: (message: string) => void,
 ) => {
@@ -390,7 +391,7 @@ const importNotebookBucket = async (
         .sort((left, right) => left.relativePath.localeCompare(right.relativePath))
         .map(async (file) => {
           onProgress(`Importing ${notebookName} / ${sectionName} / ${file.name}`)
-          const imported = await importPageFile(file)
+          const imported = await importPageFile(file, rootPath)
           imported.page.accent = accent
           return imported
         }),
@@ -515,6 +516,7 @@ export const useOneNoteExportImport = ({
           notebookName,
           files,
           directory.name,
+          directory.path,
           index,
           (message) => setSaveLabel(message),
         )

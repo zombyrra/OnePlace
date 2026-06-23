@@ -138,6 +138,10 @@ type RibbonBarProps = {
   isDictating: boolean
   isTranscribing: boolean
   setIsCopilotOpen: Dispatch<SetStateAction<boolean>>
+  isReferencesPaneOpen: boolean
+  setIsReferencesPaneOpen: Dispatch<SetStateAction<boolean>>
+  isMarkmapPaneOpen: boolean
+  openMarkmapPane: () => void
 }
 
 export function RibbonBar(props: RibbonBarProps) {
@@ -232,6 +236,8 @@ export function RibbonBar(props: RibbonBarProps) {
     isDictating,
     isTranscribing,
     setIsCopilotOpen,
+    setIsReferencesPaneOpen,
+    openMarkmapPane,
   } = props
   const canEditPage = Boolean(page) && !isCurrentSectionLocked
   const hasTask = Boolean(page?.task)
@@ -246,8 +252,8 @@ export function RibbonBar(props: RibbonBarProps) {
   const renderRibbonContent = () => {
     if (activeTab === 'File') {
       return (
-        <section className="ribbon">
-          <div className="ribbon-cluster styles">
+        <section className="ribbon ribbon-file">
+          <div className="ribbon-cluster styles file-actions">
             <button onClick={openNotebook} type="button">
               <FolderIcon size={26} />
               <span>Open Notebook</span>
@@ -290,7 +296,7 @@ export function RibbonBar(props: RibbonBarProps) {
             </button>
           </div>
           {recentNotebookEntries.length > 0 ? (
-            <div className="ribbon-cluster styles">
+            <div className="ribbon-cluster styles file-recents">
               {recentNotebookEntries.slice(0, 4).map((entry) => (
                 <button key={entry.path} onClick={() => void loadNotebookFromPath(entry.path)} type="button">
                   <FolderIcon size={26} />
@@ -305,8 +311,8 @@ export function RibbonBar(props: RibbonBarProps) {
 
     if (activeTab === 'Insert') {
       return (
-        <section className="ribbon">
-          <div className="ribbon-cluster styles">
+        <section className="ribbon ribbon-insert">
+          <div className="ribbon-cluster styles insert-pages">
             <button disabled={isCurrentSectionLocked} onClick={addPage} type="button">
               <EditIcon size={26} />
               <span>Blank Page</span>
@@ -321,7 +327,18 @@ export function RibbonBar(props: RibbonBarProps) {
             </button>
             <span className="ribbon-label">Pages</span>
           </div>
-          <div className="ribbon-cluster styles">
+          <div className="ribbon-cluster styles insert-zotero">
+            <button
+              disabled={!page}
+              onClick={() => setIsReferencesPaneOpen(true)}
+              type="button"
+            >
+              <ProjectIcon size={26} />
+              <span>Zotero Import</span>
+            </button>
+            <span className="ribbon-label">Zotero</span>
+          </div>
+          <div className="ribbon-cluster styles insert-content">
             <button disabled={!canEditPage} onClick={insertChecklist} type="button">
               <TagsIcon size={26} />
               <span>Checklist</span>
@@ -337,6 +354,14 @@ export function RibbonBar(props: RibbonBarProps) {
             <button disabled={!canEditPage} onClick={insertInternalPageLink} type="button">
               <ProjectIcon size={26} />
               <span>Page Link</span>
+            </button>
+            <button
+              disabled={!page}
+              onClick={openMarkmapPane}
+              type="button"
+            >
+              <ProjectIcon size={26} />
+              <span>Mind Map</span>
             </button>
             <button disabled={!canEditPage} onClick={insertDateStamp} type="button">
               <FormatMotivationIcon size={26} />
@@ -356,7 +381,7 @@ export function RibbonBar(props: RibbonBarProps) {
             </button>
             <span className="ribbon-label">Content</span>
           </div>
-          <div className="ribbon-cluster styles">
+          <div className="ribbon-cluster styles insert-media">
             <button disabled={!canEditPage} onClick={openImagePicker} type="button">
               <ImageIcon size={26} />
               <span>Picture</span>
@@ -375,18 +400,18 @@ export function RibbonBar(props: RibbonBarProps) {
             </button>
             <span className="ribbon-label">Media</span>
           </div>
-          <div className="ribbon-cluster styles">
+          <div className="ribbon-cluster styles insert-meeting-tools">
             <button disabled={!canEditPage} onClick={addTagToCurrentPage} type="button">
               <TagsIcon size={26} />
               <span>To Do Tag</span>
             </button>
             <button disabled={!canEditPage} onClick={openMeetingDetailsPane} type="button">
               <TableIcon size={26} />
-              <span>Meeting Details</span>
+              <span>Meeting</span>
             </button>
             <button disabled={!page} onClick={() => setIsTaskPaneOpen(true)} type="button">
               <FormatMotivationIcon size={26} />
-              <span>Find Outlook Tasks</span>
+              <span>Outlook Tasks</span>
             </button>
             <button disabled={!page} onClick={emailCurrentPage} type="button">
               <ProjectIcon size={26} />

@@ -37,8 +37,6 @@
 .recent-pages-panel,
 .add-notebook-link,
 .pages-actions-secondary,
-.section-group-toggle,
-.section-group-actions,
 .section-item-row .section-rename-button,
 .notebook-actions {
   display: none;
@@ -156,11 +154,18 @@
 .notebook-item,
 .notebook-section-link,
 .notebook-new-section,
+.notebook-new-group,
 .section-group-button,
 .section-item {
   color: #3e3940;
   font-size: 0.73rem;
   font-weight: 500;
+}
+
+.notebook-quick-actions {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 2px;
 }
 
 .notebook-sections {
@@ -170,7 +175,8 @@
 }
 
 .notebook-section-link,
-.notebook-new-section {
+.notebook-new-section,
+.notebook-new-group {
   align-items: center;
   background: transparent;
   border: 0;
@@ -185,13 +191,34 @@
   text-align: left;
 }
 
-.notebook-new-section {
+.notebook-new-section,
+.notebook-new-group {
   color: #7f5ba7;
+  flex: 1 1 0;
+}
+
+.empty-section-group-action {
+  align-items: center;
+  background: transparent;
+  border: 1px dashed rgba(127, 91, 167, 0.35);
+  border-radius: 6px;
+  color: #7f5ba7;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: 0.72rem;
+  justify-content: flex-start;
+  margin: 2px 0 4px 26px;
+  min-height: 28px;
+  padding: 4px 8px;
+  text-align: left;
 }
 
 .notebook-item:hover,
 .notebook-section-link:hover,
 .notebook-new-section:hover,
+.notebook-new-group:hover,
+.empty-section-group-action:hover,
 .section-group-button:hover,
 .section-item:hover,
 .page-card:hover,
@@ -253,9 +280,68 @@
   padding: 0;
 }
 
-.section-group-header,
+.section-group-header {
+  align-items: center;
+  display: flex;
+  gap: 2px;
+}
+
 .section-group-sections {
   display: block;
+}
+
+.section-group-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: #7f5ba7;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 18px;
+  height: 18px;
+  justify-content: center;
+  padding: 0;
+  width: 18px;
+}
+
+.section-group-actions {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.section-group-toggle svg {
+  transition: transform 140ms ease;
+}
+
+.section-group-toggle.collapsed svg {
+  transform: rotate(-90deg);
+}
+
+.section-group-add-button,
+.section-group-rename-button {
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: #7f5ba7;
+  cursor: pointer;
+  display: inline-flex;
+  height: 18px;
+  justify-content: center;
+  padding: 0;
+  width: 18px;
+}
+
+.section-group-add-button {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.section-group-add-button:hover,
+.section-group-rename-button:hover {
+  background: #ece8ec;
 }
 
 .page-cards {

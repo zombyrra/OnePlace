@@ -169,7 +169,7 @@ export const useEditorActions = ({
   }
 
   const insertTable = () => {
-    insertHtmlAtSelection('<table><tr><th>Column 1</th><th>Column 2</th></tr><tr><td></td><td></td></tr></table>')
+    insertHtmlAtSelection('<table><tbody><tr><td><br /></td><td><br /></td></tr><tr><td><br /></td><td><br /></td></tr></tbody></table>')
   }
 
   const getSelectionContainerElement = () => {

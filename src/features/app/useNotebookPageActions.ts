@@ -55,6 +55,7 @@ export const useNotebookPageActions = ({
                   group.id === groupId
                     ? {
                         ...group,
+                        isCollapsed: false,
                         sections: [
                           ...group.sections,
                           {
@@ -130,7 +131,7 @@ export const useNotebookPageActions = ({
                   ...item.sectionGroups,
                   {
                     id: groupId,
-                    isCollapsed: false,
+                    isCollapsed: true,
                     name: groupName,
                     sections: [
                       {
@@ -162,9 +163,6 @@ export const useNotebookPageActions = ({
               }
             : item,
         ),
-        selectedPageId: pageId,
-        selectedSectionGroupId: groupId,
-        selectedSectionId: sectionId,
       }
     })
   }
@@ -189,7 +187,7 @@ export const useNotebookPageActions = ({
                   ...item.sectionGroups,
                   {
                     id: groupId,
-                    isCollapsed: false,
+                    isCollapsed: true,
                     name: groupName,
                     sections: [
                       {
@@ -221,9 +219,6 @@ export const useNotebookPageActions = ({
               }
             : item,
         ),
-        selectedPageId: pageId,
-        selectedSectionGroupId: groupId,
-        selectedSectionId: sectionId,
       }
     })
   }

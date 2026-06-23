@@ -146,6 +146,7 @@ export const useWorkspaceTreeActions = ({
               if (group.id !== targetGroupId) return group
               return {
                 ...group,
+                isCollapsed: false,
                 sections: reorderItems(
                   [...group.sections, sectionToInsert as Section],
                   dragState.sectionId,
@@ -199,7 +200,7 @@ export const useWorkspaceTreeActions = ({
             ...item,
             sectionGroups: groupsWithoutDraggedSection.map((group) =>
               group.id === targetGroupId
-                ? { ...group, sections: [...group.sections, sectionToMove as Section] }
+                ? { ...group, isCollapsed: false, sections: [...group.sections, sectionToMove as Section] }
                 : group,
             ),
           }

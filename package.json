@@ -13,6 +13,8 @@
     "dist": "tauri build",
     "release:publish": "node scripts/publish-updater-release.mjs",
     "lint": "eslint .",
+    "test:references": "node --test --experimental-strip-types scripts/referenceManager.test.ts",
+    "test:markmap": "node --test --experimental-strip-types scripts/markmapFeature.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -20,6 +22,9 @@
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.9.0",
+    "markmap-common": "^0.18.9",
+    "markmap-lib": "^0.18.12",
+    "markmap-view": "^0.18.12",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

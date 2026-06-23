@@ -1,4 +1,4 @@
-import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
+import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
 import {
   checkForDesktopUpdate,
   downloadAndInstallDesktopUpdate,
@@ -42,6 +42,8 @@ const buildUpdatePrompt = (version: string, body?: string) =>
     '',
     'Install now? The app will restart after the update.',
   ].join('\n')
+
+const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
 const downloadAndInstallUpdate = async (
   version: string,
@@ -89,6 +91,8 @@ export const useAppPersistence = ({
   saveTimerRef,
   trackedRecentPageRef,
 }: UseAppPersistenceArgs) => {
+  const saveAttemptRef = useRef(0)
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -144,11 +148,19 @@ export const useAppPersistence = ({
 
     setIsDirty(true)
     setSaveLabel('Saving...')
+    const saveAttempt = saveAttemptRef.current + 1
+    saveAttemptRef.current = saveAttempt
+
     saveTimerRef.current = window.setTimeout(() => {
       void saveDesktopData(payload).then((result) => {
+        if (saveAttempt !== saveAttemptRef.current) return
         lastSavedPayloadRef.current = payload
         setIsDirty(false)
         setSaveLabel(`Saved ${formatDate(result.savedAt)}`)
+      }).catch((error) => {
+        if (saveAttempt !== saveAttemptRef.current) return
+        setIsDirty(true)
+        setSaveLabel(`Save failed: ${getErrorMessage(error)}`)
       })
     }, 250)
 

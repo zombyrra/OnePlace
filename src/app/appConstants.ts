@@ -97,6 +97,7 @@ export const defaultAppMeta = (): AppMeta => ({
   pageSortMode: 'manual',
   pageVersions: {},
   recentPageIds: [],
+  references: [],
   searchScope: 'all',
 })
 
