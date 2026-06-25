@@ -1,0 +1,149 @@
+.shortcut-help-dialog {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: min(880px, calc(100vw - 32px));
+}
+
+.shortcut-help-dialog .op-dialog-body {
+  overflow: auto;
+  max-height: calc(100vh - 170px);
+}
+
+.shortcut-help-dialog .op-dialog-footer {
+  flex-shrink: 0;
+}
+
+.shortcut-help-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.shortcut-help-intro a {
+  color: var(--iris);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.shortcut-help-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.shortcut-help-group {
+  min-width: 0;
+}
+
+.shortcut-help-group h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.shortcut-help-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.shortcut-help-row {
+  display: grid;
+  grid-template-columns: minmax(128px, 0.9fr) minmax(0, 1.4fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 10px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.shortcut-help-row:last-child {
+  border-bottom: 0;
+}
+
+.shortcut-help-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.shortcut-help-keys kbd {
+  min-height: 22px;
+  padding: 2px 6px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-bottom-color: var(--line-strong);
+  border-radius: 4px;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.shortcut-help-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shortcut-help-copy strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.shortcut-help-copy span {
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.shortcut-help-status {
+  justify-self: end;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--fill-hover);
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.shortcut-help-status.supported {
+  background: #e7f4ed;
+  color: #107c41;
+}
+
+.shortcut-help-status.partial {
+  background: #fff4ce;
+  color: #8a6100;
+}
+
+.shortcut-help-status.not-applicable {
+  background: #f3f2f1;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 780px) {
+  .shortcut-help-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .shortcut-help-row {
+    grid-template-columns: 1fr;
+  }
+
+  .shortcut-help-status {
+    justify-self: start;
+  }
+}

@@ -5,6 +5,7 @@ OnePlace saves desktop data under Tauri's per-user app data directory in a `work
 ## Save and Load Safety
 
 - Workspace saves are written to a hidden sibling staging folder first, then swapped into place. If a save fails while writing the new workspace, the previous workspace remains loadable.
+- If the app or computer stops during the final workspace swap, startup checks for a valid hidden staging or backup workspace and restores it before treating the workspace as empty.
 - Individual JSON files and notebook folders are also written through temporary paths before replacement.
 - Notebook, section group, and section IDs are encoded before they become path names, so IDs containing slashes, backslashes, `..`, or other path syntax cannot escape the intended workspace folders.
 - Stored relative paths are checked during load. Absolute paths, parent-directory segments, and paths that resolve outside the expected workspace or notebook folder are rejected.

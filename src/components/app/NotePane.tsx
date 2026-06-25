@@ -49,6 +49,7 @@ type NotePaneProps = {
   drawSurfaceRef: RefObject<SVGSVGElement | null>
   canvasScrollRef: RefObject<HTMLDivElement | null>
   editorRef: RefObject<HTMLDivElement | null>
+  titleInputRef: RefObject<HTMLInputElement | null>
   syncEditorContent: () => void
   handleEditorInput: () => void
   handleEditorClick: (event: ReactMouseEvent<HTMLDivElement>) => void
@@ -70,9 +71,6 @@ export function NotePane(props: NotePaneProps) {
     appName,
     displayVersion,
     isCurrentSectionLocked,
-    isTagPaneOpen,
-    isTaskPaneOpen,
-    isRecordingAudio,
     activeTab,
     pageWidthMode,
     showRuleLines,
@@ -85,11 +83,6 @@ export function NotePane(props: NotePaneProps) {
     formatDueDate,
     unlockSection,
     updatePage,
-    addTagToCurrentPage,
-    toggleCurrentTask,
-    openAudioPane,
-    setIsTaskPaneOpen,
-    saveCurrentPageVersion,
     toggleTagOnPage,
     toggleCurrentTaskComplete,
     beginInkStroke,
@@ -98,6 +91,7 @@ export function NotePane(props: NotePaneProps) {
     drawSurfaceRef,
     canvasScrollRef,
     editorRef,
+    titleInputRef,
     syncEditorContent,
     handleEditorInput,
     handleEditorClick,
@@ -150,6 +144,7 @@ export function NotePane(props: NotePaneProps) {
                 disabled={isCurrentSectionLocked}
                 onChange={(event) => updatePage({ title: event.target.value })}
                 placeholder="Untitled"
+                ref={titleInputRef}
                 type="text"
                 value={page?.title ?? ''}
               />
@@ -158,23 +153,6 @@ export function NotePane(props: NotePaneProps) {
                 <span>{page ? formatPageTime(page.createdAt) : ''}</span>
               </div>
             </div>
-          </div>
-          <div className="note-toolbar-inline">
-            <button disabled={isCurrentSectionLocked} onClick={addTagToCurrentPage} type="button">
-              {isTagPaneOpen ? 'Hide Tags' : 'Tags'}
-            </button>
-            <button disabled={isCurrentSectionLocked} onClick={toggleCurrentTask} type="button">
-              {page?.task ? 'Task On' : 'Task'}
-            </button>
-            <button disabled={isCurrentSectionLocked} onClick={openAudioPane} type="button">
-              {isRecordingAudio ? 'Audio Controls' : 'Audio'}
-            </button>
-            <button onClick={() => setIsTaskPaneOpen(!isTaskPaneOpen)} type="button">
-              {isTaskPaneOpen ? 'Hide Tasks' : 'Tasks'}
-            </button>
-            <button disabled={isCurrentSectionLocked} onClick={saveCurrentPageVersion} type="button">
-              Version
-            </button>
           </div>
           <div className="note-meta-strip">
             {page?.tags.map((tag) => (

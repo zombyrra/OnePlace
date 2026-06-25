@@ -66,6 +66,8 @@ fn legacy_data_file_path(app: &AppHandle) -> Result<PathBuf, String> {
 fn data_root_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let data_dir = app.path().app_data_dir().map_err(|err| err.to_string())?;
     let root = data_dir.join("workspace");
+    fs::create_dir_all(&data_dir).map_err(|err| err.to_string())?;
+    recover_workspace_dir(&root)?;
     fs::create_dir_all(&root).map_err(|err| err.to_string())?;
     Ok(root)
 }
@@ -148,6 +150,83 @@ fn hidden_sibling_path(path: &Path, marker: &str) -> Result<PathBuf, String> {
     Ok(parent.join(format!(".{name}.{marker}.{}", unique_suffix())))
 }
 
+fn is_loadable_workspace_dir(data_root: &Path) -> bool {
+    matches!(load_workspace_from_root(data_root, None), Ok(Some(_)))
+}
+
+fn workspace_recovery_candidates(data_root: &Path) -> Result<Vec<PathBuf>, String> {
+    let parent = data_root
+        .parent()
+        .ok_or_else(|| format!("Path has no parent: {}", data_root.display()))?;
+    if !parent.exists() {
+        return Ok(Vec::new());
+    }
+
+    let name = data_root
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("workspace");
+    let backup_prefix = format!(".{name}.backup.");
+    let temp_prefix = format!(".{name}.tmp.");
+    let mut candidates = Vec::new();
+
+    for entry in fs::read_dir(parent).map_err(|err| err.to_string())? {
+        let entry = entry.map_err(|err| err.to_string())?;
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+
+        let file_name = path
+            .file_name()
+            .and_then(|value| value.to_str())
+            .unwrap_or_default();
+        if !(file_name.starts_with(&backup_prefix) || file_name.starts_with(&temp_prefix)) {
+            continue;
+        }
+
+        let modified = entry
+            .metadata()
+            .and_then(|metadata| metadata.modified())
+            .unwrap_or(UNIX_EPOCH);
+        candidates.push((modified, path));
+    }
+
+    candidates.sort_by(|left, right| right.0.cmp(&left.0));
+    Ok(candidates.into_iter().map(|(_, path)| path).collect())
+}
+
+fn recover_workspace_dir(data_root: &Path) -> Result<(), String> {
+    if is_loadable_workspace_dir(data_root) {
+        return Ok(());
+    }
+
+    let recovery_path = workspace_recovery_candidates(data_root)?
+        .into_iter()
+        .find(|candidate| is_loadable_workspace_dir(candidate));
+    let Some(recovery_path) = recovery_path else {
+        return Ok(());
+    };
+
+    let displaced_path = if data_root.exists() {
+        let corrupt_path = hidden_sibling_path(data_root, "corrupt")?;
+        fs::rename(data_root, &corrupt_path).map_err(|err| err.to_string())?;
+        Some(corrupt_path)
+    } else {
+        None
+    };
+
+    match fs::rename(&recovery_path, data_root) {
+        Ok(()) => Ok(()),
+        Err(err) => {
+            if let Some(displaced_path) = displaced_path {
+                let _ = fs::rename(displaced_path, data_root);
+            }
+            Err(err.to_string())
+        }
+    }
+}
+
 fn encode_path_component(value: &str, label: &str) -> Result<String, String> {
     if value.is_empty() {
         return Err(format!("{label} cannot be empty."));
@@ -174,7 +253,9 @@ fn safe_join_relative(base: &Path, relative: &str) -> Result<PathBuf, String> {
 
     for component in relative_path.components() {
         if !matches!(component, Component::Normal(_)) {
-            return Err("Stored path cannot contain parent or current directory segments.".to_string());
+            return Err(
+                "Stored path cannot contain parent or current directory segments.".to_string(),
+            );
         }
     }
 
@@ -458,7 +539,10 @@ fn save_workspace(raw_data: &str, app: &AppHandle) -> Result<PathBuf, String> {
     save_workspace_to_root(raw_data, &data_root)
 }
 
-fn load_workspace_from_root(data_root: &Path, legacy_path: Option<&Path>) -> Result<Option<String>, String> {
+fn load_workspace_from_root(
+    data_root: &Path,
+    legacy_path: Option<&Path>,
+) -> Result<Option<String>, String> {
     let manifest_path = workspace_manifest_path_for_root(data_root);
     match fs::read_to_string(&manifest_path) {
         Ok(raw_manifest) => {
@@ -905,7 +989,10 @@ mod tests {
         let result = write_notebook_contents_to_dir(&notebook, &notebook_dir);
 
         assert!(result.is_ok());
-        assert!(!root.join("notebook").join("escaped__section-1.json").exists());
+        assert!(!root
+            .join("notebook")
+            .join("escaped__section-1.json")
+            .exists());
         assert_eq!(
             fs::read_dir(notebook_dir.join("sections"))
                 .expect("sections dir")
@@ -936,7 +1023,8 @@ mod tests {
             }]
         });
 
-        save_workspace_to_root(&serde_json::to_string(&first).unwrap(), &root).expect("initial save");
+        save_workspace_to_root(&serde_json::to_string(&first).unwrap(), &root)
+            .expect("initial save");
         let failed = save_workspace_to_root(&serde_json::to_string(&bad).unwrap(), &root);
 
         assert!(failed.is_err());
@@ -946,5 +1034,46 @@ mod tests {
         assert!(loaded.contains("notebook-1"));
         assert!(!loaded.contains("bad-notebook"));
         fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn missing_workspace_recovers_from_orphaned_backup() {
+        let base = unique_test_dir("workspace-recover-missing");
+        let root = base.join("workspace");
+        let first = sample_workspace();
+
+        save_workspace_to_root(&serde_json::to_string(&first).unwrap(), &root)
+            .expect("initial save");
+        let backup = hidden_sibling_path(&root, "backup").expect("backup path");
+        fs::rename(&root, &backup).expect("simulate crash after workspace moved to backup");
+
+        recover_workspace_dir(&root).expect("recover workspace");
+
+        let loaded = load_workspace_from_root(&root, None)
+            .expect("load recovered workspace")
+            .expect("workspace should remain");
+        assert!(loaded.contains("notebook-1"));
+        fs::remove_dir_all(base).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn empty_workspace_recovers_from_orphaned_backup() {
+        let base = unique_test_dir("workspace-recover-empty");
+        let root = base.join("workspace");
+        let first = sample_workspace();
+
+        save_workspace_to_root(&serde_json::to_string(&first).unwrap(), &root)
+            .expect("initial save");
+        let backup = hidden_sibling_path(&root, "backup").expect("backup path");
+        fs::rename(&root, &backup).expect("simulate crash after workspace moved to backup");
+        fs::create_dir_all(&root).expect("simulate later startup creating an empty workspace");
+
+        recover_workspace_dir(&root).expect("recover workspace");
+
+        let loaded = load_workspace_from_root(&root, None)
+            .expect("load recovered workspace")
+            .expect("workspace should remain");
+        assert!(loaded.contains("notebook-1"));
+        fs::remove_dir_all(base).expect("cleanup temp test dir");
     }
 }

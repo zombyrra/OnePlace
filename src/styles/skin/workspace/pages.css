@@ -1,0 +1,176 @@
+/* OneNote-web workspace — flat pages column. */
+
+.pages-pane {
+  background: var(--paper);
+}
+
+.pages-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pages-heading-copy h2 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pages-context {
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+}
+
+/* "Add page" / "Subpage" as ghost buttons (no purple fill). */
+.pages-action-pill,
+.pages-action-pill.primary {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--iris);
+  font-weight: 600;
+}
+
+.pages-action-pill:hover:not(:disabled),
+.pages-action-pill.primary:hover:not(:disabled) {
+  background: var(--fill-hover);
+  border-color: transparent;
+  color: var(--iris-strong);
+}
+
+.pages-actions-secondary .pages-sort-picker {
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+}
+
+.pages-actions-secondary button {
+  color: var(--ink-soft);
+}
+
+.pages-actions-secondary button:hover:not(:disabled) {
+  background: var(--fill-hover);
+  color: var(--iris);
+}
+
+.pages-actions-secondary button.danger:hover:not(:disabled) {
+  color: var(--hue-rose);
+}
+
+/* Page rows — flat, selected gets a purple spine + tint. */
+.page-cards {
+  padding: 4px 0;
+}
+
+.page-card {
+  gap: 8px;
+  padding: 7px 10px 7px 12px;
+  border: none;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.page-card:hover {
+  background: var(--fill-hover);
+}
+
+.page-card.active {
+  background: var(--iris-tint);
+  border-left-color: var(--iris);
+  box-shadow: none;
+}
+
+.page-card.has-selected-child {
+  background: var(--surface-sunk);
+}
+
+.page-accent {
+  width: 3px;
+  border-radius: var(--r-pill);
+  opacity: 0.7;
+}
+
+.page-card-body strong {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.page-card.active .page-card-body strong {
+  font-weight: 600;
+}
+
+.page-date {
+  color: var(--ink-faint);
+  font-size: 0.66rem;
+}
+
+.page-snippet {
+  display: none;
+}
+
+.page-disclosure,
+.page-disclosure-placeholder {
+  color: var(--ink-faint);
+}
+
+.page-inline-action {
+  color: var(--ink-faint);
+}
+
+.page-inline-action:hover {
+  background: var(--fill-hover);
+  color: var(--iris);
+}
+
+.page-inline-action.danger:hover {
+  color: var(--hue-rose);
+}
+
+/* Empty + recent */
+.pages-empty-state strong {
+  color: var(--ink);
+}
+
+.pages-empty-state span {
+  color: var(--ink-soft);
+}
+
+.recent-pages-panel {
+  border-top: 1px solid var(--line);
+}
+
+.recent-pages-heading span {
+  color: var(--ink-faint);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.recent-page-item {
+  border-radius: var(--r-sm);
+  color: var(--ink);
+}
+
+.recent-page-item:hover {
+  background: var(--fill-hover);
+}
+
+.recent-page-item.active {
+  background: var(--iris-tint);
+  color: var(--ink);
+}
+
+.recent-page-item strong {
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.recent-page-item span {
+  color: var(--ink-faint);
+  font-size: 0.66rem;
+}

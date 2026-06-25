@@ -71,3 +71,13 @@ test('sanitizePastedHtml removes active attachment download URLs', () => {
   assert.equal(html.includes('data-download-url'), false)
   assert.match(html, /data-file-name="safe.txt"/)
 })
+
+test('sanitizePastedHtml preserves safe editor alignment and indent classes', () => {
+  const html = sanitizePastedHtml(
+    '<p class="op-align-center op-indent-2 unknown-class" style="position:fixed;left:0">Centered note</p>',
+  )
+
+  assert.match(html, /class="op-align-center op-indent-2"/)
+  assert.equal(html.includes('unknown-class'), false)
+  assert.equal(html.includes('style='), false)
+})

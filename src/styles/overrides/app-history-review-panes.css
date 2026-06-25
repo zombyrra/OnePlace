@@ -6,9 +6,9 @@
 
 .history-pane-summary,
 .history-pane-preview {
-  background: #fff;
-  border: 1px solid #e8e2e7;
-  border-radius: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
   display: grid;
   gap: 6px;
   padding: 12px;
@@ -17,7 +17,7 @@
 .history-pane-summary strong,
 .history-pane-preview strong,
 .history-pane-entry strong {
-  color: #272427;
+  color: var(--ink);
 }
 
 .history-pane-summary span,
@@ -26,7 +26,7 @@
 .history-pane-entry span,
 .history-pane-entry p,
 .history-pane-entry-title {
-  color: #6f6770;
+  color: var(--ink-soft);
   font-size: 0.73rem;
 }
 
@@ -51,17 +51,24 @@
 
 .history-pane-actions button,
 .history-pane-entry {
-  background: #fff;
-  border: 1px solid #ddd6dc;
-  border-radius: 8px;
-  color: #554d56;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--ink-soft);
   cursor: pointer;
   font: inherit;
+  transition: background var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
 }
 
 .history-pane-actions button {
   min-height: 32px;
   padding: 0 12px;
+}
+
+.history-pane-actions button:hover:not(:disabled),
+.history-pane-entry:hover {
+  background: var(--fill-hover);
+  border-color: var(--line-strong);
 }
 
 .history-pane-actions button:disabled {
@@ -84,13 +91,15 @@
 }
 
 .history-pane-entry.active {
-  background: #f2ebf6;
-  border-color: #d5c6df;
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
 }
 
 .history-pane-entry-title {
   font-weight: 700;
 }
+
+/* ---------- Shared form fields (review, audio, references, meeting) ---------- */
 
 .review-pane-body {
   display: grid;
@@ -104,20 +113,25 @@
 }
 
 .review-pane-field span {
-  color: #6f6770;
+  color: var(--ink-faint);
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .review-pane-field input,
 .review-pane-field textarea {
-  background: #fff;
-  border: 1px solid #ddd6dc;
-  border-radius: 8px;
-  color: #554d56;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--ink);
   font: inherit;
   min-width: 0;
   padding: 8px 10px;
+}
+
+.review-pane-field input::placeholder,
+.review-pane-field textarea::placeholder {
+  color: var(--ink-ghost);
 }
 
 .review-pane-field textarea {
@@ -126,21 +140,21 @@
 }
 
 .review-pane-summary {
-  background: #fff;
-  border: 1px solid #e8e2e7;
-  border-radius: 8px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
   display: grid;
   gap: 4px;
   padding: 12px;
 }
 
 .review-pane-summary strong {
-  color: #272427;
+  color: var(--ink);
   font-size: 1rem;
 }
 
 .review-pane-summary span {
-  color: #6f6770;
+  color: var(--ink-soft);
   font-size: 0.72rem;
 }
 
@@ -150,18 +164,24 @@
 }
 
 .review-pane-actions button {
-  background: #fff;
-  border: 1px solid #ddd6dc;
-  border-radius: 8px;
-  color: #554d56;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--ink-soft);
   cursor: pointer;
   font: inherit;
-  min-height: 32px;
+  min-height: 34px;
   padding: 0 12px;
+  transition: background var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+}
+
+.review-pane-actions button:hover:not(:disabled) {
+  background: var(--fill-hover);
+  border-color: var(--line-strong);
+  color: var(--ink);
 }
 
 .review-pane-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
-

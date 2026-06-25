@@ -210,4 +210,4 @@ export type AudioInputDevice = {
   label: string
 }
 
-export type RibbonTab = 'File' | 'Home' | 'Insert' | 'Draw' | 'History' | 'Review' | 'View'
+export type RibbonTab = 'File' | 'Home' | 'Insert' | 'Draw' | 'View' | 'Help'

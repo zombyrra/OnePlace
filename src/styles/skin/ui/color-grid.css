@@ -1,0 +1,55 @@
+/* Colour swatch grid (.op-colorgrid) for Highlight / Font-colour flyouts. */
+
+.op-colorgrid-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.op-colorgrid {
+  display: grid;
+  gap: 4px;
+}
+
+.op-colorgrid-swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: transform var(--dur-hover) var(--ease-out), box-shadow var(--dur-hover) var(--ease-out);
+}
+
+.op-colorgrid-swatch:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px var(--iris);
+}
+
+.op-colorgrid-clear {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.op-colorgrid-clear:hover {
+  background: var(--fill-hover);
+}
+
+.op-colorgrid-clear-swatch {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background:
+    linear-gradient(to bottom right, transparent calc(50% - 1px), var(--hue-rose) calc(50% - 1px), var(--hue-rose) calc(50% + 1px), transparent calc(50% + 1px)),
+    var(--paper);
+}

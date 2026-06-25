@@ -23,6 +23,38 @@
   margin: 0 0 11px;
 }
 
+.editor-canvas .op-align-left {
+  text-align: left;
+}
+
+.editor-canvas .op-align-center {
+  text-align: center;
+}
+
+.editor-canvas .op-align-right {
+  text-align: right;
+}
+
+.editor-canvas .op-align-justify {
+  text-align: justify;
+}
+
+.editor-canvas .op-indent-1 {
+  margin-left: 28px;
+}
+
+.editor-canvas .op-indent-2 {
+  margin-left: 56px;
+}
+
+.editor-canvas .op-indent-3 {
+  margin-left: 84px;
+}
+
+.editor-canvas .op-indent-4 {
+  margin-left: 112px;
+}
+
 .status-strip {
   background: #fff;
   border-top: 0;
@@ -30,4 +62,3 @@
   font-size: 0.68rem;
   padding: 6px 16px 10px 22px;
 }
-

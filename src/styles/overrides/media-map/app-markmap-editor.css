@@ -6,34 +6,34 @@
 }
 
 .markmap-pane-status {
-  background: #fff;
-  border: 1px solid #d8e3ec;
-  border-radius: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
   display: grid;
   gap: 5px;
   padding: 12px;
 }
 
 .markmap-pane-status strong {
-  color: #272427;
+  color: var(--ink);
   font-size: 0.86rem;
 }
 
 .markmap-pane-status span {
-  color: #61717d;
+  color: var(--ink-soft);
   font-size: 0.72rem;
 }
 
 .markmap-source {
-  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-family: var(--font-mono);
   min-height: 138px;
   resize: vertical;
 }
 
 .markmap-tree-editor {
-  background: #fff;
-  border: 1px solid #e1e8ee;
-  border-radius: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
   max-height: 320px;
   min-height: 190px;
   overflow: auto;
@@ -53,7 +53,7 @@
 }
 
 .markmap-tree-children {
-  border-left: 1px solid #cfdde6;
+  border-left: 1px solid var(--line);
   display: grid;
   gap: 8px;
   margin: 8px 0 0 18px;
@@ -66,7 +66,7 @@
 }
 
 .markmap-tree-children > .markmap-tree-item::before {
-  background: #cfdde6;
+  background: var(--line);
   content: '';
   height: 1px;
   left: -16px;
@@ -77,9 +77,9 @@
 
 .markmap-tree-node {
   align-items: center;
-  background: #f8fbfd;
-  border: 1px solid #dce7ef;
-  border-radius: 999px;
+  background: var(--surface-tint);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
   display: grid;
   gap: 8px;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -88,15 +88,14 @@
 }
 
 .markmap-tree-node.root {
-  background: #edf6f9;
-  border-color: #b9d8e3;
-  box-shadow: inset 0 0 0 1px rgba(78, 125, 150, 0.08);
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
 }
 
 .markmap-tree-node input {
   background: transparent;
   border: 0;
-  color: #26343b;
+  color: var(--ink);
   font: inherit;
   font-size: 0.78rem;
   min-width: 0;
@@ -116,10 +115,10 @@
 
 .markmap-node-controls button {
   align-items: center;
-  background: #fff;
-  border: 1px solid #d4e0e7;
-  border-radius: 999px;
-  color: #4e6673;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  color: var(--ink-soft);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -129,6 +128,13 @@
   line-height: 1;
   padding: 0;
   width: 24px;
+  transition: background var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+}
+
+.markmap-node-controls button:hover:not(:disabled) {
+  background: var(--fill-hover);
+  border-color: var(--line-strong);
+  color: var(--ink);
 }
 
 .markmap-node-controls button:disabled {
@@ -142,19 +148,25 @@
 }
 
 .markmap-pane-actions button {
-  background: #fff;
-  border: 1px solid #d7dedf;
-  border-radius: 999px;
-  color: #44535b;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  color: var(--ink-soft);
   cursor: pointer;
   font: inherit;
   font-size: 0.7rem;
   min-height: 28px;
   padding: 0 10px;
+  transition: background var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+}
+
+.markmap-pane-actions button:hover:not(:disabled) {
+  background: var(--fill-hover);
+  border-color: var(--line-strong);
+  color: var(--ink);
 }
 
 .markmap-pane-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
-

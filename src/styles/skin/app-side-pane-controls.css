@@ -1,0 +1,47 @@
+/* ---------- Shared pane header controls + hero actions ----------
+   Loaded after the per-pane base styles so these win on specificity
+   without !important. Covers the close (x) icon button in every pane
+   header and the filled OneNote-purple primary action in each pane. */
+
+/* Close (x) — square Fluent icon button in every pane header */
+.side-pane-stack .side-pane-close {
+  align-items: center;
+  border-radius: var(--r-sm);
+  color: var(--ink-faint);
+  display: inline-flex;
+  flex: none;
+  height: 28px;
+  justify-content: center;
+  transition: background var(--dur-hover) var(--ease-out), color var(--dur-hover) var(--ease-out);
+  width: 28px;
+}
+
+.side-pane-stack .side-pane-close:hover {
+  background: var(--fill-hover);
+  color: var(--ink);
+}
+
+/* Hero action button (Start Recording, Insert Template, …) — filled OneNote purple */
+.side-pane-stack .pane-primary {
+  background: var(--iris);
+  border: 1px solid var(--iris);
+  border-radius: var(--r-md);
+  color: #fff;
+  cursor: pointer;
+  flex: 1;
+  font: inherit;
+  font-weight: 600;
+  min-height: 34px;
+  padding: 0 14px;
+  transition: background var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+}
+
+.side-pane-stack .pane-primary:hover:not(:disabled) {
+  background: var(--iris-strong);
+  border-color: var(--iris-strong);
+}
+
+.side-pane-stack .pane-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}

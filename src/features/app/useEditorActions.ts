@@ -1,7 +1,8 @@
-import type {
-  KeyboardEvent as ReactKeyboardEvent,
-  MutableRefObject,
-  RefObject,
+import {
+  useRef,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MutableRefObject,
+  type RefObject,
 } from 'react'
 import {
   escapeAttribute,
@@ -9,6 +10,7 @@ import {
   plainTextToHtml,
 } from '../../app/appModel'
 import type { Page } from '../../app/appModel'
+import { dialogs } from '../../components/ui/dialogContext'
 
 type MeetingDrafts = {
   agenda: string
@@ -18,6 +20,37 @@ type MeetingDrafts = {
   time: string
   title: string
 }
+
+type TextFormatSnapshot = {
+  blockTag: string
+  bold: boolean
+  fontName: string
+  fontSize: string
+  foreColor: string
+  hiliteColor: string
+  italic: boolean
+  strikeThrough: boolean
+  subscript: boolean
+  superscript: boolean
+  underline: boolean
+}
+
+type TableContext = {
+  cell: HTMLTableCellElement
+  row: HTMLTableRowElement
+  table: HTMLTableElement
+}
+
+const alignmentCommands: Record<string, string> = {
+  justifyCenter: 'op-align-center',
+  justifyFull: 'op-align-justify',
+  justifyLeft: 'op-align-left',
+  justifyRight: 'op-align-right',
+}
+
+const alignmentClasses = Object.values(alignmentCommands)
+const indentClasses = ['op-indent-1', 'op-indent-2', 'op-indent-3', 'op-indent-4']
+const editableBlockSelector = 'p,h1,h2,h3,h4,h5,h6,blockquote,pre,li,td,th,div,section'
 
 type Args = {
   editorRef: RefObject<HTMLDivElement | null>
@@ -70,6 +103,9 @@ export const useEditorActions = ({
   styleMenuClose,
   syncEditorContent,
 }: Args) => {
+  const formatPainterRef = useRef<TextFormatSnapshot | null>(null)
+  const tableDeletePressRef = useRef<{ at: number; cell: HTMLTableCellElement | null }>({ at: 0, cell: null })
+
   const focusEditor = (restoreSelection = true) => {
     const editor = editorRef.current
     if (!editor) return
@@ -81,7 +117,85 @@ export const useEditorActions = ({
     }
   }
 
+  const getEditableBlocksForRange = (range: Range) => {
+    const editor = editorRef.current
+    if (!editor) return []
+
+    const blockSet = new Set<HTMLElement>()
+    const addBlockForNode = (node: Node) => {
+      const element = node instanceof Element ? node : node.parentNode instanceof Element ? node.parentNode : null
+      const block = element?.closest(editableBlockSelector)
+      if (block instanceof HTMLElement && editor.contains(block)) {
+        blockSet.add(block)
+      }
+    }
+
+    addBlockForNode(range.startContainer)
+    addBlockForNode(range.endContainer)
+
+    const walker = document.createTreeWalker(editor, NodeFilter.SHOW_ELEMENT, {
+      acceptNode(node) {
+        if (!(node instanceof HTMLElement) || !node.matches(editableBlockSelector)) {
+          return NodeFilter.FILTER_SKIP
+        }
+        return range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
+      },
+    })
+
+    while (walker.nextNode()) {
+      if (walker.currentNode instanceof HTMLElement) {
+        blockSet.add(walker.currentNode)
+      }
+    }
+
+    if (blockSet.size === 0) blockSet.add(editor)
+    return Array.from(blockSet)
+  }
+
+  const applyAlignmentClass = (command: string) => {
+    const className = alignmentCommands[command]
+    if (!className) return false
+
+    focusEditor()
+    const range = getActiveEditorRange()
+    if (!range) return true
+
+    for (const block of getEditableBlocksForRange(range)) {
+      block.classList.remove(...alignmentClasses)
+      if (className !== 'op-align-left') {
+        block.classList.add(className)
+      }
+    }
+
+    syncEditorContent()
+    window.setTimeout(() => keepCaretInView(), 0)
+    return true
+  }
+
+  const applyIndentClass = (direction: 1 | -1) => {
+    focusEditor()
+    const range = getActiveEditorRange()
+    if (!range) return true
+
+    for (const block of getEditableBlocksForRange(range)) {
+      const currentIndex = indentClasses.findIndex((className) => block.classList.contains(className))
+      const nextIndex = Math.max(-1, Math.min(indentClasses.length - 1, currentIndex + direction))
+      block.classList.remove(...indentClasses)
+      if (nextIndex >= 0) {
+        block.classList.add(indentClasses[nextIndex])
+      }
+    }
+
+    syncEditorContent()
+    window.setTimeout(() => keepCaretInView(), 0)
+    return true
+  }
+
   const runEditorCommand = (command: string, value?: string) => {
+    if (applyAlignmentClass(command)) return
+    if (command === 'indent' && applyIndentClass(1)) return
+    if (command === 'outdent' && applyIndentClass(-1)) return
+
     focusEditor()
     document.execCommand(command, false, value)
     syncEditorContent()
@@ -179,12 +293,204 @@ export const useEditorActions = ({
     return anchor.nodeType === Node.TEXT_NODE ? anchor.parentElement : (anchor as HTMLElement)
   }
 
+  const getCurrentBlockTag = () => {
+    const container = getSelectionContainerElement()
+    const block = container?.closest('p,h1,h2,h3,h4,h5,h6,blockquote,pre')
+    return block?.tagName.toLowerCase() ?? 'p'
+  }
+
+  const readCommandValue = (command: string) => {
+    const value = document.queryCommandValue(command)
+    return typeof value === 'string' ? value : ''
+  }
+
+  const copySelectionFormatting = () => {
+    focusEditor()
+    const hiliteColor = readCommandValue('hiliteColor') || readCommandValue('backColor')
+    formatPainterRef.current = {
+      blockTag: getCurrentBlockTag(),
+      bold: document.queryCommandState('bold'),
+      fontName: readCommandValue('fontName'),
+      fontSize: readCommandValue('fontSize'),
+      foreColor: readCommandValue('foreColor'),
+      hiliteColor,
+      italic: document.queryCommandState('italic'),
+      strikeThrough: document.queryCommandState('strikeThrough'),
+      subscript: document.queryCommandState('subscript'),
+      superscript: document.queryCommandState('superscript'),
+      underline: document.queryCommandState('underline'),
+    }
+    setSaveLabel('Copied formatting')
+  }
+
+  const pasteSelectionFormatting = () => {
+    const format = formatPainterRef.current
+    if (!format) {
+      setSaveLabel('No copied formatting yet')
+      return
+    }
+
+    focusEditor()
+    const setCommandState = (command: string, enabled: boolean) => {
+      if (document.queryCommandState(command) !== enabled) {
+        document.execCommand(command)
+      }
+    }
+
+    if (format.blockTag) document.execCommand('formatBlock', false, format.blockTag)
+    if (format.fontName) document.execCommand('fontName', false, format.fontName)
+    if (format.fontSize) document.execCommand('fontSize', false, format.fontSize)
+    if (format.foreColor) document.execCommand('foreColor', false, format.foreColor)
+    if (format.hiliteColor && format.hiliteColor !== 'transparent') {
+      document.execCommand('hiliteColor', false, format.hiliteColor)
+    }
+
+    setCommandState('bold', format.bold)
+    setCommandState('italic', format.italic)
+    setCommandState('underline', format.underline)
+    setCommandState('strikeThrough', format.strikeThrough)
+    setCommandState('subscript', format.subscript)
+    setCommandState('superscript', format.superscript)
+    syncEditorContent()
+    setSaveLabel('Pasted formatting')
+    window.setTimeout(() => {
+      keepCaretInView()
+    }, 0)
+  }
+
   const getChecklistContext = () => {
     const container = getSelectionContainerElement()
     const item = container?.closest('li')
     const list = item?.closest('ul.checklist')
     if (!item || !list) return null
     return { item, list }
+  }
+
+  const getTableContext = (): TableContext | null => {
+    const container = getSelectionContainerElement()
+    const cell = container?.closest('td,th')
+    if (!(cell instanceof HTMLTableCellElement)) return null
+    const row = cell.parentElement
+    const table = cell.closest('table')
+    if (!(row instanceof HTMLTableRowElement) || !(table instanceof HTMLTableElement)) return null
+    return { cell, row, table }
+  }
+
+  const createTableCell = () => {
+    const cell = document.createElement('td')
+    cell.innerHTML = '<br />'
+    return cell
+  }
+
+  const focusTableCell = (cell: HTMLTableCellElement) => {
+    const range = document.createRange()
+    range.selectNodeContents(cell)
+    range.collapse(false)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    selectionRangeRef.current = range.cloneRange()
+    focusEditor(false)
+    window.setTimeout(syncEditorContent, 0)
+  }
+
+  const insertTableRowBelow = ({ row }: TableContext) => {
+    const newRow = document.createElement('tr')
+    const columnCount = Math.max(row.cells.length, 1)
+    for (let index = 0; index < columnCount; index += 1) {
+      newRow.append(createTableCell())
+    }
+    row.insertAdjacentElement('afterend', newRow)
+    focusTableCell(newRow.cells[0])
+  }
+
+  const insertTableRowAbove = ({ row }: TableContext) => {
+    const newRow = document.createElement('tr')
+    const columnCount = Math.max(row.cells.length, 1)
+    for (let index = 0; index < columnCount; index += 1) {
+      newRow.append(createTableCell())
+    }
+    row.insertAdjacentElement('beforebegin', newRow)
+    focusTableCell(newRow.cells[0])
+  }
+
+  const insertTableColumn = ({ cell, row, table }: TableContext, side: 'left' | 'right') => {
+    const referenceIndex = cell.cellIndex + (side === 'right' ? 1 : 0)
+    let targetCell: HTMLTableCellElement | null = null
+
+    for (const tableRow of Array.from(table.rows)) {
+      const newCell = createTableCell()
+      tableRow.insertBefore(newCell, tableRow.cells[referenceIndex] ?? null)
+      if (tableRow === row) targetCell = newCell
+    }
+
+    if (targetCell) focusTableCell(targetCell)
+  }
+
+  const moveToAdjacentTableCell = (context: TableContext, direction: -1 | 1) => {
+    const cells = Array.from(context.table.rows).flatMap((tableRow) => Array.from(tableRow.cells))
+    const currentIndex = cells.indexOf(context.cell)
+    const nextCell = cells[currentIndex + direction]
+    if (nextCell) {
+      focusTableCell(nextCell)
+      return
+    }
+
+    if (direction > 0) {
+      insertTableRowBelow({ ...context, row: context.table.rows[context.table.rows.length - 1] ?? context.row })
+    }
+  }
+
+  const getActiveRangeInEditor = () => {
+    const selection = window.getSelection()
+    if (!selection || selection.rangeCount === 0) return null
+    const range = selection.getRangeAt(0)
+    if (!editorRef.current?.contains(range.commonAncestorContainer)) return null
+    return range
+  }
+
+  const isRangeAtStartOfCell = (cell: HTMLTableCellElement) => {
+    const range = getActiveRangeInEditor()
+    if (!range?.collapsed || !cell.contains(range.startContainer)) return false
+    const beforeRange = document.createRange()
+    beforeRange.selectNodeContents(cell)
+    beforeRange.setEnd(range.startContainer, range.startOffset)
+    return beforeRange.toString().trim().length === 0
+  }
+
+  const isRangeAtEndOfCell = (cell: HTMLTableCellElement) => {
+    const range = getActiveRangeInEditor()
+    if (!range?.collapsed || !cell.contains(range.startContainer)) return false
+    const afterRange = document.createRange()
+    afterRange.selectNodeContents(cell)
+    afterRange.setStart(range.startContainer, range.startOffset)
+    return afterRange.toString().trim().length === 0
+  }
+
+  const isTableCellEmpty = (cell: HTMLTableCellElement) =>
+    !cell.textContent?.trim() &&
+    !cell.querySelector('img,audio,iframe,.attachment-card,.printout-card,.markmap-card')
+
+  const deleteTableRow = ({ row, table }: TableContext) => {
+    const rowIndex = row.rowIndex
+    const nextFocusRow = table.rows[rowIndex + 1] ?? table.rows[rowIndex - 1]
+
+    if (table.rows.length <= 1) {
+      const paragraph = document.createElement('p')
+      paragraph.innerHTML = '<br />'
+      table.insertAdjacentElement('afterend', paragraph)
+      table.remove()
+      focusEditor(false)
+      syncEditorContent()
+      return
+    }
+
+    row.remove()
+    if (nextFocusRow?.cells[0]) {
+      focusTableCell(nextFocusRow.cells[0])
+    } else {
+      syncEditorContent()
+    }
   }
 
   const focusChecklistItem = (item: HTMLLIElement) => {
@@ -207,20 +513,32 @@ export const useEditorActions = ({
     return item
   }
 
-  const insertExternalLink = () => {
-    const url = window.prompt('Link URL', 'https://')
+  const insertExternalLink = async () => {
+    const url = await dialogs.prompt({
+      title: 'Insert link',
+      label: 'Address',
+      defaultValue: 'https://',
+      placeholder: 'https://example.com',
+      confirmText: 'Insert',
+    })
     if (!url) return
-    const label = window.prompt('Text to display', url) || url
+    const label =
+      (await dialogs.prompt({ title: 'Insert link', label: 'Text to display', defaultValue: url, confirmText: 'Insert' })) || url
     insertHtmlAtSelection(`<a href="${escapeAttribute(url)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>`)
   }
 
-  const insertInternalPageLink = () => {
-    const query = window.prompt('Link to which page? Search by title', page?.title ?? '')
+  const insertInternalPageLink = async () => {
+    const query = await dialogs.prompt({
+      title: 'Link to page',
+      label: 'Search by title',
+      defaultValue: page?.title ?? '',
+      confirmText: 'Insert',
+    })
     if (!query) return
 
     const match = searchPages(query)[0]
     if (!match) {
-      window.alert('No matching page found.')
+      setSaveLabel('No matching page found.')
       return
     }
 
@@ -289,6 +607,91 @@ export const useEditorActions = ({
   }
 
   const handleEditorKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const tableContext = getTableContext()
+    if (tableContext) {
+      if (event.key === 'Delete' && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+        const rowIsEmpty = Array.from(tableContext.row.cells).every((cell) =>
+          isTableCellEmpty(cell as HTMLTableCellElement),
+        )
+        if (rowIsEmpty && isRangeAtStartOfCell(tableContext.cell)) {
+          event.preventDefault()
+          const now = Date.now()
+          if (
+            tableDeletePressRef.current.cell === tableContext.cell &&
+            now - tableDeletePressRef.current.at < 1300
+          ) {
+            tableDeletePressRef.current = { at: 0, cell: null }
+            deleteTableRow(tableContext)
+            return
+          }
+
+          tableDeletePressRef.current = { at: now, cell: tableContext.cell }
+          setSaveLabel('Press Delete again to remove empty table row')
+          return
+        }
+      }
+
+      if (event.key === 'Tab') {
+        event.preventDefault()
+        moveToAdjacentTableCell(tableContext, event.shiftKey ? -1 : 1)
+        return
+      }
+
+      if (
+        event.key === 'Enter' &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        tableContext.cell.cellIndex === 0 &&
+        tableContext.row.rowIndex > 0 &&
+        isRangeAtStartOfCell(tableContext.cell)
+      ) {
+        event.preventDefault()
+        insertTableRowAbove(tableContext)
+        return
+      }
+
+      if (
+        event.key === 'Enter' &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        tableContext.row.rowIndex === tableContext.table.rows.length - 1 &&
+        tableContext.cell.cellIndex === tableContext.row.cells.length - 1 &&
+        isRangeAtEndOfCell(tableContext.cell)
+      ) {
+        event.preventDefault()
+        insertTableRowBelow(tableContext)
+        return
+      }
+
+      if (event.key === 'Enter' && event.ctrlKey) {
+        event.preventDefault()
+        insertTableRowBelow(tableContext)
+        return
+      }
+
+      if (event.key === 'Enter' && event.altKey) {
+        event.preventDefault()
+        insertHtmlAtSelection('<br /><br />')
+        return
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.altKey && event.key.toLowerCase() === 'r') {
+        event.preventDefault()
+        insertTableColumn(tableContext, 'right')
+        return
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.altKey && event.key.toLowerCase() === 'e') {
+        event.preventDefault()
+        insertTableColumn(tableContext, 'left')
+        return
+      }
+    }
+
     if (event.key === 'Tab') {
       event.preventDefault()
       runEditorCommand(event.shiftKey ? 'outdent' : 'indent')
@@ -372,6 +775,7 @@ export const useEditorActions = ({
     applyFontSize,
     applyPageTemplate,
     applyStylePreset,
+    copySelectionFormatting,
     handleEditorInput,
     handleEditorKeyDown,
     insertChecklist,
@@ -384,6 +788,7 @@ export const useEditorActions = ({
     insertTemplate,
     insertTextAsHtml,
     openMeetingDetailsPane,
+    pasteSelectionFormatting,
     runEditorCommand,
   }
 }

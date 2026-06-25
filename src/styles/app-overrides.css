@@ -5,6 +5,7 @@
 @import './overrides/app-template-pane.css';
 @import './overrides/app-media-map-panes.css';
 @import './overrides/app-reference-meeting-panes.css';
+@import './overrides/app-meeting-panes.css';
 @import './overrides/app-history-review-panes.css';
 @import './overrides/app-tag-task-panes.css';
 @import './overrides/app-search.css';

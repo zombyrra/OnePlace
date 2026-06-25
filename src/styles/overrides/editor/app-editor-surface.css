@@ -26,12 +26,12 @@
   pointer-events: none;
   position: absolute;
   top: 0;
-  width: min(calc(100% - 22px), 880px);
+  width: calc(100% - 22px);
   z-index: 2;
 }
 
 .ink-page-layer.wide {
-  width: min(calc(100% - 22px), 980px);
+  width: calc(100% - 22px);
 }
 
 .ink-page-layer.is-active {
@@ -47,6 +47,7 @@
   background: transparent;
   border: 0;
   border-radius: 0;
+  box-sizing: border-box;
   box-shadow: none;
   color: #1f1f1f;
   font-family: "Segoe UI", sans-serif;
@@ -54,11 +55,11 @@
   line-height: 1.7;
   margin: 0;
   margin-left: 22px;
-  max-width: 920px;
+  max-width: none;
   min-height: 1120px;
   outline: none;
   padding: 24px 36px 72px 0;
-  width: min(100%, 880px);
+  width: calc(100% - 22px);
   position: relative;
   z-index: 1;
 }
@@ -70,8 +71,8 @@
 }
 
 .editor-canvas.wide {
-  max-width: 980px;
-  width: min(100%, 980px);
+  max-width: none;
+  width: calc(100% - 22px);
 }
 
 .editor-canvas.rule-lines {
@@ -82,4 +83,3 @@
   background-repeat: repeat;
   background-size: 100% 100%, 100% 28px;
 }
-

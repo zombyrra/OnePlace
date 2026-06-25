@@ -1,0 +1,108 @@
+/* OneNote-web app header (row A) — .op-header. Loaded after the legacy
+   chrome skin so the old .titlebar rules (now unused markup) don't apply. */
+
+.op-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 48px;
+  padding: 0 12px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+
+.op-header-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.op-header-right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.op-header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background var(--dur-hover) var(--ease-out);
+}
+
+.op-header-icon:hover {
+  background: var(--fill-hover);
+  color: var(--ink);
+}
+
+.op-header-icon:disabled {
+  color: var(--ink-ghost);
+  background: transparent;
+  cursor: default;
+}
+
+.op-quick-access {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin: 0 4px;
+}
+
+.op-notebook-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 8px 0 6px;
+  margin-left: 2px;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background var(--dur-hover) var(--ease-out);
+}
+
+.op-notebook-switch:hover {
+  background: var(--fill-hover);
+}
+
+.op-notebook-name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.op-notebook-switch > svg:last-child {
+  flex-shrink: 0;
+  color: var(--ink-faint);
+}
+
+.op-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-left: 4px;
+  background: #b4009e;
+  border: none;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+}

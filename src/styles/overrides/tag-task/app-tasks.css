@@ -11,16 +11,16 @@
 }
 
 .task-pane-summary > div {
-  background: #fff;
-  border: 1px solid #e8e2e7;
-  border-radius: 8px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
   display: grid;
   gap: 4px;
   padding: 10px 12px;
 }
 
 .task-pane-summary strong {
-  color: #272427;
+  color: var(--ink);
   font-size: 1rem;
 }
 
@@ -28,7 +28,7 @@
 .task-pane-empty,
 .task-pane-card p,
 .task-pane-card-meta {
-  color: #6f6770;
+  color: var(--ink-soft);
   font-size: 0.72rem;
 }
 
@@ -41,21 +41,30 @@
 .task-pane-filters button,
 .task-pane-card-row button,
 .task-pane-card-actions button {
-  background: #fff;
-  border: 1px solid #ddd6dc;
-  border-radius: 999px;
-  color: #554d56;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  color: var(--ink-soft);
   cursor: pointer;
   font: inherit;
   font-size: 0.7rem;
   min-height: 28px;
   padding: 0 10px;
+  transition: background var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+}
+
+.task-pane-filters button:hover,
+.task-pane-card-row button:hover,
+.task-pane-card-actions button:hover {
+  background: var(--fill-hover);
+  border-color: var(--line-strong);
+  color: var(--ink);
 }
 
 .task-pane-filters button.active {
-  background: #f2ebf6;
-  border-color: #d5c6df;
-  color: #5f4d74;
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+  color: var(--iris-strong);
 }
 
 .task-pane-list {
@@ -65,24 +74,24 @@
 }
 
 .task-pane-empty {
-  background: #fff;
-  border: 1px dashed #dcd4db;
-  border-radius: 8px;
+  background: var(--paper);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
   padding: 14px;
 }
 
 .task-pane-card {
-  background: #fff;
-  border: 1px solid #e8e2e7;
-  border-radius: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
   display: grid;
   gap: 8px;
   padding: 12px;
 }
 
 .task-pane-card.overdue {
-  border-color: #e4c0b2;
-  box-shadow: inset 0 0 0 1px rgba(193, 97, 54, 0.08);
+  border-color: rgba(202, 80, 16, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(202, 80, 16, 0.08);
 }
 
 .task-pane-card-row,
@@ -97,7 +106,7 @@
 .task-pane-link {
   background: transparent;
   border: 0;
-  color: #2f3f56;
+  color: var(--iris);
   cursor: pointer;
   font: inherit;
   font-size: 0.78rem;
@@ -105,6 +114,11 @@
   margin-left: auto;
   padding: 0;
   text-align: right;
+}
+
+.task-pane-link:hover {
+  color: var(--iris-strong);
+  text-decoration: underline;
 }
 
 .task-pane-card p {

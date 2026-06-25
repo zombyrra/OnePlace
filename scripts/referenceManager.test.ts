@@ -7,7 +7,7 @@ import {
   importReferencesFromText,
 } from '../src/features/app/referenceManager.ts'
 
-test('imports Zotero-compatible CSL JSON, BibTeX, and RIS references', () => {
+test('imports CSL JSON, BibTeX, and RIS references', () => {
   const cslJson = JSON.stringify([
     {
       DOI: '10.1000/example',

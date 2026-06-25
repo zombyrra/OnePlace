@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react'
 import {
   buildSnippet,
+  clonePageTree,
   createId,
   createSingleNotebookState,
   createStarterPage,
@@ -9,11 +10,22 @@ import {
   demotePageOneLevel,
   ensureSelection,
   flattenPages,
+  insertPageRelative,
+  movePageWithinSiblings,
   promotePageOneLevel,
   removePageById,
   updateNestedPages,
 } from '../../app/appModel'
 import type { AppState, Notebook, Page, Section, SectionGroup } from '../../app/appModel'
+import { dialogs } from '../../components/ui/dialogContext'
+
+export type MoveCopyPageMode = 'copy' | 'move'
+
+export type MoveCopyPageTarget = {
+  groupId: string
+  notebookId: string
+  sectionId: string
+}
 
 type Args = {
   appState: AppState
@@ -36,6 +48,24 @@ export const useNotebookPageActions = ({
   sectionGroup,
   setAppState,
 }: Args) => {
+  const createBlankPage = (title: string, accent: string, content = ''): Page => {
+    const now = new Date().toISOString()
+    return {
+      accent,
+      children: [],
+      content,
+      createdAt: now,
+      id: createId(),
+      inkStrokes: [],
+      isCollapsed: false,
+      snippet: buildSnippet(title, content, now),
+      tags: [],
+      task: null,
+      title,
+      updatedAt: now,
+    }
+  }
+
   const createSection = (groupId: string, name: string, color: string) => {
     setAppState((current) => {
       const sectionId = createId()
@@ -91,10 +121,12 @@ export const useNotebookPageActions = ({
     })
   }
 
-  const promptCreateSection = (groupId?: string) => {
+  const promptCreateSection = async (groupId?: string) => {
     const targetGroupId = groupId ?? sectionGroup?.id
     if (!targetGroupId) return
-    const name = window.prompt('New section name', 'New Section')?.trim()
+    const name = (
+      await dialogs.prompt({ title: 'New section', label: 'Section name', defaultValue: 'New Section', confirmText: 'Create' })
+    )?.trim()
     if (!name) return
     createSection(targetGroupId, name, '#4c75b8')
   }
@@ -358,12 +390,16 @@ export const useNotebookPageActions = ({
     })
   }
 
-  const deleteNotebook = (notebookId: string) => {
+  const deleteNotebook = async (notebookId: string) => {
     const currentNotebook = appState.notebooks.find((item) => item.id === notebookId)
     if (!currentNotebook) return
-    if (!window.confirm(`Delete notebook "${currentNotebook.name}" and all of its sections and pages?`)) {
-      return
-    }
+    const confirmed = await dialogs.confirm({
+      title: 'Delete notebook',
+      message: `Delete "${currentNotebook.name}" and all of its sections and pages?`,
+      confirmText: 'Delete',
+      danger: true,
+    })
+    if (!confirmed) return
 
     setAppState((current) => {
       const notebooks = current.notebooks.filter((item) => item.id !== notebookId)
@@ -376,14 +412,18 @@ export const useNotebookPageActions = ({
     })
   }
 
-  const deleteSectionGroup = (groupId: string) => {
+  const deleteSectionGroup = async (groupId: string) => {
     if (!notebook) return
 
     const group = notebook.sectionGroups.find((item) => item.id === groupId)
     if (!group) return
-    if (!window.confirm(`Delete section group "${group.name}" and everything inside it?`)) {
-      return
-    }
+    const confirmed = await dialogs.confirm({
+      title: 'Delete section group',
+      message: `Delete "${group.name}" and everything inside it?`,
+      confirmText: 'Delete',
+      danger: true,
+    })
+    if (!confirmed) return
 
     setAppState((current) =>
       ensureSelection({
@@ -403,15 +443,19 @@ export const useNotebookPageActions = ({
     )
   }
 
-  const deleteSection = (groupId: string, sectionId: string) => {
+  const deleteSection = async (groupId: string, sectionId: string) => {
     if (!sectionGroup) return
 
     const group = notebook?.sectionGroups.find((item) => item.id === groupId)
     const currentSection = group?.sections.find((item) => item.id === sectionId)
     if (!currentSection) return
-    if (!window.confirm(`Delete section "${currentSection.name}" and all of its pages?`)) {
-      return
-    }
+    const confirmed = await dialogs.confirm({
+      title: 'Delete section',
+      message: `Delete "${currentSection.name}" and all of its pages?`,
+      confirmText: 'Delete',
+      danger: true,
+    })
+    if (!confirmed) return
 
     setAppState((current) =>
       ensureSelection({
@@ -502,21 +546,7 @@ export const useNotebookPageActions = ({
   const addPage = () => {
     if (!section) return
     setAppState((current) => {
-      const now = new Date().toISOString()
-      const nextPage: Page = {
-        accent: section.color,
-        children: [],
-        content: '',
-        createdAt: now,
-        id: createId(),
-        inkStrokes: [],
-        isCollapsed: false,
-        snippet: buildSnippet('Untitled Page', '', now),
-        tags: [],
-        task: null,
-        title: 'Untitled Page',
-        updatedAt: now,
-      }
+      const nextPage = createBlankPage('Untitled Page', section.color)
       return {
         ...current,
         notebooks: current.notebooks.map((item) => ({
@@ -525,7 +555,7 @@ export const useNotebookPageActions = ({
             ...group,
             sections: group.sections.map((entry) =>
               entry.id === current.selectedSectionId
-                ? { ...entry, pages: [nextPage, ...entry.pages] }
+                ? { ...entry, pages: [...entry.pages, nextPage] }
                 : entry,
             ),
           })),
@@ -540,21 +570,7 @@ export const useNotebookPageActions = ({
     const nextTitle = title.trim()
     if (!nextTitle) return
     setAppState((current) => {
-      const now = new Date().toISOString()
-      const nextPage: Page = {
-        accent: section.color,
-        children: [],
-        content: '',
-        createdAt: now,
-        id: createId(),
-        inkStrokes: [],
-        isCollapsed: false,
-        snippet: buildSnippet(nextTitle, '', now),
-        tags: [],
-        task: null,
-        title: nextTitle,
-        updatedAt: now,
-      }
+      const nextPage = createBlankPage(nextTitle, section.color)
       return {
         ...current,
         notebooks: current.notebooks.map((item) => ({
@@ -563,7 +579,33 @@ export const useNotebookPageActions = ({
             ...group,
             sections: group.sections.map((entry) =>
               entry.id === current.selectedSectionId
-                ? { ...entry, pages: [nextPage, ...entry.pages] }
+                ? { ...entry, pages: [...entry.pages, nextPage] }
+                : entry,
+            ),
+          })),
+        })),
+        selectedPageId: nextPage.id,
+      }
+    })
+  }
+
+  const addPageBelowCurrent = () => {
+    if (!section || !page) {
+      addPage()
+      return
+    }
+
+    setAppState((current) => {
+      const nextPage = createBlankPage('Untitled Page', page.accent || section.color)
+      return {
+        ...current,
+        notebooks: current.notebooks.map((item) => ({
+          ...item,
+          sectionGroups: item.sectionGroups.map((group) => ({
+            ...group,
+            sections: group.sections.map((entry) =>
+              entry.id === current.selectedSectionId
+                ? { ...entry, pages: insertPageRelative(entry.pages, current.selectedPageId, nextPage, 'after') }
                 : entry,
             ),
           })),
@@ -576,21 +618,7 @@ export const useNotebookPageActions = ({
   const addSubpage = () => {
     if (!section || !page) return
     setAppState((current) => {
-      const now = new Date().toISOString()
-      const nextPage: Page = {
-        accent: page.accent,
-        children: [],
-        content: '',
-        createdAt: now,
-        id: createId(),
-        inkStrokes: [],
-        isCollapsed: false,
-        snippet: buildSnippet('Untitled Subpage', '', now),
-        tags: [],
-        task: null,
-        title: 'Untitled Subpage',
-        updatedAt: now,
-      }
+      const nextPage = createBlankPage('Untitled Subpage', page.accent)
       return {
         ...current,
         notebooks: current.notebooks.map((item) => ({
@@ -621,21 +649,7 @@ export const useNotebookPageActions = ({
     const nextTitle = title.trim()
     if (!nextTitle) return
     setAppState((current) => {
-      const now = new Date().toISOString()
-      const nextPage: Page = {
-        accent: page.accent,
-        children: [],
-        content: '',
-        createdAt: now,
-        id: createId(),
-        inkStrokes: [],
-        isCollapsed: false,
-        snippet: buildSnippet(nextTitle, '', now),
-        tags: [],
-        task: null,
-        title: nextTitle,
-        updatedAt: now,
-      }
+      const nextPage = createBlankPage(nextTitle, page.accent)
       return {
         ...current,
         notebooks: current.notebooks.map((item) => ({
@@ -658,6 +672,102 @@ export const useNotebookPageActions = ({
         })),
         selectedPageId: nextPage.id,
       }
+    })
+  }
+
+  const moveCurrentPage = (direction: -1 | 1) => {
+    if (!section || !page) return
+
+    setAppState((current) => {
+      let moved = false
+      const nextState = {
+        ...current,
+        notebooks: current.notebooks.map((item) => ({
+          ...item,
+          sectionGroups: item.sectionGroups.map((group) => ({
+            ...group,
+            sections: group.sections.map((entry) => {
+              if (entry.id !== current.selectedSectionId) return entry
+
+              const result = movePageWithinSiblings(entry.pages, current.selectedPageId, direction)
+              moved = result.moved
+              return moved ? { ...entry, pages: result.pages } : entry
+            }),
+          })),
+        })),
+      }
+
+      return moved ? nextState : current
+    })
+  }
+
+  const moveCurrentPageUp = () => moveCurrentPage(-1)
+  const moveCurrentPageDown = () => moveCurrentPage(1)
+
+  const moveOrCopyCurrentPage = (mode: MoveCopyPageMode, target: MoveCopyPageTarget) => {
+    if (!section || !page) return
+
+    setAppState((current) => {
+      let pageToPlace: Page | undefined = mode === 'copy' ? clonePageTree(page) : undefined
+      const isSameTargetSection = mode === 'move' && target.sectionId === current.selectedSectionId
+
+      const withoutMovedPage =
+        mode === 'move'
+          ? {
+              ...current,
+              notebooks: current.notebooks.map((item) => ({
+                ...item,
+                sectionGroups: item.sectionGroups.map((group) => ({
+                  ...group,
+                  sections: group.sections.map((entry) => {
+                    if (entry.id !== current.selectedSectionId) return entry
+
+                    const removed = removePageById(entry.pages, current.selectedPageId)
+                    if (!removed.page) return entry
+                    pageToPlace = removed.page
+                    const pages =
+                      removed.pages.length > 0 || isSameTargetSection
+                        ? removed.pages
+                        : [createStarterPage('Untitled Page', entry.color, '<p>Start writing here.</p>')]
+                    return { ...entry, pages }
+                  }),
+                })),
+              })),
+            }
+          : current
+
+      if (!pageToPlace) return current
+
+      let inserted = false
+      const nextState = {
+        ...withoutMovedPage,
+        notebooks: withoutMovedPage.notebooks.map((item) =>
+          item.id === target.notebookId
+            ? {
+                ...item,
+                sectionGroups: item.sectionGroups.map((group) =>
+                  group.id === target.groupId
+                    ? {
+                        ...group,
+                        isCollapsed: false,
+                        sections: group.sections.map((entry) => {
+                          if (entry.id !== target.sectionId) return entry
+                          inserted = true
+                          return { ...entry, pages: [...entry.pages, pageToPlace as Page] }
+                        }),
+                      }
+                    : group,
+                ),
+              }
+            : item,
+        ),
+        selectedNotebookId: target.notebookId,
+        selectedPageId: pageToPlace.id,
+        selectedSectionGroupId: target.groupId,
+        selectedSectionId: target.sectionId,
+      }
+
+      return inserted ? ensureSelection(nextState) : current
     })
   }
 
@@ -713,9 +823,9 @@ export const useNotebookPageActions = ({
     })
   }
 
-  const deleteCurrentPage = () => {
+  const deleteCurrentPage = async () => {
     if (!section || !page) return
-    if (!window.confirm(`Delete page "${page.title}"?`)) return
+    if (!(await dialogs.confirm({ title: 'Delete page', message: `Delete "${page.title}"?`, confirmText: 'Delete', danger: true }))) return
 
     setAppState((current) => {
       const currentNotebook = current.notebooks.find((item) => item.id === current.selectedNotebookId)
@@ -765,6 +875,7 @@ export const useNotebookPageActions = ({
 
   return {
     addPage,
+    addPageBelowCurrent,
     addPageWithTitle,
     addSectionGroup,
     addSectionGroupWithName,
@@ -776,6 +887,9 @@ export const useNotebookPageActions = ({
     deleteSection,
     deleteSectionGroup,
     demoteCurrentPage,
+    moveOrCopyCurrentPage,
+    moveCurrentPageDown,
+    moveCurrentPageUp,
     promptCreateSection,
     createSectionInGroup,
     promoteCurrentPage,

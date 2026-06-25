@@ -1,0 +1,66 @@
+/* Font / size combobox (.op-combobox) — select-style trigger + flyout list. */
+
+.op-combobox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  height: 26px;
+  min-width: 0;
+  padding: 0 6px 0 8px;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color var(--dur-hover) var(--ease-out);
+}
+
+.op-combobox:hover {
+  border-color: var(--ink-faint);
+}
+
+.op-combobox[data-state='open'] {
+  border-color: var(--iris);
+}
+
+.op-combobox-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.op-combobox-list {
+  min-width: 132px;
+  max-height: 320px;
+  padding: 4px;
+  overflow-y: auto;
+}
+
+.op-combobox-option {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.op-combobox-option:hover {
+  background: var(--fill-hover);
+}
+
+.op-combobox-option.is-selected {
+  background: var(--iris-tint);
+  color: var(--iris-strong);
+  font-weight: 600;
+}

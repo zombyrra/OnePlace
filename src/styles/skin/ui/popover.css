@@ -1,0 +1,19 @@
+/* OneNote-web flyout (.op-popover) — Radix Popover surface for non-list
+   content (colour grids, table-size picker, combobox lists). Portal-safe. */
+
+.op-popover {
+  padding: 8px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-pop);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--ink);
+  transform-origin: var(--radix-popover-content-transform-origin);
+  animation: op-pop-in var(--dur-enter) var(--ease-out);
+}
+
+.op-popover:focus-visible {
+  outline: none;
+}

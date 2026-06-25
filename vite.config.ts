@@ -49,4 +49,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(packageJson.version),
   },
   plugins: [react()],
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+  },
 })

@@ -3,6 +3,10 @@
 @import './skin/app-navigation.css';
 @import './skin/app-editor.css';
 @import './skin/app-side-panes.css';
+@import './skin/app-side-pane-controls.css';
 @import './skin/app-context-sidebar.css';
 @import './skin/app-interactions.css';
 @import './skin/app-motion.css';
+@import './skin/app-ui.css';
+@import './skin/app-chrome-shell.css';
+@import './skin/app-workspace-onenote.css';

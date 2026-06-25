@@ -1,0 +1,168 @@
+/* Ribbon control faces (.op-ribbon-btn / .op-split) for the OneNote-web
+   ribbon. Rendered inside .desktop-scene but kept on base tokens so they
+   stay consistent with the portaled menus they open. */
+
+.op-ribbon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  height: 26px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+}
+
+.op-ribbon-btn:hover {
+  background: var(--fill-hover);
+}
+
+.op-ribbon-btn:active {
+  background: var(--fill-pressed);
+}
+
+.op-ribbon-btn.is-active {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+  color: var(--iris-strong);
+}
+
+.op-ribbon-btn:disabled {
+  color: var(--ink-ghost);
+  background: transparent;
+  cursor: default;
+}
+
+.op-ribbon-btn-large {
+  flex-direction: column;
+  gap: 3px;
+  height: auto;
+  min-width: 56px;
+  padding: 5px 8px 4px;
+}
+
+.op-ribbon-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--ink);
+}
+
+.op-ribbon-btn:disabled .op-ribbon-btn-icon {
+  color: var(--ink-ghost);
+}
+
+.op-ribbon-btn.is-active .op-ribbon-btn-icon {
+  color: var(--iris-strong);
+}
+
+.op-ribbon-btn-label {
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.op-ribbon-btn-large .op-ribbon-btn-label {
+  font-size: 11px;
+  text-align: center;
+}
+
+.op-ribbon-btn-caret {
+  margin-left: 1px;
+  color: var(--ink-faint);
+}
+
+/* Split button: a main action + a separate caret target. */
+.op-split {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+}
+
+.op-split-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm) 0 0 var(--r-sm);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.op-split-large {
+  flex-direction: column;
+}
+
+.op-split-large .op-split-main {
+  flex-direction: column;
+  gap: 3px;
+  min-width: 56px;
+  padding: 5px 8px 2px;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+}
+
+.op-split-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid transparent;
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+
+.op-split-large .op-split-caret {
+  width: auto;
+  border-left: none;
+  border-top: 1px solid transparent;
+  border-radius: 0 0 var(--r-sm) var(--r-sm);
+  padding: 1px 0 3px;
+}
+
+.op-split-main:hover,
+.op-split-caret:hover {
+  background: var(--fill-hover);
+}
+
+.op-split:hover .op-split-caret {
+  border-left-color: var(--line);
+}
+
+.op-split-large:hover .op-split-caret {
+  border-left-color: transparent;
+  border-top-color: var(--line);
+}
+
+.op-split-main .op-ribbon-btn-icon {
+  color: var(--ink);
+}
+
+.op-split.is-active {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+}
+
+.op-split.is-disabled {
+  pointer-events: none;
+}
+
+.op-split.is-disabled .op-split-main,
+.op-split.is-disabled .op-split-caret,
+.op-split.is-disabled .op-ribbon-btn-icon {
+  color: var(--ink-ghost);
+}

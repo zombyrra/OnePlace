@@ -1,9 +1,14 @@
-import type { RefObject, ReactNode } from 'react'
-import type { SearchFilter, SearchResult, SearchScope } from '../../app/appModel'
+import { Menu, MenuContent, MenuItem, MenuTrigger } from '../ui'
 import {
+  AppGridIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  BellIcon,
   ChevronDownIcon,
+  FilePlusIcon,
+  FolderIcon,
   SaveIcon,
-  SearchIcon,
+  SettingsIcon,
   UndoIcon,
 } from '../Icons'
 
@@ -16,22 +21,13 @@ type TitleBarProps = {
   onUndo: () => void
   onGoBack: () => void
   onGoForward: () => void
-  query: string
-  setQuery: (value: string) => void
-  titlebarSearchRef: RefObject<HTMLDivElement | null>
-  searchInputRef: RefObject<HTMLInputElement | null>
-  searchResultsPanelRef: RefObject<HTMLDivElement | null>
-  searchScope: SearchScope
-  searchScopeLabels: Record<SearchScope, string>
-  searchFilter: SearchFilter
-  searchFilterLabels: Record<SearchFilter, string>
-  onToggleSearchScope: () => void
-  onSetSearchFilter: (filter: SearchFilter) => void
-  searchResults: SearchResult[]
-  openSearchResult: (result: SearchResult) => void
-  renderHighlightedText: (text: string, query: string) => ReactNode
+  onNewNotebook: () => void
+  onOpenNotebook: () => void
 }
 
+/* OneNote-web app header (row A): app launcher + quick access, the notebook
+   switcher, and the account cluster. Content search lives in the command
+   bar (row B); see CommandBar.tsx. */
 export function TitleBar(props: TitleBarProps) {
   const {
     windowTitle,
@@ -42,128 +38,59 @@ export function TitleBar(props: TitleBarProps) {
     onUndo,
     onGoBack,
     onGoForward,
-    query,
-    setQuery,
-    titlebarSearchRef,
-    searchInputRef,
-    searchResultsPanelRef,
-    searchScope,
-    searchScopeLabels,
-    searchFilter,
-    searchFilterLabels,
-    onToggleSearchScope,
-    onSetSearchFilter,
-    searchResults,
-    openSearchResult,
-    renderHighlightedText,
+    onNewNotebook,
+    onOpenNotebook,
   } = props
+  const avatarInitial = (workspaceName.trim()[0] ?? 'O').toUpperCase()
 
   return (
-    <header className="titlebar">
-      <div className="titlebar-left">
-        <div className="titlebar-brand">
-          <button className="quick-action icon-only" onClick={onSave} type="button">
-            <SaveIcon size={16} />
+    <header className="op-header">
+      <div className="op-header-left">
+        <button aria-label="App launcher" className="op-header-icon" type="button">
+          <AppGridIcon size={18} />
+        </button>
+        <div className="op-quick-access">
+          <button className="op-header-icon" onClick={onSave} title="Save" type="button">
+            <SaveIcon size={15} />
           </button>
-          <button className="quick-action icon-only" onClick={onUndo} type="button">
-            <UndoIcon size={16} />
+          <button className="op-header-icon" onClick={onUndo} title="Undo" type="button">
+            <UndoIcon size={15} />
           </button>
-          <button className="quick-action icon-only" disabled={!canGoBack} onClick={onGoBack} type="button">
-            {'<'}
+          <button className="op-header-icon" disabled={!canGoBack} onClick={onGoBack} title="Back" type="button">
+            <ArrowLeftIcon size={15} />
           </button>
-          <button className="quick-action icon-only" disabled={!canGoForward} onClick={onGoForward} type="button">
-            {'>'}
-          </button>
-          <button className="quick-action icon-only small" type="button">
-            <ChevronDownIcon size={12} />
+          <button className="op-header-icon" disabled={!canGoForward} onClick={onGoForward} title="Forward" type="button">
+            <ArrowRightIcon size={15} />
           </button>
         </div>
-        <div className="titlebar-workspace" title={windowTitle}>
-          <span className="workspace-name">{workspaceName}</span>
-          <span className="workspace-dot" />
-          <span className="workspace-pill">Non-Business</span>
-          <span className="workspace-dot" />
-          <span className="workspace-app">OnePlace</span>
-          <ChevronDownIcon size={11} />
-        </div>
+        <Menu>
+          <MenuTrigger asChild>
+            <button className="op-notebook-switch" title={windowTitle} type="button">
+              <img alt="OnePlace" height={20} src="/oneplace-logo.png" width={20} />
+              <span className="op-notebook-name">{workspaceName}</span>
+              <ChevronDownIcon size={12} />
+            </button>
+          </MenuTrigger>
+          <MenuContent>
+            <MenuItem icon={<FilePlusIcon size={16} />} onSelect={onNewNotebook}>
+              New notebook
+            </MenuItem>
+            <MenuItem icon={<FolderIcon size={16} />} onSelect={onOpenNotebook}>
+              Open notebook
+            </MenuItem>
+          </MenuContent>
+        </Menu>
       </div>
-      <div className="titlebar-search" ref={titlebarSearchRef}>
-        <span className="search-icon">
-          <SearchIcon size={16} />
-        </span>
-        <input
-          ref={searchInputRef}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search"
-          type="search"
-          value={query}
-        />
-        {query.trim() ? (
-          <div className="search-results search-results-floating" ref={searchResultsPanelRef}>
-            <div className="search-results-toolbar">
-              <button className="search-scope-chip" onClick={onToggleSearchScope} type="button">
-                {searchScopeLabels[searchScope]}
-              </button>
-              <div className="search-filter-row">
-                {(['all', 'title', 'content', 'tag', 'task'] as SearchFilter[]).map((filter) => (
-                  <button
-                    key={filter}
-                    className={`search-filter-chip ${searchFilter === filter ? 'active' : ''}`}
-                    onClick={() => onSetSearchFilter(filter)}
-                    type="button"
-                  >
-                    {searchFilterLabels[filter]}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="search-results-summary">
-              <strong>{searchResults.length}</strong>
-              <span>
-                result{searchResults.length === 1 ? '' : 's'} in {searchScopeLabels[searchScope].toLowerCase()}
-              </span>
-            </div>
-            <div className="search-results-list">
-              {searchResults.length > 0 ? (
-                searchResults.slice(0, 8).map((result) => (
-                  <button
-                    key={result.page.id}
-                    className="search-result"
-                    onClick={() => openSearchResult(result)}
-                    type="button"
-                  >
-                    <strong>
-                      {renderHighlightedText(
-                        result.isSubpage ? `${result.page.title} (Subpage)` : result.page.title,
-                        query.trim(),
-                      )}
-                    </strong>
-                    <span>{result.notebookName} / {result.groupName} / {result.sectionName}</span>
-                    <p>{renderHighlightedText(result.matchSnippet ?? result.page.snippet, query.trim())}</p>
-                    <div className="search-result-meta">
-                      {(result.matchedFields ?? ['content']).map((field) => (
-                        <em key={`${result.page.id}-${field}`}>{searchFilterLabels[field]}</em>
-                      ))}
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="search-results-empty">
-                  No matches for this query with the current search scope and filter.
-                </div>
-              )}
-            </div>
-          </div>
-        ) : null}
-      </div>
-      <div className="titlebar-right">
-        <button className="titlebar-chip" type="button">
-          Sticky Notes
+      <div className="op-header-right">
+        <button aria-label="Settings" className="op-header-icon" type="button">
+          <SettingsIcon size={18} />
         </button>
-        <button className="titlebar-share" type="button">
-          Share
+        <button aria-label="Notifications" className="op-header-icon" type="button">
+          <BellIcon size={18} />
         </button>
-        <div className="profile-chip">SJ</div>
+        <button className="op-avatar" type="button">
+          {avatarInitial}
+        </button>
       </div>
     </header>
   )

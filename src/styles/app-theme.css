@@ -1,78 +1,97 @@
 /* =====================================================================
-   OnePlace — "Ink & Porcelain" design tokens (single source of truth)
+   OnePlace — "OneNote for the web" design tokens (single source of truth)
    Loaded last; owns the palette, type, radii, shadows and base element
-   defaults. Legacy variable names are remapped here so every existing
-   rule that consumes them picks up the new identity automatically.
+   defaults. The token NAMES are unchanged so every existing rule keeps
+   working — only their VALUES were repointed from the old "Ink &
+   Porcelain" identity to a faithful Microsoft Fluent / OneNote-web look.
+   (Some names like --iris/--paper are now historical: --iris == OneNote
+   purple, --paper == white sheet. Kept to avoid touching ~70 files.)
+
+   Tokens live at :root so Radix-portaled menus/dialogs/popovers — which
+   mount at document.body, OUTSIDE .desktop-scene — can still consume them.
    ===================================================================== */
 
 :root {
-  /* Type roles */
-  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
-  --font-ui: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Spline Sans Mono", "Cascadia Mono", Consolas, monospace;
+  /* Type roles — Inter for a contemporary feel distinct from Microsoft. */
+  --font-display: "Inter", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  --font-ui: "Inter", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  --font-mono: Consolas, "Cascadia Mono", "Courier New", monospace;
 
-  /* Porcelain & desk surfaces — a deliberate tonal ramp:
-     desk (deepest) → chrome/rail → pages → paper (lightest, the sheet) */
-  --paper: #fcfcfb;
-  --desk: #e1dfd7;
-  --chrome: #ebe8e1;
-  --surface-raised: #fbfaf7;
-  --surface-sunk: #f4f2ec;
-  --surface-tint: #f0eee8;
+  /* Neutral surfaces — faint lavender tint connects purple rail to content. */
+  --paper: #ffffff;            /* the writing sheet / raised menus */
+  --desk: #f3f2f1;             /* faint frame behind the window */
+  --chrome: #f9f8fd;           /* ribbon / pane backgrounds — barely lavender */
+  --surface-raised: #ffffff;   /* flyouts, cards, dialogs */
+  --surface-sunk: #f0edf9;     /* lavender-tinted sunk panels */
+  --surface-tint: #f9f8fd;     /* subtle fill — matches chrome */
 
-  /* Dried-ink text */
-  --ink: #1c1b22;
-  --ink-soft: #57565f;
-  --ink-faint: #8b8a94;
-  --ink-ghost: #a8a79c;
+  /* Hover / pressed / selected fills (Fluent neutrals) */
+  --fill-hover: #f3f2f1;
+  --fill-pressed: #edebe9;
+  --fill-selected: #e1dfdd;
 
-  /* Iris — the fountain-pen accent */
-  --iris: #4b3fa7;
-  --iris-spine: #5b4fc4;
-  --iris-strong: #3a2f8f;
-  --iris-tint: #efeef9;
-  --iris-tint-strong: #e6e4f6;
-  --iris-edge: #d7d3f0;
+  /* Text (Fluent neutral ramp) */
+  --ink: #201f1e;        /* neutralDark — primary text */
+  --ink-soft: #605e5c;   /* neutralSecondary */
+  --ink-faint: #797775;  /* between secondary and tertiary */
+  --ink-ghost: #a19f9d;  /* neutralTertiary — placeholder / disabled */
 
-  /* Index-tab hues (curated, archival) */
-  --hue-teal: #2e8c82;
-  --hue-amber: #c98a2e;
-  --hue-slate: #4a6b8a;
-  --hue-rose: #c25a6e;
-  --hue-moss: #6e8b4a;
-  --hue-teal-tint: #e6f2ef;
-  --hue-amber-tint: #f7efe1;
+  /* Vivid violet — more contemporary than Microsoft purple. */
+  --iris: #6d28d9;             /* violet-700 — primary accent */
+  --iris-spine: #6d28d9;       /* nav rail + selected-section spine */
+  --iris-strong: #5b21b6;      /* violet-800 — hover / pressed */
+  --iris-tint: #ede9fe;        /* violet-100 — light selected wash */
+  --iris-tint-strong: #ddd6fe; /* violet-200 — stronger selected / text selection */
+  --iris-edge: #c4b5fd;        /* violet-300 — tinted border on selected items */
 
-  /* Borders */
-  --line-soft: #dcd9d1;
-  --line: #d2cfc6;
-  --line-strong: #c4c1b7;
+  /* Section / tag accent hues (used sparingly in side panes & tags) */
+  --hue-teal: #038387;
+  --hue-amber: #ca5010;
+  --hue-slate: #0078d4;
+  --hue-rose: #d13438;
+  --hue-moss: #498205;
+  --hue-teal-tint: #e6f3f3;
+  --hue-amber-tint: #fbeae1;
 
-  /* Radii */
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 12px;
+  /* Borders — Fluent neutralLight ramp */
+  --line-soft: #edebe9;
+  --line: #e1dfdd;
+  --line-strong: #d2d0ce;
+
+  /* Radii — softer geometry, more contemporary feel */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
   --r-pill: 999px;
 
-  /* Shadows — restrained, paper-on-desk */
-  --sh-sm: 0 1px 2px rgba(40, 38, 55, 0.05);
-  --sh-sheet: 0 1px 3px rgba(40, 38, 55, 0.05), 0 10px 30px rgba(40, 38, 55, 0.05);
-  --sh-pop: 0 10px 28px rgba(28, 27, 34, 0.14), 0 2px 6px rgba(28, 27, 34, 0.08);
+  /* Scrim behind modal dialogs */
+  --scrim: rgba(0, 0, 0, 0.4);
 
-  /* Motion — a small, named vocabulary so every transition speaks the same
-     language. --ease stays a duration+curve shorthand (consumed as
-     `transition: prop var(--ease)`); the rest are split tokens. */
+  /* Shadows — Fluent elevation (depth-4 / depth-8 / depth-16/64) */
+  --sh-sm: 0 0.3px 0.9px rgba(0, 0, 0, 0.10), 0 1.6px 3.6px rgba(0, 0, 0, 0.11);
+  --sh-sheet: 0 0.6px 1.8px rgba(0, 0, 0, 0.11), 0 3.2px 7.2px rgba(0, 0, 0, 0.13);
+  --sh-pop: 0 0.6px 1.8px rgba(0, 0, 0, 0.11), 0 3.2px 7.2px rgba(0, 0, 0, 0.13);
+  --sh-dialog: 0 1.2px 3.6px rgba(0, 0, 0, 0.11), 0 6.4px 14.4px rgba(0, 0, 0, 0.13);
+
+  /* Motion — kept small and quiet, matching OneNote's restrained feel. */
   --ease: 160ms cubic-bezier(0.2, 0.6, 0.2, 1);
-  --ease-out: cubic-bezier(0.2, 0.6, 0.2, 1);     /* the house curve, extracted */
-  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1); /* a hint of overshoot for entrances */
-  --dur-press: 80ms;   /* tactile click feedback */
-  --dur-hover: 130ms;  /* hover state changes */
-  --dur-base: 180ms;   /* general state transitions */
-  --dur-enter: 240ms;  /* surfaces arriving on screen */
+  --ease-out: cubic-bezier(0.2, 0.6, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --dur-press: 80ms;
+  --dur-hover: 110ms;
+  --dur-base: 160ms;
+  --dur-enter: 200ms;
+}
+
+/* Portaled content (Radix menus/dialogs at document.body) inherits the
+   OneNote face and text colour from the document root. */
+body {
+  font-family: var(--font-ui);
+  color: var(--ink);
 }
 
 /* Remap the legacy token names the existing stylesheets consume, so the
-   whole app shifts to Ink & Porcelain without touching every rule. */
+   whole app shifts to the OneNote look without touching every rule. */
 .desktop-scene {
   --chrome-top: var(--chrome);
   --chrome-bottom: var(--chrome);
@@ -91,7 +110,7 @@
   --accent-strong: var(--iris-strong);
   --shadow-sm: var(--sh-sm);
   --shadow-md: var(--sh-sheet);
-  --shadow-lg: var(--sh-sheet);
+  --shadow-lg: var(--sh-dialog);
 
   /* Active notebook hue — overridden per-notebook where data allows */
   --active-hue: var(--iris-spine);
@@ -114,26 +133,26 @@ select {
   color: var(--ink);
 }
 
-/* One calm, consistent focus ring everywhere */
+/* One calm, consistent focus ring everywhere — OneNote purple */
 .desktop-scene :focus-visible {
   outline: 2px solid var(--iris);
   outline-offset: 1px;
   border-radius: var(--r-sm);
 }
 
-/* Quiet, paper-toned scrollbars */
+/* Quiet Fluent-grey scrollbars */
 .desktop-scene *::-webkit-scrollbar {
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
 }
 .desktop-scene *::-webkit-scrollbar-thumb {
-  background: rgba(120, 116, 130, 0.32);
+  background: rgba(96, 94, 92, 0.4);
   background-clip: padding-box;
   border: 3px solid transparent;
   border-radius: var(--r-pill);
 }
 .desktop-scene *::-webkit-scrollbar-thumb:hover {
-  background: rgba(120, 116, 130, 0.5);
+  background: rgba(96, 94, 92, 0.6);
   background-clip: padding-box;
   border: 3px solid transparent;
 }

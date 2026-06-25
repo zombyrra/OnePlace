@@ -15,7 +15,9 @@ import {
   getReferencePreview,
   referenceStyleOptions,
 } from '../../features/app/referenceManager'
+import type { ReferenceDraft } from '../../features/app/useReferenceManager'
 import { countMarkmapTreeNodes, type MarkmapTreeNode } from '../../features/app/markmapFeature'
+import { CloseIcon, SparklesIcon } from '../Icons'
 import { MarkmapPreview } from './MarkmapPreview'
 import { MarkmapTreeEditor } from './MarkmapTreeEditor'
 
@@ -81,8 +83,14 @@ export type SidePanesProps = {
   referenceImportDraft: string
   setReferenceImportDraft: Dispatch<SetStateAction<string>>
   referenceImportSummary: string
+  manualReferenceDraft: ReferenceDraft
+  editingReferenceId: string | null
   canInsertReference: boolean
   importReferenceText: (value: string) => void
+  setManualReferenceField: (field: keyof ReferenceDraft, value: string) => void
+  saveManualReference: () => void
+  resetManualReferenceDraft: () => void
+  editReference: (item: ReferenceItem) => void
   insertReferenceCitation: (item: ReferenceItem) => void
   insertReferenceEntry: (item: ReferenceItem) => void
   insertReferenceBibliography: () => void
@@ -210,8 +218,14 @@ export function SidePanes(props: SidePanesProps) {
     referenceImportDraft,
     setReferenceImportDraft,
     referenceImportSummary,
+    manualReferenceDraft,
+    editingReferenceId,
     canInsertReference,
     importReferenceText,
+    setManualReferenceField,
+    saveManualReference,
+    resetManualReferenceDraft,
+    editReference,
     insertReferenceCitation,
     insertReferenceEntry,
     insertReferenceBibliography,
@@ -305,8 +319,8 @@ export function SidePanes(props: SidePanesProps) {
         <div className="task-pane-toolbar">
           <strong>Page Templates</strong>
           <span className="copilot-pane-spacer" />
-          <button onClick={() => setIsTemplatePaneOpen(false)} type="button">
-            x
+          <button aria-label="Close pane" className="side-pane-close" onClick={() => setIsTemplatePaneOpen(false)} type="button">
+            <CloseIcon />
           </button>
         </div>
         <div className="template-pane-body">
@@ -328,7 +342,7 @@ export function SidePanes(props: SidePanesProps) {
               <strong>{selectedTemplate.label}</strong>
               <p>{extractSnippetText(selectedTemplate.html).slice(0, 220)}</p>
               <div className="template-pane-actions">
-                <button disabled={isCurrentSectionLocked} onClick={insertSelectedTemplate} type="button">
+                <button className="pane-primary" disabled={isCurrentSectionLocked} onClick={insertSelectedTemplate} type="button">
                   Insert Template
                 </button>
                 <button onClick={() => setIsTemplatePaneOpen(false)} type="button">
@@ -343,8 +357,8 @@ export function SidePanes(props: SidePanesProps) {
         <div className="task-pane-toolbar">
           <strong>Mind Map</strong>
           <span className="copilot-pane-spacer" />
-          <button onClick={() => setIsMarkmapPaneOpen(false)} type="button">
-            x
+          <button aria-label="Close pane" className="side-pane-close" onClick={() => setIsMarkmapPaneOpen(false)} type="button">
+            <CloseIcon />
           </button>
         </div>
         <div className="markmap-pane-body">
@@ -357,7 +371,7 @@ export function SidePanes(props: SidePanesProps) {
             <button disabled={!page} onClick={seedMarkmapFromPage} type="button">
               Use Page
             </button>
-            <button disabled={!canInsertMarkmap || !markmapTree.label.trim()} onClick={insertMarkmapBlock} type="button">
+            <button className="pane-primary" disabled={!canInsertMarkmap || !markmapTree.label.trim()} onClick={insertMarkmapBlock} type="button">
               Insert Map
             </button>
           </div>
@@ -370,14 +384,17 @@ export function SidePanes(props: SidePanesProps) {
         <div className="task-pane-toolbar">
           <strong>Audio Note</strong>
           <span className="copilot-pane-spacer" />
-          <button onClick={() => setIsAudioPaneOpen(false)} type="button">
-            x
+          <button aria-label="Close pane" className="side-pane-close" onClick={() => setIsAudioPaneOpen(false)} type="button">
+            <CloseIcon />
           </button>
         </div>
         <div className="audio-pane-body">
-          <div className="audio-pane-status">
-            <strong>{isRecordingAudio ? (isAudioPaused ? 'Paused' : 'Recording') : 'Ready'}</strong>
-            <span>{formatElapsedTime(audioRecordingSeconds)}</span>
+          <div className={`audio-pane-status ${isRecordingAudio ? (isAudioPaused ? 'paused' : 'recording') : ''}`}>
+            <span className="audio-pane-state">
+              <span className="audio-pane-dot" aria-hidden="true" />
+              <strong>{isRecordingAudio ? (isAudioPaused ? 'Paused' : 'Recording') : 'Ready'}</strong>
+            </span>
+            <span className="audio-pane-time">{formatElapsedTime(audioRecordingSeconds)}</span>
           </div>
           <label className="review-pane-field">
             <span>Input Device</span>
@@ -400,6 +417,7 @@ export function SidePanes(props: SidePanesProps) {
           </label>
           <div className="audio-pane-actions">
             <button
+              className="pane-primary"
               disabled={isCurrentSectionLocked}
               onClick={() => void (isRecordingAudio ? stopAudioRecording() : startAudioRecording())}
               type="button"
@@ -418,23 +436,114 @@ export function SidePanes(props: SidePanesProps) {
       </aside>
       <aside className="references-pane" hidden={!isReferencesPaneOpen}>
         <div className="task-pane-toolbar">
-          <strong>Zotero</strong>
+          <strong>Citation Library</strong>
           <span className="copilot-pane-spacer" />
-          <button onClick={() => setIsReferencesPaneOpen(false)} type="button">
-            x
+          <button aria-label="Close pane" className="side-pane-close" onClick={() => setIsReferencesPaneOpen(false)} type="button">
+            <CloseIcon />
           </button>
         </div>
         <div className="references-pane-body">
           <div className="references-pane-status">
-            <strong>Zotero library</strong>
+            <strong>Saved sources</strong>
             <span>
               {references.length === 0
-                ? 'Import Zotero BibTeX, RIS, or CSL JSON exports to build a local reference library.'
+                ? 'Add sources here, then cite them in your notes.'
                 : `${references.length} saved reference${references.length === 1 ? '' : 's'}`}
             </span>
           </div>
+          <section className="reference-editor">
+            <div className="reference-editor-head">
+              <strong>{editingReferenceId ? 'Edit reference' : 'Add reference'}</strong>
+              {editingReferenceId ? (
+                <button onClick={resetManualReferenceDraft} type="button">
+                  Cancel
+                </button>
+              ) : null}
+            </div>
+            <label className="review-pane-field">
+              <span>Title</span>
+              <input
+                onChange={(event) => setManualReferenceField('title', event.target.value)}
+                placeholder="Article, book, page, or report title"
+                type="text"
+                value={manualReferenceDraft.title}
+              />
+            </label>
+            <label className="review-pane-field">
+              <span>Authors</span>
+              <input
+                onChange={(event) => setManualReferenceField('authors', event.target.value)}
+                placeholder="Ada Lovelace; Grace Hopper"
+                type="text"
+                value={manualReferenceDraft.authors}
+              />
+            </label>
+            <div className="reference-editor-grid">
+              <label className="review-pane-field">
+                <span>Year</span>
+                <input
+                  onChange={(event) => setManualReferenceField('year', event.target.value)}
+                  placeholder="2026"
+                  type="text"
+                  value={manualReferenceDraft.year}
+                />
+              </label>
+              <label className="review-pane-field">
+                <span>Type</span>
+                <input
+                  onChange={(event) => setManualReferenceField('itemType', event.target.value)}
+                  placeholder="article"
+                  type="text"
+                  value={manualReferenceDraft.itemType}
+                />
+              </label>
+            </div>
+            <label className="review-pane-field">
+              <span>Journal / Source</span>
+              <input
+                onChange={(event) => setManualReferenceField('containerTitle', event.target.value)}
+                placeholder="Journal, website, conference, or book"
+                type="text"
+                value={manualReferenceDraft.containerTitle}
+              />
+            </label>
+            <label className="review-pane-field">
+              <span>Publisher</span>
+              <input
+                onChange={(event) => setManualReferenceField('publisher', event.target.value)}
+                placeholder="Publisher or organization"
+                type="text"
+                value={manualReferenceDraft.publisher}
+              />
+            </label>
+            <div className="reference-editor-grid">
+              <label className="review-pane-field">
+                <span>DOI</span>
+                <input
+                  onChange={(event) => setManualReferenceField('doi', event.target.value)}
+                  placeholder="10.xxxx/example"
+                  type="text"
+                  value={manualReferenceDraft.doi}
+                />
+              </label>
+              <label className="review-pane-field">
+                <span>URL</span>
+                <input
+                  onChange={(event) => setManualReferenceField('url', event.target.value)}
+                  placeholder="https://..."
+                  type="url"
+                  value={manualReferenceDraft.url}
+                />
+              </label>
+            </div>
+            <div className="references-pane-actions">
+              <button className="pane-primary" disabled={!manualReferenceDraft.title.trim()} onClick={saveManualReference} type="button">
+                {editingReferenceId ? 'Update Reference' : 'Add Reference'}
+              </button>
+            </div>
+          </section>
           <label className="review-pane-field">
-            <span>Import Zotero Export</span>
+            <span>Import BibTeX / RIS / CSL</span>
             <textarea
               onChange={(event) => setReferenceImportDraft(event.target.value)}
               placeholder="@article{...}, TY  - JOUR, or CSL JSON"
@@ -479,7 +588,7 @@ export function SidePanes(props: SidePanesProps) {
             </select>
           </label>
           <div className="references-pane-actions">
-            <button disabled={!canInsertReference || filteredReferences.length === 0} onClick={insertReferenceBibliography} type="button">
+            <button className="pane-primary" disabled={!canInsertReference || filteredReferences.length === 0} onClick={insertReferenceBibliography} type="button">
               Insert Bibliography
             </button>
           </div>
@@ -509,6 +618,9 @@ export function SidePanes(props: SidePanesProps) {
                     <button disabled={!canInsertReference} onClick={() => insertReferenceEntry(item)} type="button">
                       Reference
                     </button>
+                    <button onClick={() => editReference(item)} type="button">
+                      Edit
+                    </button>
                     <button onClick={() => removeReference(item.id)} type="button">
                       Remove
                     </button>
@@ -523,8 +635,8 @@ export function SidePanes(props: SidePanesProps) {
         <div className="task-pane-toolbar">
           <strong>Meeting Details</strong>
           <span className="copilot-pane-spacer" />
-          <button onClick={() => setIsMeetingDetailsOpen(false)} type="button">
-            x
+          <button aria-label="Close pane" className="side-pane-close" onClick={() => setIsMeetingDetailsOpen(false)} type="button">
+            <CloseIcon />
           </button>
         </div>
         <div className="meeting-pane-body">
@@ -570,7 +682,7 @@ export function SidePanes(props: SidePanesProps) {
             />
           </label>
           <div className="meeting-pane-actions">
-            <button disabled={isCurrentSectionLocked} onClick={insertMeetingDetails} type="button">
+            <button className="pane-primary" disabled={isCurrentSectionLocked} onClick={insertMeetingDetails} type="button">
               Insert Meeting Block
             </button>
             <button onClick={() => setIsMeetingDetailsOpen(false)} type="button">
@@ -583,8 +695,8 @@ export function SidePanes(props: SidePanesProps) {
         <div className="task-pane-toolbar">
           <strong>Page Versions</strong>
           <span className="copilot-pane-spacer" />
-          <button onClick={() => setIsHistoryPaneOpen(false)} type="button">
-            x
+          <button aria-label="Close pane" className="side-pane-close" onClick={() => setIsHistoryPaneOpen(false)} type="button">
+            <CloseIcon />
           </button>
         </div>
         <div className="history-pane-body">
@@ -644,8 +756,8 @@ export function SidePanes(props: SidePanesProps) {
           >
             {reviewScopeLabels[reviewScope]}
           </button>
-          <button onClick={() => setIsReviewPaneOpen(false)} type="button">
-            x
+          <button aria-label="Close pane" className="side-pane-close" onClick={() => setIsReviewPaneOpen(false)} type="button">
+            <CloseIcon />
           </button>
         </div>
         <div className="review-pane-body">
@@ -672,7 +784,7 @@ export function SidePanes(props: SidePanesProps) {
             <span>matches in {reviewScopeLabels[reviewScope].toLowerCase()}</span>
           </div>
           <div className="review-pane-actions">
-            <button disabled={!reviewFind.trim()} onClick={replaceInReviewScope} type="button">
+            <button className="pane-primary" disabled={!reviewFind.trim()} onClick={replaceInReviewScope} type="button">
               Replace All
             </button>
             <button onClick={() => { setReviewFind(''); setReviewReplace('') }} type="button">
@@ -688,8 +800,8 @@ export function SidePanes(props: SidePanesProps) {
           <button onClick={() => setTagPaneScope((current) => (current === 'all' ? 'notebook' : current === 'notebook' ? 'section' : 'all'))} type="button">
             {searchScopeLabels[tagPaneScope]}
           </button>
-          <button onClick={() => setIsTagPaneOpen(false)} type="button">
-            x
+          <button aria-label="Close pane" className="side-pane-close" onClick={() => setIsTagPaneOpen(false)} type="button">
+            <CloseIcon />
           </button>
         </div>
         <div className="tag-pane-body">
@@ -765,8 +877,8 @@ export function SidePanes(props: SidePanesProps) {
           <button onClick={() => setTaskPaneScope((current) => (current === 'all' ? 'notebook' : current === 'notebook' ? 'section' : 'all'))} type="button">
             {searchScopeLabels[taskPaneScope]}
           </button>
-          <button onClick={() => setIsTaskPaneOpen(false)} type="button">
-            x
+          <button aria-label="Close pane" className="side-pane-close" onClick={() => setIsTaskPaneOpen(false)} type="button">
+            <CloseIcon />
           </button>
         </div>
         <div className="task-pane-body">
@@ -833,11 +945,13 @@ export function SidePanes(props: SidePanesProps) {
       </aside>
       <aside className="copilot-pane" hidden={!isCopilotOpen}>
         <div className="copilot-pane-toolbar">
-          <span className="copilot-pane-icon">=</span>
-          <span className="copilot-pane-status">o</span>
+          <SparklesIcon className="copilot-pane-icon" />
+          <strong className="copilot-pane-title">Copilot</strong>
           <span className="copilot-pane-spacer" />
-          <button onClick={() => setCopilotMessages([])} type="button">Clear</button>
-          <button onClick={() => setIsCopilotOpen(false)} type="button">x</button>
+          <button className="copilot-pane-clear" onClick={() => setCopilotMessages([])} type="button">Clear</button>
+          <button aria-label="Close pane" className="side-pane-close" onClick={() => setIsCopilotOpen(false)} type="button">
+            <CloseIcon />
+          </button>
         </div>
         <div className="copilot-pane-body">
           <div className="copilot-orb" />

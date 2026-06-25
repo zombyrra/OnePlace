@@ -7,8 +7,7 @@
 .note-header {
   background: var(--paper);
   border-bottom: 1px solid var(--line-soft);
-  border-top: 4px solid var(--active-hue);
-  padding: 18px 32px 12px 24px;
+  padding: 20px 32px 12px 32px;
 }
 
 .note-title {
@@ -22,10 +21,10 @@
 }
 
 .note-date-row {
-  color: var(--ink-ghost);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.03em;
+  color: var(--ink-faint);
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  letter-spacing: 0;
   margin-top: 4px;
 }
 
@@ -63,7 +62,7 @@
   color: var(--ink);
   font-family: var(--font-ui);
   font-size: 0.95rem;
-  line-height: 1.75;
+  line-height: 1.8;
 }
 
 .editor-canvas:empty::before {
@@ -150,17 +149,17 @@
   margin-top: 0;
 }
 
-/* Rule-lines mode — palette-matched to Ink & Porcelain */
+/* Rule-lines mode — neutral OneNote ruling */
 .editor-canvas.rule-lines {
   background-image:
-    linear-gradient(to right, transparent 86px, var(--iris-edge) 86px, var(--iris-edge) 87px, transparent 87px),
+    linear-gradient(to right, transparent 86px, var(--line) 86px, var(--line) 87px, transparent 87px),
     repeating-linear-gradient(to bottom, transparent 0 27px, var(--line-soft) 27px 28px);
 }
 
 /* Note title placeholder */
 .note-title::placeholder {
   color: var(--ink-ghost);
-  font-weight: 300;
+  font-weight: 400;
 }
 
 .status-strip {

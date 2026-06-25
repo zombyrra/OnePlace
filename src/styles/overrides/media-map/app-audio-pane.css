@@ -6,30 +6,61 @@
 
 .audio-pane-status {
   align-items: center;
-  background: #fff;
-  border: 1px solid #e8e2e7;
-  border-radius: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
   display: flex;
   justify-content: space-between;
-  padding: 12px;
+  padding: 12px 14px;
+}
+
+.audio-pane-state {
+  align-items: center;
+  display: flex;
+  gap: 8px;
 }
 
 .audio-pane-status strong {
-  color: #272427;
+  color: var(--ink);
+  font-size: 0.82rem;
 }
 
-.audio-pane-status span {
-  color: #6f6770;
-  font-size: 0.76rem;
+/* State dot — grey idle, pulsing red while recording, amber when paused */
+.audio-pane-dot {
+  background: var(--ink-ghost);
+  border-radius: var(--r-pill);
+  flex: none;
+  height: 8px;
+  width: 8px;
+}
+
+.audio-pane-status.recording .audio-pane-dot {
+  background: var(--hue-rose);
+  animation: audio-pulse 1.4s ease-out infinite;
+}
+
+.audio-pane-status.paused .audio-pane-dot {
+  background: var(--hue-amber);
+}
+
+@keyframes audio-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(209, 52, 56, 0.45); }
+  70% { box-shadow: 0 0 0 7px rgba(209, 52, 56, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(209, 52, 56, 0); }
+}
+
+.audio-pane-time {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
 }
 
 .audio-pane-select,
 .review-pane-field select {
-  background: #fff;
-  border: 1px solid #ddd6dc;
-  border-radius: 8px;
-  color: #554d56;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--ink);
   font: inherit;
   min-width: 0;
   padding: 8px 10px;
@@ -41,18 +72,25 @@
 }
 
 .audio-pane-actions button {
-  background: #fff;
-  border: 1px solid #ddd6dc;
-  border-radius: 8px;
-  color: #554d56;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--ink-soft);
   cursor: pointer;
+  flex: 1;
   font: inherit;
-  min-height: 32px;
+  min-height: 34px;
   padding: 0 12px;
+  transition: background var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+}
+
+.audio-pane-actions button:hover:not(:disabled) {
+  background: var(--fill-hover);
+  border-color: var(--line-strong);
+  color: var(--ink);
 }
 
 .audio-pane-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
-

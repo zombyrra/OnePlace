@@ -1,6 +1,6 @@
 .side-pane-stack {
-  background: #fbf9fb;
-  border-left: 1px solid #ddd8dd;
+  background: var(--surface-sunk);
+  border-left: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -16,7 +16,7 @@
 .tag-pane,
 .task-pane,
 .copilot-pane {
-  background: #fbf9fb;
+  background: var(--surface-sunk);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -48,12 +48,13 @@
 
 .template-pane-card,
 .template-pane-actions button {
-  background: #fff;
-  border: 1px solid #ddd6dc;
-  border-radius: 8px;
-  color: #554d56;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--ink-soft);
   cursor: pointer;
   font: inherit;
+  transition: background var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
 }
 
 .template-pane-card {
@@ -63,25 +64,42 @@
   text-align: left;
 }
 
+.template-pane-card strong {
+  color: var(--ink);
+}
+
 .template-pane-card span,
 .template-pane-preview p {
-  color: #6f6770;
+  color: var(--ink-soft);
   font-size: 0.73rem;
   line-height: 1.45;
 }
 
+.template-pane-card:hover {
+  background: var(--fill-hover);
+  border-color: var(--line-strong);
+}
+
 .template-pane-card.active {
-  background: #f2ebf6;
-  border-color: #d5c6df;
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+}
+
+.template-pane-card.active strong {
+  color: var(--iris-strong);
 }
 
 .template-pane-preview {
-  background: #fff;
-  border: 1px solid #e8e2e7;
-  border-radius: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
   display: grid;
   gap: 8px;
   padding: 12px;
+}
+
+.template-pane-preview strong {
+  color: var(--ink);
 }
 
 .template-pane-actions {
@@ -90,12 +108,17 @@
 }
 
 .template-pane-actions button {
-  min-height: 32px;
+  min-height: 34px;
   padding: 0 12px;
+}
+
+.template-pane-actions button:hover:not(:disabled) {
+  background: var(--fill-hover);
+  border-color: var(--line-strong);
+  color: var(--ink);
 }
 
 .template-pane-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
-

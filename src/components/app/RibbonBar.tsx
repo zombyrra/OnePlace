@@ -1,6 +1,4 @@
-import { useLayoutEffect, useState, type CSSProperties } from 'react'
-import { createPortal } from 'react-dom'
-import type { Dispatch, ReactNode, RefObject, SetStateAction } from 'react'
+import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type {
   Page,
   PageSortMode,
@@ -8,19 +6,23 @@ import type {
   RecentNotebookEntry,
   RibbonTab,
 } from '../../app/appModel'
+import { fontFamilies, fontSizes, stylePresets } from '../../app/appModel'
 import {
-  ribbonTabs,
-  fontFamilies,
-  fontSizes,
-  stylePresets,
-} from '../../app/appModel'
+  ColorGrid,
+  Combobox,
+  HIGHLIGHT_COLORS,
+  MenuItem,
+  PopoverButton,
+  RibbonButton,
+  SplitButton,
+  TEXT_COLORS,
+} from '../ui'
 import {
   AlignCenterIcon,
+  BaselineIcon,
   AlignJustifyIcon,
   AlignLeftIcon,
   AlignRightIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon,
   AttachmentIcon,
   AudioLinesIcon,
   BoldIcon,
@@ -34,7 +36,6 @@ import {
   CheckSquareIcon,
   ChevronDownIcon,
   CircleCheckIcon,
-  ClipboardListIcon,
   ClockIcon,
   CopyIcon,
   CrosshairIcon,
@@ -47,12 +48,11 @@ import {
   FileUpIcon,
   FolderIcon,
   FolderPlusIcon,
-  GripVerticalIcon,
   HighlighterIcon,
-  HistoryIcon,
   ImageIcon,
   IndentIcon,
   ItalicIcon,
+  KeyboardIcon,
   LayoutTemplateIcon,
   LibraryBigIcon,
   Link2Icon,
@@ -66,19 +66,14 @@ import {
   PanelRightIcon,
   PasteIcon,
   PenIcon,
-  PilcrowIcon,
   PrinterIcon,
-  Redo2Icon,
-  RefreshCcwIcon,
   ReplaceIcon,
-  RotateCcwIcon,
   SaveAllIcon,
   SaveIcon,
   ScanSearchIcon,
   SearchIcon,
   SearchXIcon,
   SectionBookIcon,
-  SelectAllIcon,
   SeparatorHorizontalIcon,
   SortAZIcon,
   SortNewestIcon,
@@ -89,7 +84,6 @@ import {
   TextSizeDownIcon,
   TextSizeUpIcon,
   UnderlineIcon,
-  UndoIcon,
   UsersRoundIcon,
   WidenPageIcon,
 } from '../Icons'
@@ -164,6 +158,8 @@ type RibbonBarProps = {
   editorRef: RefObject<HTMLDivElement | null>
   pasteFromClipboard: () => void
   copySelection: () => void
+  copySelectionFormatting: () => void
+  pasteSelectionFormatting: () => void
   runEditorCommand: (command: string, value?: string) => void
   fontMenuRef: RefObject<HTMLDivElement | null>
   fontMenuPanelRef: RefObject<HTMLDivElement | null>
@@ -189,106 +185,14 @@ type RibbonBarProps = {
   setIsReferencesPaneOpen: Dispatch<SetStateAction<boolean>>
   isMarkmapPaneOpen: boolean
   openMarkmapPane: () => void
+  openShortcutHelp: () => void
 }
 
-type FloatingPickerMenuProps = {
-  anchorRef: RefObject<HTMLElement | null>
-  children: ReactNode
-  className?: string
-  isOpen: boolean
-  panelRef: RefObject<HTMLDivElement | null>
-}
-
-type FloatingPickerMenuPosition = {
-  left: number
-  minWidth: number
-  top: number
-}
-
-const FloatingPickerMenu = ({ anchorRef, children, className = '', isOpen, panelRef }: FloatingPickerMenuProps) => {
-  const [position, setPosition] = useState<FloatingPickerMenuPosition | null>(null)
-
-  useLayoutEffect(() => {
-    if (!isOpen) {
-      const resetFrame = window.requestAnimationFrame(() => setPosition(null))
-      return () => window.cancelAnimationFrame(resetFrame)
-    }
-
-    let animationFrame = 0
-
-    const updatePosition = () => {
-      const anchor = anchorRef.current
-      if (!anchor) return
-
-      const anchorRect = anchor.getBoundingClientRect()
-      const panel = panelRef.current
-      const panelWidth = panel?.offsetWidth ?? anchorRect.width
-      const panelHeight = panel?.offsetHeight ?? 0
-      const gap = 6
-      const viewportPadding = 8
-      const belowTop = anchorRect.bottom + gap
-      const aboveTop = anchorRect.top - panelHeight - gap
-      const fitsBelow = belowTop + panelHeight <= window.innerHeight - viewportPadding
-      const left = Math.max(
-        viewportPadding,
-        Math.min(anchorRect.left, window.innerWidth - panelWidth - viewportPadding),
-      )
-      const top = !fitsBelow && aboveTop >= viewportPadding ? aboveTop : belowTop
-
-      setPosition({
-        left,
-        minWidth: anchorRect.width,
-        top: Math.max(viewportPadding, top),
-      })
-    }
-
-    const scheduleUpdate = () => {
-      if (animationFrame) {
-        window.cancelAnimationFrame(animationFrame)
-      }
-      animationFrame = window.requestAnimationFrame(updatePosition)
-    }
-
-    updatePosition()
-    scheduleUpdate()
-    window.addEventListener('resize', scheduleUpdate)
-    window.addEventListener('scroll', scheduleUpdate, true)
-
-    return () => {
-      if (animationFrame) {
-        window.cancelAnimationFrame(animationFrame)
-      }
-      window.removeEventListener('resize', scheduleUpdate)
-      window.removeEventListener('scroll', scheduleUpdate, true)
-    }
-  }, [anchorRef, isOpen, panelRef])
-
-  if (!isOpen) return null
-
-  const style: CSSProperties = position
-    ? {
-        left: position.left,
-        minWidth: position.minWidth,
-        top: position.top,
-      }
-    : {
-        left: 0,
-        top: 0,
-        visibility: 'hidden',
-      }
-
-  return createPortal(
-    <div className={`picker-menu picker-menu-floating ${className}`.trim()} ref={panelRef} style={style}>
-      {children}
-    </div>,
-    document.body,
-  )
-}
+const Sep = () => <span className="op-rib-sep" aria-hidden="true" />
 
 export function RibbonBar(props: RibbonBarProps) {
   const {
     activeTab,
-    setActiveTab,
     canGoBack,
     canGoForward,
     goBack,
@@ -325,10 +229,6 @@ export function RibbonBar(props: RibbonBarProps) {
     isRecordingAudio,
     setDrawColor,
     clearInkStrokes,
-    saveCurrentPageVersion,
-    restoreSavedPageVersion,
-    setIsHistoryPaneOpen,
-    isHistoryPaneOpen,
     setQuery,
     addTagToCurrentPage,
     toggleCurrentTask,
@@ -338,8 +238,6 @@ export function RibbonBar(props: RibbonBarProps) {
     toggleCurrentTaskComplete,
     setIsReviewPaneOpen,
     isReviewPaneOpen,
-    setIsTaskPaneOpen,
-    isTaskPaneOpen,
     pageSortMode,
     setPageSortMode,
     adjustEditorZoom,
@@ -356,17 +254,10 @@ export function RibbonBar(props: RibbonBarProps) {
     editorRef,
     pasteFromClipboard,
     copySelection,
+    copySelectionFormatting,
     runEditorCommand,
-    fontMenuRef,
-    fontMenuPanelRef,
-    isFontMenuOpen,
-    setIsFontMenuOpen,
     selectedFontFamily,
     applyFontFamily,
-    fontSizeMenuRef,
-    fontSizeMenuPanelRef,
-    isFontSizeMenuOpen,
-    setIsFontSizeMenuOpen,
     selectedFontSize,
     applyFontSize,
     applyStylePreset,
@@ -379,655 +270,294 @@ export function RibbonBar(props: RibbonBarProps) {
     setIsCopilotOpen,
     setIsReferencesPaneOpen,
     openMarkmapPane,
+    openShortcutHelp,
   } = props
+
   const canEditPage = Boolean(page) && !isCurrentSectionLocked
   const hasTask = Boolean(page?.task)
-  const focusPage = () => {
-    editorRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  const sizeValue = fontSizes.find((size) => size.label === selectedFontSize)?.command ?? '3'
+  const focusPage = () => editorRef.current?.scrollIntoView({ behavior: 'smooth' })
   const insertDateStamp = () => insertTemplate(`<p>${new Date().toLocaleDateString()}</p>`)
-  const insertTimeStamp = () => insertTemplate(`<p>${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>`)
+  const insertTimeStamp = () =>
+    insertTemplate(`<p>${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>`)
   const insertDateTimeStamp = () => insertTemplate(`<p>${new Date().toLocaleString()}</p>`)
   const insertDivider = () => insertTemplate('<hr />')
+  const overflow = (
+    <button aria-label="More commands" className="op-rib-overflow" type="button">
+      <ChevronDownIcon size={14} />
+    </button>
+  )
 
-  const renderRibbonContent = () => {
-    if (activeTab === 'File') {
-      return (
-        <section className="ribbon ribbon-file">
-          <div className="ribbon-cluster styles file-actions">
-            <button onClick={openNotebook} type="button">
-              <FolderIcon size={26} />
-              <span>Open Notebook</span>
-            </button>
-            <button disabled={isImportingOneNoteExport} onClick={() => void importOneNoteExport()} type="button">
-              <FileDownIcon size={26} />
-              <span>{isImportingOneNoteExport ? 'Importing OneNote...' : 'Import OneNote'}</span>
-            </button>
-            <button onClick={() => void saveNotebookAs()} type="button">
-              <SaveAllIcon size={26} />
-              <span>Save Notebook As</span>
-            </button>
-            <button onClick={() => void exportCurrentPage()} type="button">
-              <FileUpIcon size={26} />
-              <span>Export Page</span>
-            </button>
-            <button onClick={() => void saveNow()} type="button">
-              <SaveIcon size={26} />
-              <span>Save Notebook</span>
-            </button>
-            <button onClick={addPage} type="button">
-              <FilePlusIcon size={26} />
-              <span>New Page</span>
-            </button>
-            <button onClick={addSubpage} type="button">
-              <FileStackIcon size={26} />
-              <span>New Subpage</span>
-            </button>
-            <button onClick={() => promptCreateSection()} type="button">
-              <SectionBookIcon size={26} />
-              <span>New Section</span>
-            </button>
-            <button onClick={addSectionGroup} type="button">
-              <FolderPlusIcon size={26} />
-              <span>New Section Group</span>
-            </button>
-            <button onClick={createNotebook} type="button">
-              <LibraryBigIcon size={26} />
-              <span>New Notebook</span>
-            </button>
-          </div>
-          {recentNotebookEntries.length > 0 ? (
-            <div className="ribbon-cluster styles file-recents">
-              {recentNotebookEntries.slice(0, 4).map((entry) => (
-                <button key={entry.path} onClick={() => void loadNotebookFromPath(entry.path)} type="button">
-                  <FolderIcon size={26} />
-                  <span>{entry.name}</span>
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </section>
-      )
-    }
-
-    if (activeTab === 'Insert') {
-      return (
-        <section className="ribbon ribbon-insert">
-          <div className="ribbon-cluster styles insert-pages">
-            <button disabled={isCurrentSectionLocked} onClick={addPage} type="button">
-              <FilePlusIcon size={26} />
-              <span>Blank Page</span>
-            </button>
-            <button disabled={!canEditPage} onClick={addSubpage} type="button">
-              <FileStackIcon size={26} />
-              <span>Subpage</span>
-            </button>
-            <button onClick={() => promptCreateSection()} type="button">
-              <SectionBookIcon size={26} />
-              <span>Section</span>
-            </button>
-            <span className="ribbon-label">Pages</span>
-          </div>
-          <div className="ribbon-cluster styles insert-zotero">
-            <button
-              disabled={!page}
-              onClick={() => setIsReferencesPaneOpen(true)}
-              type="button"
-            >
-              <BookDownIcon size={26} />
-              <span>Zotero Import</span>
-            </button>
-            <span className="ribbon-label">Zotero</span>
-          </div>
-          <div className="ribbon-cluster styles insert-content">
-            <button disabled={!canEditPage} onClick={insertChecklist} type="button">
-              <ListChecksIcon size={26} />
-              <span>Checklist</span>
-            </button>
-            <button disabled={!canEditPage} onClick={insertTable} type="button">
-              <TableIcon size={26} />
-              <span>Table</span>
-            </button>
-            <button disabled={!canEditPage} onClick={insertExternalLink} type="button">
-              <LinkIcon size={26} />
-              <span>Link</span>
-            </button>
-            <button disabled={!canEditPage} onClick={insertInternalPageLink} type="button">
-              <Link2Icon size={26} />
-              <span>Page Link</span>
-            </button>
-            <button
-              disabled={!page}
-              onClick={openMarkmapPane}
-              type="button"
-            >
-              <NetworkIcon size={26} />
-              <span>Mind Map</span>
-            </button>
-            <button disabled={!canEditPage} onClick={insertDateStamp} type="button">
-              <CalendarDaysIcon size={26} />
-              <span>Date</span>
-            </button>
-            <button disabled={!canEditPage} onClick={insertTimeStamp} type="button">
-              <ClockIcon size={26} />
-              <span>Time</span>
-            </button>
-            <button disabled={!canEditPage} onClick={insertDateTimeStamp} type="button">
-              <CalendarClockIcon size={26} />
-              <span>Date &amp; Time</span>
-            </button>
-            <button disabled={!canEditPage} onClick={insertDivider} type="button">
-              <SeparatorHorizontalIcon size={26} />
-              <span>Divider</span>
-            </button>
-            <span className="ribbon-label">Content</span>
-          </div>
-          <div className="ribbon-cluster styles insert-media">
-            <button disabled={!canEditPage} onClick={openImagePicker} type="button">
-              <ImageIcon size={26} />
-              <span>Picture</span>
-            </button>
-            <button disabled={!canEditPage} onClick={openPrintoutPicker} type="button">
-              <PrinterIcon size={26} />
-              <span>Printout</span>
-            </button>
-            <button disabled={!canEditPage} onClick={openAudioPane} type="button">
-              <AudioLinesIcon size={26} />
-              <span>{isRecordingAudio ? 'Audio Controls' : 'Audio Note'}</span>
-            </button>
-            <button disabled={!canEditPage} onClick={openAttachmentPicker} type="button">
-              <AttachmentIcon size={26} />
-              <span>File</span>
-            </button>
-            <span className="ribbon-label">Media</span>
-          </div>
-          <div className="ribbon-cluster styles insert-meeting-tools">
-            <button disabled={!canEditPage} onClick={addTagToCurrentPage} type="button">
-              <ListChecksIcon size={26} />
-              <span>To Do Tag</span>
-            </button>
-            <button disabled={!canEditPage} onClick={openMeetingDetailsPane} type="button">
-              <UsersRoundIcon size={26} />
-              <span>Meeting</span>
-            </button>
-            <button disabled={!page} onClick={() => setIsTaskPaneOpen(true)} type="button">
-              <ClipboardListIcon size={26} />
-              <span>Outlook Tasks</span>
-            </button>
-            <button disabled={!page} onClick={emailCurrentPage} type="button">
-              <MailIcon size={26} />
-              <span>Email Page</span>
-            </button>
-            <button disabled={!canEditPage} onClick={applyPageTemplate} type="button">
-              <LayoutTemplateIcon size={26} />
-              <span>Template</span>
-            </button>
-            <button disabled={!canEditPage} onClick={startDictation} type="button">
-              <MicIcon size={26} />
-              <span>{isDictating ? 'Stop Dictate' : 'Dictate'}</span>
-            </button>
-            <button disabled={!canEditPage} onClick={startSpeechTranscription} type="button">
-              <CaptionsIcon size={26} />
-              <span>{isTranscribing ? 'Stop Transcribe' : 'Transcribe'}</span>
-            </button>
-            <button disabled={!page} onClick={() => setIsCopilotOpen(true)} type="button">
-              <SparklesIcon size={26} />
-              <span>Copilot</span>
-            </button>
-            <span className="ribbon-label">Meeting Tools</span>
-          </div>
-        </section>
-      )
-    }
-
-    if (activeTab === 'Draw') {
-      return (
-        <section className="ribbon">
-          <div className="ribbon-cluster styles">
-            <button disabled={!canEditPage} onClick={() => setDrawColor('#1a73d9')} type="button">
-              <PenIcon size={26} />
-              <span>Blue Ink</span>
-            </button>
-            <button disabled={!canEditPage} onClick={() => setDrawColor('#232a35')} type="button">
-              <PenIcon size={26} />
-              <span>Black Ink</span>
-            </button>
-            <button disabled={!canEditPage} onClick={() => setDrawColor('#b42318')} type="button">
-              <PenIcon size={26} />
-              <span>Red Ink</span>
-            </button>
-            <button disabled={!canEditPage} onClick={() => setDrawColor('#067647')} type="button">
-              <PenIcon size={26} />
-              <span>Green Ink</span>
-            </button>
-            <button disabled={!canEditPage} onClick={() => setDrawColor('#ffe266')} type="button">
-              <HighlighterIcon size={26} />
-              <span>Highlighter</span>
-            </button>
-            <button disabled={!canEditPage} onClick={clearInkStrokes} type="button">
-              <EraserIcon size={26} />
-              <span>Clear Ink</span>
-            </button>
-            <span className="ribbon-label">Pens</span>
-          </div>
-          <div className="ribbon-cluster styles">
-            <button disabled={!canEditPage} onClick={startDictation} type="button">
-              <MicIcon size={26} />
-              <span>{isDictating ? 'Stop Dictate' : 'Dictate'}</span>
-            </button>
-            <button disabled={!canEditPage} onClick={startSpeechTranscription} type="button">
-              <CaptionsIcon size={26} />
-              <span>{isTranscribing ? 'Stop Transcribe' : 'Transcribe'}</span>
-            </button>
-            <button disabled={!canEditPage} onClick={openAudioPane} type="button">
-              <AudioLinesIcon size={26} />
-              <span>{isRecordingAudio ? 'Audio Controls' : 'Audio Note'}</span>
-            </button>
-            <span className="ribbon-label">Capture</span>
-          </div>
-        </section>
-      )
-    }
-
-    if (activeTab === 'History') {
-      return (
-        <section className="ribbon">
-          <div className="ribbon-cluster styles">
-            <button onClick={() => runEditorCommand('undo')} type="button">
-              <UndoIcon size={26} />
-              <span>Undo</span>
-            </button>
-            <button onClick={() => runEditorCommand('redo')} type="button">
-              <Redo2Icon size={26} />
-              <span>Redo</span>
-            </button>
-            <button disabled={!canGoBack} onClick={goBack} type="button">
-              <ArrowLeftIcon size={26} />
-              <span>Back</span>
-            </button>
-            <button disabled={!canGoForward} onClick={goForward} type="button">
-              <ArrowRightIcon size={26} />
-              <span>Forward</span>
-            </button>
-            <span className="ribbon-label">Navigation</span>
-          </div>
-          <div className="ribbon-cluster styles">
-            <button disabled={!page} onClick={() => saveCurrentPageVersion()} type="button">
-              <SaveIcon size={26} />
-              <span>Save Version</span>
-            </button>
-            <button disabled={!page} onClick={restoreSavedPageVersion} type="button">
-              <RotateCcwIcon size={26} />
-              <span>Restore Version</span>
-            </button>
-            <button onClick={() => setIsHistoryPaneOpen((current) => !current)} type="button">
-              <HistoryIcon size={26} />
-              <span>{isHistoryPaneOpen ? 'Hide History' : 'History Pane'}</span>
-            </button>
-            <span className="ribbon-label">Versions</span>
-          </div>
-          <div className="ribbon-cluster styles">
-            <button onClick={() => setQuery('')} type="button">
-              <SearchXIcon size={26} />
-              <span>Clear Search</span>
-            </button>
-            <button onClick={() => void saveNow()} type="button">
-              <SaveIcon size={26} />
-              <span>Save Now</span>
-            </button>
-            <span className="ribbon-label">Session</span>
-          </div>
-        </section>
-      )
-    }
-
-    if (activeTab === 'Review') {
-      return (
-        <section className="ribbon">
-          <div className="ribbon-cluster styles">
-            <button disabled={!canEditPage} onClick={addTagToCurrentPage} type="button">
-              <TagsIcon size={26} />
-              <span>Tag</span>
-            </button>
-            <button disabled={!canEditPage} onClick={toggleCurrentTask} type="button">
-              <CheckSquareIcon size={26} />
-              <span>{page?.task ? 'Remove To Do' : 'To Do'}</span>
-            </button>
-            <button disabled={!canEditPage || !hasTask} onClick={setCurrentTaskDueDate} type="button">
-              <CalendarCheckIcon size={26} />
-              <span>Set Due Date</span>
-            </button>
-            <button disabled={!canEditPage || !hasTask} onClick={toggleCurrentTaskComplete} type="button">
-              <CircleCheckIcon size={26} />
-              <span>{page?.task?.status === 'done' ? 'Mark Incomplete' : 'Mark Complete'}</span>
-            </button>
-            <span className="ribbon-label">Tasks</span>
-          </div>
-          <div className="ribbon-cluster styles">
-            <button onClick={() => setIsReviewPaneOpen((current) => !current)} type="button">
-              <ReplaceIcon size={26} />
-              <span>{isReviewPaneOpen ? 'Hide Find' : 'Find & Replace'}</span>
-            </button>
-            <button onClick={() => setIsTaskPaneOpen((current) => !current)} type="button">
-              <ClipboardListIcon size={26} />
-              <span>{isTaskPaneOpen ? 'Hide Task List' : 'Task List'}</span>
-            </button>
-            <button disabled={!page} onClick={() => setQuery(page?.title ?? '')} type="button">
-              <SearchIcon size={26} />
-              <span>Find This Page</span>
-            </button>
-            <button disabled={!page} onClick={emailCurrentPage} type="button">
-              <MailIcon size={26} />
-              <span>Email Page</span>
-            </button>
-            <span className="ribbon-label">Review</span>
-          </div>
-        </section>
-      )
-    }
-
-    if (activeTab === 'View') {
-      return (
-        <section className="ribbon">
-          <div className="ribbon-cluster styles">
-            <button onClick={() => adjustEditorZoom(0.1)} type="button">
-              <TextSizeUpIcon size={26} />
-              <span>Zoom In</span>
-            </button>
-            <button onClick={() => adjustEditorZoom(-0.1)} type="button">
-              <TextSizeDownIcon size={26} />
-              <span>Zoom Out</span>
-            </button>
-            <button onClick={() => setEditorZoom(1)} type="button">
-              <ScanSearchIcon size={26} />
-              <span>{Math.round(editorZoom * 100)}%</span>
-            </button>
-            <span className="ribbon-label">Zoom</span>
-          </div>
-          <div className="ribbon-cluster styles">
-            <button onClick={() => setPageWidthMode((current) => (current === 'normal' ? 'wide' : 'normal'))} type="button">
-              <WidenPageIcon size={26} />
-              <span>{pageWidthMode === 'normal' ? 'Wide Page' : 'Normal Page'}</span>
-            </button>
-            <button onClick={() => setShowRuleLines((current) => !current)} type="button">
-              <AlignJustifyIcon size={26} />
-              <span>{showRuleLines ? 'Hide Rule Lines' : 'Rule Lines'}</span>
-            </button>
-            <button onClick={() => setIsNotebookPaneVisible((current) => !current)} type="button">
-              <PanelLeftIcon size={26} />
-              <span>{isNotebookPaneVisible ? 'Hide Notebooks' : 'Show Notebooks'}</span>
-            </button>
-            <button onClick={() => setIsPagesPaneVisible((current) => !current)} type="button">
-              <PanelRightIcon size={26} />
-              <span>{isPagesPaneVisible ? 'Hide Pages' : 'Show Pages'}</span>
-            </button>
-            <span className="ribbon-label">Layout</span>
-          </div>
-          <div className="ribbon-cluster styles">
-            <button onClick={() => setPageSortMode('manual')} type="button">
-              <GripVerticalIcon size={26} />
-              <span>{pageSortMode === 'manual' ? 'Manual Sort' : 'Set Manual'}</span>
-            </button>
-            <button onClick={() => setPageSortMode('updated-desc')} type="button">
-              <SortNewestIcon size={26} />
-              <span>{pageSortMode === 'updated-desc' ? 'Newest First' : 'Sort Newest'}</span>
-            </button>
-            <button onClick={() => setPageSortMode('title-asc')} type="button">
-              <SortAZIcon size={26} />
-              <span>{pageSortMode === 'title-asc' ? 'A-Z Pages' : 'Sort A-Z'}</span>
-            </button>
-            <span className="ribbon-label">Sort</span>
-          </div>
-          <div className="ribbon-cluster styles">
-            <button onClick={focusPage} type="button">
-              <CrosshairIcon size={26} />
-              <span>Focus Page</span>
-            </button>
-            <button onClick={() => void saveNow()} type="button">
-              <RefreshCcwIcon size={26} />
-              <span>Refresh Save</span>
-            </button>
-            <button onClick={() => setQuery('')} type="button">
-              <SearchXIcon size={26} />
-              <span>Clear Search</span>
-            </button>
-            <span className="ribbon-label">Workspace</span>
-          </div>
-        </section>
-      )
-    }
-
+  if (activeTab === 'File') {
     return (
-      <section className="ribbon ribbon-home">
-        <div className="ribbon-cluster clipboard">
-          <div className="ribbon-big">
-            <button onClick={() => void pasteFromClipboard()} type="button">
-              <PasteIcon className="ribbon-large-icon" size={30} />
-              <span>Paste</span>
-              <ChevronDownIcon size={12} />
-            </button>
-          </div>
-          <div className="ribbon-stack">
-            <button onClick={() => document.execCommand('cut')} type="button">
-              <CutIcon size={16} />
-              <span>Cut</span>
-            </button>
-            <button onClick={() => void copySelection()} type="button">
-              <CopyIcon size={16} />
-              <span>Copy</span>
-            </button>
-            <button onClick={() => runEditorCommand('removeFormat')} type="button">
-              <BrushIcon size={16} />
-              <span>Format Painter</span>
-            </button>
-          </div>
-          <span className="ribbon-label">Clipboard</span>
-        </div>
-
-        <div className="ribbon-cluster font home-basic-text">
-          <div className="ribbon-row-compact">
-            <div className="picker-dropdown" ref={fontMenuRef}>
-              <button className="picker" onClick={() => setIsFontMenuOpen((current) => !current)} type="button">
-                <span>{selectedFontFamily}</span>
-                <ChevronDownIcon size={12} />
-              </button>
-              <FloatingPickerMenu anchorRef={fontMenuRef} isOpen={isFontMenuOpen} panelRef={fontMenuPanelRef}>
-                {fontFamilies.map((fontFamily) => (
-                  <button key={fontFamily} onClick={() => applyFontFamily(fontFamily)} type="button">
-                    {fontFamily}
-                  </button>
-                ))}
-              </FloatingPickerMenu>
-            </div>
-            <div className="picker-dropdown" ref={fontSizeMenuRef}>
-              <button
-                className="picker tiny"
-                onClick={() => setIsFontSizeMenuOpen((current) => !current)}
-                type="button"
-              >
-                <span>{selectedFontSize}</span>
-                <ChevronDownIcon size={12} />
-              </button>
-              <FloatingPickerMenu
-                anchorRef={fontSizeMenuRef}
-                className="tiny"
-                isOpen={isFontSizeMenuOpen}
-                panelRef={fontSizeMenuPanelRef}
-              >
-                {fontSizes.map((fontSize) => (
-                  <button
-                    key={fontSize.command}
-                    onClick={() => applyFontSize(fontSize.command, fontSize.label)}
-                    type="button"
-                  >
-                    {fontSize.label}
-                  </button>
-                ))}
-              </FloatingPickerMenu>
-            </div>
-            <button onClick={() => runEditorCommand('fontSize', '4')} type="button">
-              <TextSizeUpIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('fontSize', '2')} type="button">
-              <TextSizeDownIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('foreColor', '#7e42b3')} type="button">
-              <PenIcon size={16} />
-            </button>
-            <button onClick={insertExternalLink} type="button">
-              <LinkIcon size={16} />
-            </button>
-          </div>
-          <div className="ribbon-row-compact">
-            <button className="strong" onClick={() => runEditorCommand('bold')} type="button">
-              <BoldIcon size={16} />
-            </button>
-            <button className="strong" onClick={() => runEditorCommand('italic')} type="button">
-              <ItalicIcon size={16} />
-            </button>
-            <button className="strong" onClick={() => runEditorCommand('underline')} type="button">
-              <UnderlineIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('strikeThrough')} type="button">
-              <StrikethroughIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('superscript')} type="button">
-              <TextSizeUpIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('subscript')} type="button">
-              <TextSizeDownIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('hiliteColor', '#fff59d')} type="button">
-              <HighlighterIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('foreColor', '#d83b01')} type="button">
-              <PenIcon size={16} />
-            </button>
-          </div>
-          <span className="ribbon-label">Font</span>
-        </div>
-
-        <div className="ribbon-cluster paragraph home-basic-text">
-          <div className="ribbon-row-compact">
-            <button onClick={() => runEditorCommand('insertUnorderedList')} type="button">
-              <BulletsIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('outdent')} type="button">
-              <IndentIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('justifyLeft')} type="button">
-              <AlignLeftIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('insertOrderedList')} type="button">
-              <ListOrderedIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('selectAll')} type="button">
-              <SelectAllIcon size={16} />
-            </button>
-            <button onClick={insertTable} type="button">
-              <TableIcon size={16} />
-            </button>
-          </div>
-          <div className="ribbon-row-compact">
-            <button onClick={() => runEditorCommand('justifyLeft')} type="button">
-              <AlignLeftIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('insertParagraph')} type="button">
-              <PilcrowIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('justifyCenter')} type="button">
-              <AlignCenterIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('justifyRight')} type="button">
-              <AlignRightIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('indent')} type="button">
-              <IndentIcon size={16} />
-            </button>
-            <button onClick={() => runEditorCommand('removeFormat')} type="button">
-              <EraserIcon size={16} />
-            </button>
-            <button onClick={openImagePicker} type="button">
-              <ImageIcon size={16} />
-            </button>
-          </div>
-          <span className="ribbon-label">Paragraph</span>
-        </div>
-
-        <div className="ribbon-cluster home-styles">
-          <div className="home-style-grid">
-            {stylePresets.map((preset) => (
-              <button
-                key={preset.id}
-                className={`home-style-card compact ${preset.id}`}
-                onClick={() => applyStylePreset(preset.html)}
-                type="button"
-              >
-                <strong>{preset.label}</strong>
-              </button>
-            ))}
-          </div>
-          <span className="ribbon-label">Styles</span>
-        </div>
-
-        <div className="ribbon-cluster home-tags">
-          <button className="home-tag-card" onClick={toggleCurrentTask} type="button">
-            <span className="home-tag-dot">{'✓'}</span>
-            <span>To Do (Ctrl+1)</span>
-          </button>
-          <button
-            className="home-tag-card"
-            onClick={() => insertTemplate('<p><span style="color:#d68200;">Important</span></p>')}
-            type="button"
-          >
-            <span className="home-tag-star">{'★'}</span>
-            <span>Important (Ctrl+2)</span>
-          </button>
-          <span className="ribbon-label">Tags</span>
-        </div>
-
-        <div className="ribbon-cluster home-quick-actions">
-          <button className="home-vertical-action" onClick={addPage} type="button">
-            <FilePlusIcon size={22} />
-            <span>New Page</span>
-          </button>
-          <button className="home-vertical-action" onClick={addSubpage} type="button">
-            <FileStackIcon size={22} />
-            <span>Subpage</span>
-          </button>
-          <button className="home-vertical-action" disabled={!canPromotePage} onClick={promoteCurrentPage} type="button">
-            <TextSizeUpIcon size={22} />
-            <span>Promote</span>
-          </button>
-          <button className="home-vertical-action" disabled={!canDemotePage} onClick={demoteCurrentPage} type="button">
-            <TextSizeDownIcon size={22} />
-            <span>Demote</span>
-          </button>
-          <button className="home-vertical-action" disabled={!canDeletePage} onClick={deleteCurrentPage} type="button">
-            <DeleteIcon size={22} />
-            <span>Delete Page</span>
-          </button>
-        </div>
-
+      <section className="op-ribbon">
+        <RibbonButton icon={<FolderIcon size={18} />} label="Open" onClick={openNotebook} title="Open notebook" variant="compact" />
+        <RibbonButton
+          disabled={isImportingOneNoteExport}
+          icon={<FileDownIcon size={18} />}
+          label={isImportingOneNoteExport ? 'Importing…' : 'Import'}
+          onClick={() => void importOneNoteExport()}
+          title="Import OneNote export"
+          variant="compact"
+        />
+        <RibbonButton icon={<SaveAllIcon size={18} />} label="Save As" onClick={() => void saveNotebookAs()} variant="compact" />
+        <RibbonButton icon={<FileUpIcon size={18} />} label="Export" onClick={() => void exportCurrentPage()} title="Export page" variant="compact" />
+        <RibbonButton icon={<SaveIcon size={18} />} label="Save" onClick={() => void saveNow()} variant="compact" />
+        <Sep />
+        <RibbonButton icon={<FilePlusIcon size={18} />} label="New Page" onClick={addPage} variant="compact" />
+        <RibbonButton icon={<FileStackIcon size={18} />} label="Subpage" onClick={addSubpage} variant="compact" />
+        <RibbonButton icon={<SectionBookIcon size={18} />} label="Section" onClick={() => promptCreateSection()} variant="compact" />
+        <RibbonButton icon={<FolderPlusIcon size={18} />} label="Group" onClick={addSectionGroup} variant="compact" />
+        <RibbonButton icon={<LibraryBigIcon size={18} />} label="Notebook" onClick={createNotebook} title="New notebook" variant="compact" />
+        {recentNotebookEntries.length > 0 ? <Sep /> : null}
+        {recentNotebookEntries.slice(0, 3).map((entry) => (
+          <RibbonButton
+            icon={<FolderIcon size={18} />}
+            key={entry.path}
+            label={entry.name}
+            onClick={() => void loadNotebookFromPath(entry.path)}
+            title={entry.path}
+            variant="compact"
+          />
+        ))}
+        {overflow}
       </section>
     )
   }
 
+  if (activeTab === 'Insert') {
+    return (
+      <section className="op-ribbon">
+        <RibbonButton disabled={isCurrentSectionLocked} icon={<FilePlusIcon size={18} />} label="Page" onClick={addPage} variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<FileStackIcon size={18} />} label="Subpage" onClick={addSubpage} variant="compact" />
+        <Sep />
+        <RibbonButton disabled={!canEditPage} icon={<TableIcon size={18} />} label="Table" onClick={insertTable} variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<AttachmentIcon size={18} />} label="File" onClick={openAttachmentPicker} variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<ImageIcon size={18} />} label="Picture" onClick={openImagePicker} variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<PrinterIcon size={18} />} label="Printout" onClick={openPrintoutPicker} variant="compact" />
+        <Sep />
+        <RibbonButton disabled={!canEditPage} icon={<LinkIcon size={18} />} label="Link" onClick={insertExternalLink} variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<Link2Icon size={18} />} label="Page Link" onClick={insertInternalPageLink} variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<ListChecksIcon size={18} />} label="Checklist" onClick={insertChecklist} variant="compact" />
+        <RibbonButton disabled={!page} icon={<NetworkIcon size={18} />} label="Mind Map" onClick={openMarkmapPane} variant="compact" />
+        <RibbonButton disabled={!page} icon={<BookDownIcon size={18} />} label="Citations" onClick={() => setIsReferencesPaneOpen(true)} variant="compact" />
+        <Sep />
+        <RibbonButton disabled={!canEditPage} icon={<CalendarDaysIcon size={18} />} label="Date" onClick={insertDateStamp} variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<ClockIcon size={18} />} label="Time" onClick={insertTimeStamp} variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<CalendarClockIcon size={18} />} label="Date & Time" onClick={insertDateTimeStamp} variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<SeparatorHorizontalIcon size={18} />} label="Divider" onClick={insertDivider} variant="compact" />
+        <Sep />
+        <RibbonButton disabled={!canEditPage} icon={<UsersRoundIcon size={18} />} label="Meeting" onClick={openMeetingDetailsPane} variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<LayoutTemplateIcon size={18} />} label="Template" onClick={applyPageTemplate} variant="compact" />
+        <RibbonButton disabled={!page} icon={<SparklesIcon size={18} />} label="Copilot" onClick={() => setIsCopilotOpen(true)} variant="compact" />
+        {overflow}
+      </section>
+    )
+  }
+
+  if (activeTab === 'Draw') {
+    return (
+      <section className="op-ribbon">
+        <RibbonButton disabled={!canEditPage} icon={<PenIcon size={18} />} label="Blue" onClick={() => setDrawColor('#1a73d9')} title="Blue ink" variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<PenIcon size={18} />} label="Black" onClick={() => setDrawColor('#232a35')} title="Black ink" variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<PenIcon size={18} />} label="Red" onClick={() => setDrawColor('#b42318')} title="Red ink" variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<PenIcon size={18} />} label="Green" onClick={() => setDrawColor('#067647')} title="Green ink" variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<HighlighterIcon size={18} />} label="Highlighter" onClick={() => setDrawColor('#ffe266')} variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<EraserIcon size={18} />} label="Clear Ink" onClick={clearInkStrokes} variant="compact" />
+        <Sep />
+        <SplitButton
+          caretLabel="Dictate options"
+          disabled={!canEditPage}
+          icon={<MicIcon size={18} />}
+          label={isDictating ? 'Stop' : 'Dictate'}
+          onClick={startDictation}
+          split
+          variant="compact"
+        >
+          <MenuItem icon={<CaptionsIcon size={16} />} onSelect={startSpeechTranscription}>
+            {isTranscribing ? 'Stop transcribe' : 'Transcribe'}
+          </MenuItem>
+          <MenuItem icon={<AudioLinesIcon size={16} />} onSelect={openAudioPane}>
+            {isRecordingAudio ? 'Audio controls' : 'Audio note'}
+          </MenuItem>
+        </SplitButton>
+        {overflow}
+      </section>
+    )
+  }
+
+  if (activeTab === 'View') {
+    return (
+      <section className="op-ribbon">
+        <RibbonButton icon={<TextSizeUpIcon size={18} />} label="Zoom In" onClick={() => adjustEditorZoom(0.1)} variant="compact" />
+        <RibbonButton icon={<TextSizeDownIcon size={18} />} label="Zoom Out" onClick={() => adjustEditorZoom(-0.1)} variant="compact" />
+        <RibbonButton icon={<ScanSearchIcon size={18} />} label={`${Math.round(editorZoom * 100)}%`} onClick={() => setEditorZoom(1)} title="Reset zoom" variant="compact" />
+        <Sep />
+        <RibbonButton
+          icon={<WidenPageIcon size={18} />}
+          label={pageWidthMode === 'normal' ? 'Wide' : 'Normal'}
+          onClick={() => setPageWidthMode((current) => (current === 'normal' ? 'wide' : 'normal'))}
+          title="Page width"
+          variant="compact"
+        />
+        <RibbonButton
+          active={showRuleLines}
+          icon={<AlignJustifyIcon size={18} />}
+          label="Rule Lines"
+          onClick={() => setShowRuleLines((current) => !current)}
+          variant="compact"
+        />
+        <RibbonButton
+          active={isNotebookPaneVisible}
+          icon={<PanelLeftIcon size={18} />}
+          label="Notebooks"
+          onClick={() => setIsNotebookPaneVisible((current) => !current)}
+          variant="compact"
+        />
+        <RibbonButton
+          active={isPagesPaneVisible}
+          icon={<PanelRightIcon size={18} />}
+          label="Pages"
+          onClick={() => setIsPagesPaneVisible((current) => !current)}
+          variant="compact"
+        />
+        <Sep />
+        <RibbonButton active={pageSortMode === 'updated-desc'} icon={<SortNewestIcon size={18} />} label="Newest" onClick={() => setPageSortMode('updated-desc')} title="Sort newest" variant="compact" />
+        <RibbonButton active={pageSortMode === 'title-asc'} icon={<SortAZIcon size={18} />} label="A–Z" onClick={() => setPageSortMode('title-asc')} title="Sort A–Z" variant="compact" />
+        {overflow}
+      </section>
+    )
+  }
+
+  if (activeTab === 'Help') {
+    return (
+      <section className="op-ribbon">
+        <RibbonButton icon={<KeyboardIcon size={18} />} label="Shortcuts" onClick={openShortcutHelp} title="OneNote keyboard shortcuts (F1)" variant="compact" />
+        <RibbonButton active={isReviewPaneOpen} icon={<ReplaceIcon size={18} />} label="Find & Replace" onClick={() => setIsReviewPaneOpen((current) => !current)} variant="compact" />
+<RibbonButton disabled={!page} icon={<SearchIcon size={18} />} label="Find Page" onClick={() => setQuery(page?.title ?? '')} variant="compact" />
+        <RibbonButton onClick={() => setQuery('')} icon={<SearchXIcon size={18} />} label="Clear" title="Clear search" variant="compact" />
+        <Sep />
+        <RibbonButton disabled={!canEditPage} icon={<TagsIcon size={18} />} label="Tag" onClick={addTagToCurrentPage} variant="compact" />
+        <RibbonButton disabled={!canEditPage} icon={<CheckSquareIcon size={18} />} label={page?.task ? 'Remove To Do' : 'To Do'} onClick={toggleCurrentTask} variant="compact" />
+        <RibbonButton disabled={!canEditPage || !hasTask} icon={<CalendarCheckIcon size={18} />} label="Due Date" onClick={setCurrentTaskDueDate} variant="compact" />
+        <RibbonButton disabled={!canEditPage || !hasTask} icon={<CircleCheckIcon size={18} />} label={page?.task?.status === 'done' ? 'Incomplete' : 'Complete'} onClick={toggleCurrentTaskComplete} variant="compact" />
+        <Sep />
+        <RibbonButton disabled={!page} icon={<MailIcon size={18} />} label="Email Page" onClick={emailCurrentPage} variant="compact" />
+        <RibbonButton disabled={!canGoBack} icon={<CrosshairIcon size={18} />} label="Back" onClick={goBack} variant="compact" />
+        <RibbonButton disabled={!canGoForward} icon={<CrosshairIcon size={18} />} label="Forward" onClick={goForward} variant="compact" />
+        {overflow}
+      </section>
+    )
+  }
+
+  // Home (default)
   return (
-    <>
-      <nav className="tab-row">
-        {ribbonTabs.map((item) => (
-          <button
-            key={item}
-            className={`tab-button ${item === activeTab ? 'active' : ''}`}
-            onClick={() => setActiveTab(item)}
-            type="button"
-          >
-            {item}
-          </button>
+    <section className="op-ribbon op-ribbon-home">
+      <SplitButton
+        caretLabel="Paste options"
+        icon={<PasteIcon size={18} />}
+        label="Paste"
+        onClick={() => void pasteFromClipboard()}
+        split
+        variant="compact"
+      >
+        <MenuItem icon={<PasteIcon size={16} />} onSelect={() => void pasteFromClipboard()}>
+          Keep source formatting
+        </MenuItem>
+        <MenuItem icon={<CopyIcon size={16} />} onSelect={() => void copySelection()}>
+          Copy
+        </MenuItem>
+      </SplitButton>
+      <RibbonButton icon={<CutIcon size={16} />} onClick={() => document.execCommand('cut')} title="Cut" variant="icon" />
+      <RibbonButton icon={<CopyIcon size={16} />} onClick={() => void copySelection()} title="Copy" variant="icon" />
+      <RibbonButton icon={<BrushIcon size={16} />} onClick={copySelectionFormatting} title="Format Painter (Ctrl+Alt+C)" variant="icon" />
+      <Sep />
+
+      <Combobox
+        ariaLabel="Font"
+        onSelect={applyFontFamily}
+        optionFont
+        options={fontFamilies.map((font) => ({ value: font, label: font }))}
+        value={selectedFontFamily}
+        width={128}
+      />
+      <Combobox
+        ariaLabel="Font size"
+        display={selectedFontSize}
+        onSelect={(command) =>
+          applyFontSize(command, fontSizes.find((size) => size.command === command)?.label ?? selectedFontSize)
+        }
+        options={fontSizes.map((size) => ({ value: size.command, label: size.label }))}
+        value={sizeValue}
+        width={56}
+      />
+      <RibbonButton icon={<TextSizeUpIcon size={16} />} onClick={() => runEditorCommand('fontSize', '5')} title="Grow font" variant="icon" />
+      <RibbonButton icon={<TextSizeDownIcon size={16} />} onClick={() => runEditorCommand('fontSize', '2')} title="Shrink font" variant="icon" />
+      <RibbonButton icon={<BoldIcon size={16} />} onClick={() => runEditorCommand('bold')} title="Bold (Ctrl+B)" variant="icon" />
+      <RibbonButton icon={<ItalicIcon size={16} />} onClick={() => runEditorCommand('italic')} title="Italic (Ctrl+I)" variant="icon" />
+      <RibbonButton icon={<UnderlineIcon size={16} />} onClick={() => runEditorCommand('underline')} title="Underline (Ctrl+U)" variant="icon" />
+      <RibbonButton icon={<StrikethroughIcon size={16} />} onClick={() => runEditorCommand('strikeThrough')} title="Strikethrough" variant="icon" />
+      <PopoverButton caretLabel="Highlight colour" icon={<HighlighterIcon size={16} />} surfaceClassName="op-color-pop" title="Text highlight colour" variant="icon">
+        <ColorGrid
+          clearLabel="No colour"
+          colors={HIGHLIGHT_COLORS}
+          onClear={() => runEditorCommand('hiliteColor', 'transparent')}
+          onSelect={(color) => runEditorCommand('hiliteColor', color)}
+        />
+      </PopoverButton>
+      <PopoverButton caretLabel="Font colour" icon={<BaselineIcon size={16} />} label="Color" surfaceClassName="op-color-pop" title="Font colour" variant="compact">
+        <ColorGrid
+          clearLabel="Automatic"
+          colors={TEXT_COLORS}
+          columns={8}
+          onClear={() => runEditorCommand('foreColor', '#201f1e')}
+          onSelect={(color) => runEditorCommand('foreColor', color)}
+        />
+      </PopoverButton>
+      <RibbonButton icon={<EraserIcon size={16} />} onClick={() => runEditorCommand('removeFormat')} title="Clear all formatting" variant="icon" />
+      <Sep />
+
+      <SplitButton caretLabel="Bullet library" icon={<BulletsIcon size={16} />} onClick={() => runEditorCommand('insertUnorderedList')} split variant="icon">
+        <MenuItem onSelect={() => runEditorCommand('insertUnorderedList')}>Bulleted list</MenuItem>
+        <MenuItem onSelect={() => runEditorCommand('insertOrderedList')}>Numbered list</MenuItem>
+        <MenuItem onSelect={() => runEditorCommand('insertUnorderedList')}>Remove list</MenuItem>
+      </SplitButton>
+      <SplitButton caretLabel="Numbering library" icon={<ListOrderedIcon size={16} />} onClick={() => runEditorCommand('insertOrderedList')} split variant="icon">
+        <MenuItem onSelect={() => runEditorCommand('insertOrderedList')}>Numbered list</MenuItem>
+        <MenuItem onSelect={() => runEditorCommand('insertUnorderedList')}>Bulleted list</MenuItem>
+      </SplitButton>
+      <RibbonButton icon={<IndentIcon className="op-flip" size={16} />} onClick={() => runEditorCommand('outdent')} title="Decrease indent" variant="icon" />
+      <RibbonButton icon={<IndentIcon size={16} />} onClick={() => runEditorCommand('indent')} title="Increase indent" variant="icon" />
+      <SplitButton caretLabel="Alignment" icon={<AlignLeftIcon size={16} />} surfaceClassName="op-align-menu" variant="icon">
+        <MenuItem icon={<AlignLeftIcon size={16} />} onSelect={() => runEditorCommand('justifyLeft')}>Align left</MenuItem>
+        <MenuItem icon={<AlignCenterIcon size={16} />} onSelect={() => runEditorCommand('justifyCenter')}>Center</MenuItem>
+        <MenuItem icon={<AlignRightIcon size={16} />} onSelect={() => runEditorCommand('justifyRight')}>Align right</MenuItem>
+        <MenuItem icon={<AlignJustifyIcon size={16} />} onSelect={() => runEditorCommand('justifyFull')}>Justify</MenuItem>
+      </SplitButton>
+      <Sep />
+
+      <SplitButton align="start" label="Styles" surfaceClassName="op-styles-menu" title="Styles" variant="compact">
+        <MenuItem className="op-style-item op-style-normal" onSelect={() => runEditorCommand('formatBlock', 'p')}>
+          Normal
+        </MenuItem>
+        {stylePresets.map((preset) => (
+          <MenuItem className={`op-style-item op-style-${preset.id}`} key={preset.id} onSelect={() => applyStylePreset(preset.html)}>
+            {preset.label}
+          </MenuItem>
         ))}
-      </nav>
-      {renderRibbonContent()}
-    </>
+      </SplitButton>
+      <Sep />
+
+      <SplitButton caretLabel="Dictate options" disabled={!canEditPage} icon={<MicIcon size={16} />} label={isDictating ? 'Stop' : 'Dictate'} onClick={startDictation} split variant="compact">
+        <MenuItem icon={<CaptionsIcon size={16} />} onSelect={startSpeechTranscription}>
+          {isTranscribing ? 'Stop transcribe' : 'Transcribe'}
+        </MenuItem>
+      </SplitButton>
+      <RibbonButton disabled={!canPromotePage} icon={<TextSizeUpIcon size={16} />} onClick={promoteCurrentPage} title="Promote page" variant="icon" />
+      <RibbonButton disabled={!canDemotePage} icon={<TextSizeDownIcon size={16} />} onClick={demoteCurrentPage} title="Demote page" variant="icon" />
+      <RibbonButton disabled={!canDeletePage} icon={<DeleteIcon size={16} />} onClick={deleteCurrentPage} title="Delete page" variant="icon" />
+      <RibbonButton icon={<CrosshairIcon size={16} />} onClick={focusPage} title="Focus page" variant="icon" />
+      {overflow}
+    </section>
   )
 }

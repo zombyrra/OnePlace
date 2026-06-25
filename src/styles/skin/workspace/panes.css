@@ -1,0 +1,177 @@
+/* OneNote-web workspace — flat sections column. Overrides the earlier
+   glassmorphism pane skin (rounded cards, blur, blue gradient) with the
+   flat Fluent two-column nav. Loaded last so it wins the cascade. */
+
+.workspace {
+  grid-template-columns: 236px var(--pages-pane-width, 300px) 1fr;
+  gap: 0;
+  padding: 0;
+  background: var(--paper);
+}
+
+.workspace.notebooks-hidden {
+  grid-template-columns: 0 var(--pages-pane-width, 300px) 1fr;
+}
+
+.workspace.pages-hidden {
+  grid-template-columns: 236px 0 1fr;
+}
+
+.workspace.notebooks-hidden.pages-hidden {
+  grid-template-columns: 0 0 1fr;
+}
+
+.notebooks-pane,
+.pages-pane {
+  border: none;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0;
+}
+
+.notebooks-pane {
+  background: var(--surface-sunk);
+  padding: 4px 0 0;
+}
+
+/* Notebook + section heading — drop the tiny kicker labels. */
+.pane-kicker {
+  display: none;
+}
+
+.pane-heading {
+  padding: 6px 12px 8px;
+}
+
+.pane-heading strong {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.heading-icon {
+  color: var(--iris);
+}
+
+.pane-heading-action {
+  color: var(--ink-soft);
+}
+
+.pane-heading-action:hover {
+  background: var(--fill-hover);
+  color: var(--iris);
+}
+
+.pane-count {
+  color: var(--ink-faint);
+}
+
+/* Notebook rows */
+.notebook-item {
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.notebook-item:hover {
+  background: var(--fill-hover);
+}
+
+.notebook-item.active {
+  background: transparent;
+  color: var(--ink);
+}
+
+.notebook-glyph svg {
+  color: var(--iris);
+}
+
+/* Section group label + "+ Add section" / "+ Group" as ghost links. */
+.notebook-new-group,
+.empty-section-group-action {
+  background: transparent;
+  border: none;
+  color: var(--iris);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 12px;
+}
+
+.notebook-new-group:hover,
+.empty-section-group-action:hover {
+  color: var(--iris-strong);
+  text-decoration: underline;
+}
+
+.section-group-button {
+  color: var(--ink-faint);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.section-group-toggle {
+  color: var(--ink-faint);
+}
+
+/* Section rows — flat, with a small colour square + purple selected spine. */
+.section-item-row {
+  margin: 0;
+}
+
+.notebook-section-link.section-item {
+  gap: 8px;
+  padding: 6px 10px 6px 12px;
+  border-radius: 0;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 400;
+  box-shadow: none;
+}
+
+.notebook-section-link.section-item:hover {
+  background: var(--fill-hover);
+}
+
+.notebook-section-link.section-item.active {
+  background: var(--iris-tint);
+  border-left-color: var(--iris);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.section-color {
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  border-radius: 3px;
+}
+
+.section-rename-button {
+  color: var(--ink-faint);
+}
+
+.section-rename-button:hover {
+  background: var(--fill-hover);
+  color: var(--iris);
+}
+
+/* Footer */
+.pane-footer {
+  border-top: 1px solid var(--line);
+}
+
+.settings-button {
+  color: var(--ink-soft);
+}
+
+.settings-button:hover {
+  background: var(--fill-hover);
+  color: var(--iris);
+}

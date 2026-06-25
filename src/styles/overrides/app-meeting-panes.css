@@ -1,0 +1,50 @@
+.meeting-pane-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px 14px 14px;
+}
+
+.meeting-pane-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.meeting-pane-textarea {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--ink);
+  font: inherit;
+  min-height: 112px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.meeting-pane-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.meeting-pane-actions button {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--ink-soft);
+  cursor: pointer;
+  font: inherit;
+  min-height: 34px;
+  padding: 0 12px;
+  transition: background var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+}
+
+.meeting-pane-actions button:hover:not(:disabled) {
+  background: var(--fill-hover);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.meeting-pane-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}

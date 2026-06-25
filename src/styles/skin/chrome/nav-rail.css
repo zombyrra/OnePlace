@@ -1,0 +1,64 @@
+/* OneNote-web vertical nav rail — .op-rail (the purple spine) + the body
+   wrapper that sits the rail beside the workspace. */
+
+.op-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.op-body > .workspace {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.op-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 44px;
+  flex-shrink: 0;
+  padding: 8px 0;
+  background: var(--iris);
+  color: #ffffff;
+}
+
+.op-rail-top {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.op-rail-bottom {
+  margin-top: auto;
+}
+
+.op-rail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm);
+  color: rgba(255, 255, 255, 0.86);
+  cursor: pointer;
+  transition: background var(--dur-hover) var(--ease-out);
+}
+
+.op-rail-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.op-rail-btn.is-active {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.op-rail-btn:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
+}

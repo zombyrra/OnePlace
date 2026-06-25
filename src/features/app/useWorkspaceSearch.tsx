@@ -400,9 +400,19 @@ export const useWorkspaceSearch = ({
       },
     }))
 
+  const setSearchScope = (searchScope: SearchScope) =>
+    setAppState((current) => ({
+      ...current,
+      meta: {
+        ...current.meta,
+        searchScope,
+      },
+    }))
+
   return {
     recentPages,
     searchResults,
+    setSearchScope,
     tagCatalog,
     tagResults,
     taskResults,

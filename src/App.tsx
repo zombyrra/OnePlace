@@ -111,6 +111,8 @@ function App() {
   const [isMeetingDetailsOpen, setIsMeetingDetailsOpen] = useState(false)
   const [isTemplatePaneOpen, setIsTemplatePaneOpen] = useState(false)
   const [isMarkmapPaneOpen, setIsMarkmapPaneOpen] = useState(false)
+  const [isShortcutHelpOpen, setIsShortcutHelpOpen] = useState(false)
+  const [isMoveCopyPageOpen, setIsMoveCopyPageOpen] = useState(false)
   const [markmapTree, setMarkmapTree] = useState(() => createMarkmapTreeFromMarkdown('', 'Mind Map'))
   const [selectedHistoryVersionId, setSelectedHistoryVersionId] = useState('')
   const [selectedTemplateId, setSelectedTemplateId] = useState(pageTemplates[0]?.id ?? '')
@@ -125,10 +127,12 @@ function App() {
   const [pageWidthMode, setPageWidthMode] = useState<PageWidthMode>('normal')
   const [isNotebookPaneVisible, setIsNotebookPaneVisible] = useState(true)
   const [isPagesPaneVisible, setIsPagesPaneVisible] = useState(true)
+  const [pagesPaneWidth, setPagesPaneWidth] = useState(300)
   const [selectedFontFamily, setSelectedFontFamily] = useState('Calibri')
   const [selectedFontSize, setSelectedFontSize] = useState('11')
   const [recentNotebookEntries, setRecentNotebookEntries] = useState<RecentNotebookEntry[]>([])
   const editorRef = useRef<HTMLDivElement | null>(null)
+  const titleInputRef = useRef<HTMLInputElement | null>(null)
   const noteCanvasScrollRef = useRef<HTMLDivElement | null>(null)
   const lastHydratedPageIdRef = useRef<string | null>(null)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
@@ -188,6 +192,21 @@ function App() {
   const searchScope = appState.meta.searchScope
   const isCurrentSectionLocked = Boolean(section?.passwordHash && !unlockedSectionIds.includes(section.id))
   const markmapMarkdown = useMemo(() => serializeMarkmapTreeToMarkdown(markmapTree), [markmapTree])
+  const moveCopyPageDestinations = useMemo(
+    () =>
+      appState.notebooks.flatMap((entry) =>
+        entry.sectionGroups.flatMap((group) =>
+          group.sections.map((part) => ({
+            groupId: group.id,
+            id: `${entry.id}:${group.id}:${part.id}`,
+            label: `${entry.name} / ${group.name} / ${part.name}`,
+            notebookId: entry.id,
+            sectionId: part.id,
+          })),
+        ),
+      ),
+    [appState.notebooks],
+  )
 
   const { runUpdateCheck } = useAppPersistence({
     appState,
@@ -243,8 +262,14 @@ function App() {
     openSearchResult,
     openTagResult,
     openTaskResult,
+    selectFirstPage,
+    selectLastPage,
     selectNotebook,
+    selectNextPage,
+    selectNextSection,
     selectPage,
+    selectPreviousPage,
+    selectPreviousSection,
     selectSection,
     setPageSortMode,
   } = useNavigationActions({
@@ -312,7 +337,7 @@ function App() {
 
   useMarkmapRenderer(editorRef, page?.id, page?.content)
 
-  const { recentPages, searchResults, tagCatalog, tagResults, taskResults, taskSummary, toggleSearchScope, visiblePages } =
+  const { recentPages, searchResults, setSearchScope, tagCatalog, tagResults, taskResults, taskSummary, toggleSearchScope, visiblePages } =
     useWorkspaceSearch({
       appState,
       isCurrentSectionLocked,
@@ -335,6 +360,7 @@ function App() {
     applyFontSize,
     applyPageTemplate,
     applyStylePreset,
+    copySelectionFormatting,
     handleEditorInput,
     handleEditorKeyDown,
     insertChecklist,
@@ -347,6 +373,7 @@ function App() {
     insertTemplate,
     insertTextAsHtml,
     openMeetingDetailsPane,
+    pasteSelectionFormatting,
     runEditorCommand,
   } = useEditorActions({
     editorRef,
@@ -389,20 +416,26 @@ function App() {
 
   const {
     canInsertReference,
+    editReference,
+    editingReferenceId,
     filteredReferences,
     importReferenceText,
     insertReferenceBibliography,
     insertReferenceCitation,
     insertReferenceEntry,
     isReferencesPaneOpen,
+    manualReferenceDraft,
     referenceImportDraft,
     referenceImportSummary,
     referenceQuery,
     referenceStyle,
     references,
     removeReference,
+    resetManualReferenceDraft,
+    saveManualReference,
     setIsReferencesPaneOpen,
     setReferenceImportDraft,
+    setManualReferenceField,
     setReferenceQuery,
     setReferenceStyle,
   } = useReferenceManager({
@@ -585,8 +618,11 @@ function App() {
     addCustomTagToCurrentPage: applyCustomTagDraft,
     addSelectedTagToCurrentPage,
     addTagToCurrentPage,
+    clearCurrentPageTask,
+    clearCurrentPageTags,
     clearTaskForPage,
     protectSection,
+    markCurrentPageUnread,
     removeSectionProtection,
     renamePage,
     renamePageTo,
@@ -594,9 +630,11 @@ function App() {
     restoreSelectedHistoryVersion,
     saveCurrentPageVersion,
     setCurrentTaskDueDate,
+    setCurrentTaskDuePreset,
     setTaskDueDateForPage,
     toggleCurrentTask,
     toggleCurrentTaskComplete,
+    toggleNamedTagOnCurrentPage,
     toggleTagOnPage,
     toggleTaskForPage,
     unlockSection,
@@ -624,6 +662,7 @@ function App() {
 
   const {
     addPage,
+    addPageBelowCurrent,
     addPageWithTitle,
     addSectionGroup,
     addSectionGroupWithName,
@@ -636,6 +675,9 @@ function App() {
     deleteSection,
     deleteSectionGroup,
     demoteCurrentPage,
+    moveOrCopyCurrentPage,
+    moveCurrentPageDown,
+    moveCurrentPageUp,
     promptCreateSection,
     promoteCurrentPage,
     renameNotebookTo,
@@ -668,18 +710,286 @@ function App() {
   void deleteSectionGroup
   void deleteSection
 
+  const canEditPage = Boolean(page) && !isCurrentSectionLocked
+
+  const focusElement = (selector: string) => {
+    window.setTimeout(() => {
+      document.querySelector<HTMLElement>(selector)?.focus()
+    }, 0)
+  }
+
+  const focusCurrentNotebook = () => {
+    setIsNotebookPaneVisible(true)
+    focusElement('.notebook-item.active')
+  }
+
+  const focusCurrentSection = () => {
+    setIsNotebookPaneVisible(true)
+    focusElement('.notebook-section-link.section-item.active')
+  }
+
+  const focusCurrentPage = () => {
+    setIsPagesPaneVisible(true)
+    focusElement('.page-card.active')
+  }
+
+  const focusPageTitle = () => {
+    titleInputRef.current?.focus()
+    titleInputRef.current?.select()
+  }
+
+  const openSearchAll = () => {
+    setSearchScope('all')
+    window.setTimeout(() => {
+      searchInputRef.current?.focus()
+      searchInputRef.current?.select()
+    }, 0)
+  }
+
+  const openCurrentPageFind = () => {
+    setReviewScope('page')
+    setIsReviewPaneOpen(true)
+    window.setTimeout(() => {
+      document.querySelector<HTMLInputElement>('.review-pane .review-pane-field input')?.focus()
+    }, 0)
+  }
+
+  const findCurrentPageMatch = (backward = false) => {
+    setReviewScope('page')
+    setIsReviewPaneOpen(true)
+    const needle = reviewFind.trim()
+    if (!needle) {
+      window.setTimeout(() => {
+        document.querySelector<HTMLInputElement>('.review-pane .review-pane-field input')?.focus()
+      }, 0)
+      return
+    }
+
+    window.setTimeout(() => {
+      const finder = (window as Window & {
+        find?: (
+          searchString: string,
+          caseSensitive?: boolean,
+          backwards?: boolean,
+          wrapAround?: boolean,
+          wholeWord?: boolean,
+          searchInFrames?: boolean,
+          showDialog?: boolean,
+        ) => boolean
+      }).find
+      const found = finder?.(needle, false, backward, true, false, false, false) ?? false
+      setSaveLabel(found ? `Found "${needle}"` : `No page matches for "${needle}"`)
+    }, 0)
+  }
+
+  const closeSearchAndReturnToPage = () => {
+    setQuery('')
+    setIsReviewPaneOpen(false)
+    window.setTimeout(() => {
+      editorRef.current?.focus()
+    }, 0)
+  }
+
+  const getVisibleSearchResultButtons = () =>
+    Array.from(document.querySelectorAll<HTMLButtonElement>('.search-results-list .search-result'))
+
+  const focusNextSearchResult = () => {
+    const buttons = getVisibleSearchResultButtons()
+    if (buttons.length === 0) return
+    const activeIndex = buttons.findIndex((button) => button === document.activeElement)
+    buttons[(activeIndex + 1) % buttons.length]?.focus()
+  }
+
+  const openSelectedSearchResult = () => {
+    const visibleResults = searchResults.slice(0, 8)
+    if (visibleResults.length === 0) return
+    const buttons = getVisibleSearchResultButtons()
+    const activeIndex = buttons.findIndex((button) => button === document.activeElement)
+    const result = visibleResults[activeIndex >= 0 ? activeIndex : 0]
+    if (!result) return
+    openSearchResult(result)
+    setQuery('')
+    window.setTimeout(() => {
+      editorRef.current?.focus()
+    }, 0)
+  }
+
+  const toggleFullPageView = () => {
+    const shouldHidePanes = isNotebookPaneVisible || isPagesPaneVisible
+    setIsNotebookPaneVisible(!shouldHidePanes)
+    setIsPagesPaneVisible(!shouldHidePanes)
+  }
+
+  const printPage = () => {
+    syncEditorContent()
+    window.print()
+  }
+
+  const lockProtectedSections = () => {
+    setUnlockedSectionIds([])
+    setSaveLabel('Locked protected sections')
+  }
+
+  const insertAuthorTimestamp = () => {
+    insertTemplate(`<p>${appInfo?.name ?? 'OnePlace'} - ${new Date().toLocaleString()}</p>`)
+  }
+
+  const selectAllPageContent = () => {
+    runEditorCommand('selectAll')
+  }
+
+  const getPageAudioElements = () =>
+    Array.from(editorRef.current?.querySelectorAll<HTMLAudioElement>('audio') ?? [])
+
+  const getSelectedAudioElement = () => {
+    const activeElement = document.activeElement
+    if (activeElement instanceof HTMLAudioElement && editorRef.current?.contains(activeElement)) {
+      return activeElement
+    }
+
+    if (activeElement instanceof HTMLElement && editorRef.current?.contains(activeElement)) {
+      const activeAudio = activeElement.closest<HTMLElement>('.audio-note')?.querySelector<HTMLAudioElement>('audio')
+      if (activeAudio) return activeAudio
+    }
+
+    const range = window.getSelection()?.rangeCount ? window.getSelection()?.getRangeAt(0) : null
+    const rangeElement =
+      range?.commonAncestorContainer instanceof HTMLElement
+        ? range.commonAncestorContainer
+        : range?.commonAncestorContainer.parentElement
+    const selectedAudio = rangeElement?.closest<HTMLElement>('.audio-note')?.querySelector<HTMLAudioElement>('audio')
+    if (selectedAudio) return selectedAudio
+
+    const audios = getPageAudioElements()
+    return audios.find((audio) => !audio.paused) ?? audios[0] ?? null
+  }
+
+  const playSelectedAudio = () => {
+    const audio = getSelectedAudioElement()
+    if (!audio) {
+      setSaveLabel('No audio recording on this page')
+      return
+    }
+
+    void audio.play().then(
+      () => setSaveLabel('Playing audio recording'),
+      () => setSaveLabel('Audio playback is blocked until the page is clicked'),
+    )
+  }
+
+  const skipAudioPlayback = (deltaSeconds: number) => {
+    const audio = getSelectedAudioElement()
+    if (!audio) {
+      setSaveLabel('No audio recording on this page')
+      return
+    }
+
+    const duration = Number.isFinite(audio.duration) ? audio.duration : Number.MAX_SAFE_INTEGER
+    audio.currentTime = Math.max(0, Math.min(duration, audio.currentTime + deltaSeconds))
+    setSaveLabel(deltaSeconds < 0 ? 'Skipped audio back 10 seconds' : 'Skipped audio forward 10 seconds')
+  }
+
+  const startAudioRecordingShortcut = () => {
+    setIsAudioPaneOpen(true)
+    void startAudioRecording()
+  }
+
+  const stopAudioShortcut = () => {
+    if (isRecordingAudio) {
+      void stopAudioRecording()
+      return
+    }
+
+    const audio = getSelectedAudioElement()
+    if (!audio) return
+    audio.pause()
+    setSaveLabel('Stopped audio playback')
+  }
+
+  const openCurrentTask = () => {
+    setIsTaskPaneOpen(true)
+    setTaskStatusFilter('all')
+    window.setTimeout(() => {
+      document.querySelector<HTMLElement>('.task-pane-link')?.focus()
+    }, 0)
+  }
+
+  const increasePageNavigationWidth = () => {
+    setIsPagesPaneVisible(true)
+    setPagesPaneWidth((current) => Math.min(460, current + 32))
+  }
+
+  const decreasePageNavigationWidth = () => {
+    setIsPagesPaneVisible(true)
+    setPagesPaneWidth((current) => Math.max(220, current - 32))
+  }
+
   useGlobalShortcuts({
-    canDemotePage,
-    canPromotePage,
-    searchInputRef,
+    canEditPage,
     shortcutActions: {
       addPage,
-      createNotebook,
+      addPageBelowCurrent,
+      addSubpage,
+      clearCurrentPageTask,
+      clearCurrentPageTags,
+      closeSearchAndReturnToPage,
+      copySelectionFormatting,
+      createSection: () => void promptCreateSection(),
+      decreasePageNavigationWidth,
       demoteCurrentPage,
+      emailCurrentPage,
+      findNextCurrentPageMatch: () => findCurrentPageMatch(false),
+      findPreviousCurrentPageMatch: () => findCurrentPageMatch(true),
+      focusCurrentNotebook,
+      focusCurrentPage,
+      focusCurrentSection,
+      focusNextSearchResult,
+      focusPageTitle,
+      goBack,
+      goForward,
+      increasePageNavigationWidth,
+      insertAuthorTimestamp,
+      insertExternalLink,
+      insertHtmlAtSelection: insertTemplate,
+      lockProtectedSections,
+      markCurrentPageUnread,
+      moveCurrentPageDown,
+      moveCurrentPageUp,
+      openCurrentPageFind,
+      openCurrentTask,
+      openMoveCopyPage: () => setIsMoveCopyPageOpen(true),
       openNotebook,
+      openSelectedSearchResult,
+      openSearchAll,
+      openShortcutHelp: () => setIsShortcutHelpOpen(true),
+      pasteSelectionFormatting,
+      playSelectedAudio,
+      printPage,
       promoteCurrentPage,
+      runEditorCommand,
       saveNow,
-      saveNotebookAs,
+      selectFirstPage,
+      selectLastPage,
+      selectNextPage,
+      selectNextSection,
+      selectPreviousPage,
+      selectPreviousSection,
+      selectAllPageContent,
+      setActiveTab,
+      setCurrentTaskDuePreset,
+      skipAudioPlayback,
+      startAudioRecording: startAudioRecordingShortcut,
+      stopAudio: stopAudioShortcut,
+      syncEditorContent,
+      toggleCurrentTask,
+      toggleCurrentTaskComplete,
+      toggleCurrentPageCollapse: () => {
+        if (page) togglePageCollapse(page.id)
+      },
+      toggleFullPageView,
+      toggleNamedTagOnCurrentPage,
+      toggleRuleLines: () => setShowRuleLines((current) => !current),
+      zoomBy: adjustEditorZoom,
     },
   })
 
@@ -775,8 +1085,14 @@ function App() {
     referenceImportDraft,
     setReferenceImportDraft,
     referenceImportSummary,
+    manualReferenceDraft,
+    editingReferenceId,
     canInsertReference,
     importReferenceText,
+    setManualReferenceField,
+    saveManualReference,
+    resetManualReferenceDraft,
+    editReference,
     insertReferenceCitation,
     insertReferenceEntry,
     insertReferenceBibliography,
@@ -880,6 +1196,20 @@ function App() {
       }}
       isNotebookPaneVisible={isNotebookPaneVisible}
       isPagesPaneVisible={isPagesPaneVisible}
+      moveCopyPageDialogProps={{
+        destinations: moveCopyPageDestinations,
+        onOpenChange: setIsMoveCopyPageOpen,
+        onSubmit: (mode, target) => {
+          moveOrCopyCurrentPage(mode, target)
+          setIsMoveCopyPageOpen(false)
+        },
+        open: isMoveCopyPageOpen,
+        pageTitle: page?.title ?? 'Untitled Page',
+      }}
+      shortcutHelpDialogProps={{
+        onOpenChange: setIsShortcutHelpOpen,
+        open: isShortcutHelpOpen,
+      }}
       notePaneProps={{
         activeTab,
         addTagToCurrentPage,
@@ -925,6 +1255,7 @@ function App() {
         toggleCurrentTask,
         toggleCurrentTaskComplete,
         toggleTagOnPage,
+        titleInputRef,
         unlockSection,
         updatePage,
       }}
@@ -1003,6 +1334,7 @@ function App() {
         unlockSection,
         visiblePages,
       }}
+      pagesPaneWidth={pagesPaneWidth}
       ribbonBarProps={{
         activeTab,
         addPage,
@@ -1021,6 +1353,7 @@ function App() {
         canPromotePage,
         clearInkStrokes,
         copySelection,
+        copySelectionFormatting,
         createNotebook,
         deleteCurrentPage,
         demoteCurrentPage,
@@ -1062,10 +1395,12 @@ function App() {
         openMarkmapPane,
         openNotebook,
         openPrintoutPicker,
+        openShortcutHelp: () => setIsShortcutHelpOpen(true),
         page,
         pageSortMode,
         pageWidthMode,
         pasteFromClipboard,
+        pasteSelectionFormatting,
         promptCreateSection,
         promoteCurrentPage,
         recentNotebookEntries,
@@ -1099,15 +1434,11 @@ function App() {
         toggleCurrentTask,
         toggleCurrentTaskComplete,
       }}
-      titleBarProps={{
-        canGoBack,
-        canGoForward,
-        onGoBack: goBack,
-        onGoForward: goForward,
-        onSave: () => void saveNow(),
+      commandBarProps={{
+        activeTab,
+        setActiveTab,
         onSetSearchFilter: setSearchFilter,
         onToggleSearchScope: toggleSearchScope,
-        onUndo: () => runEditorCommand('undo'),
         openSearchResult,
         query,
         renderHighlightedText,
@@ -1120,6 +1451,21 @@ function App() {
         searchScopeLabels,
         setQuery,
         titlebarSearchRef,
+      }}
+      navRailProps={{
+        isNotebookPaneVisible,
+        onFocusSearch: () => searchInputRef.current?.focus(),
+        onShowLibrary: () => setIsNotebookPaneVisible(true),
+      }}
+      titleBarProps={{
+        canGoBack,
+        canGoForward,
+        onGoBack: goBack,
+        onGoForward: goForward,
+        onNewNotebook: createNotebook,
+        onOpenNotebook: openNotebook,
+        onSave: () => void saveNow(),
+        onUndo: () => runEditorCommand('undo'),
         windowTitle,
         workspaceName: notebook?.name ?? 'Dunder Mifflin offsite',
       }}
@@ -1128,10 +1474,3 @@ function App() {
 }
 
 export default App
-
-
-
-
-
-
-

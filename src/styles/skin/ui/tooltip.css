@@ -1,0 +1,20 @@
+/* Fluent tooltip (.op-tooltip) — small, white, bordered. Portal-safe. */
+
+.op-tooltip {
+  z-index: 1700;
+  max-width: 240px;
+  padding: 6px 8px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-pop);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink);
+  animation: op-fade-in var(--dur-base) var(--ease-out);
+}
+
+.op-tooltip-arrow {
+  fill: var(--paper);
+}

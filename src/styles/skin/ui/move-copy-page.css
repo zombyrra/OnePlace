@@ -1,0 +1,72 @@
+.move-copy-page-dialog {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.move-copy-page-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+.move-copy-page-summary span {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.move-copy-page-summary strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.move-copy-mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.move-copy-mode button,
+.move-copy-destinations button {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.move-copy-mode button {
+  height: 32px;
+  font-weight: 700;
+}
+
+.move-copy-mode button.active,
+.move-copy-destinations button.active {
+  background: var(--iris-tint);
+  border-color: var(--iris);
+}
+
+.move-copy-destinations {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: min(360px, calc(100vh - 330px));
+  overflow: auto;
+}
+
+.move-copy-destinations button {
+  min-height: 34px;
+  padding: 7px 10px;
+  text-align: left;
+}
+
+.move-copy-destinations button:hover {
+  background: var(--fill-hover);
+}

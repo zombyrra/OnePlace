@@ -81,6 +81,49 @@ export const useNavigationActions = ({
     navigateToEntry(entry, true)
   }
 
+  const selectPageByOffset = (offset: number) => {
+    if (!section || !page) return
+    const pages = flattenPages(section.pages, 0, true).map((entry) => entry.page)
+    const currentIndex = pages.findIndex((entry) => entry.id === page.id)
+    if (currentIndex === -1) return
+    const nextPage = pages[currentIndex + offset]
+    if (!nextPage) return
+    setAppState((current) => ({ ...current, selectedPageId: nextPage.id }))
+  }
+
+  const selectFirstPage = () => {
+    if (!section) return
+    const firstPage = flattenPages(section.pages, 0, true)[0]?.page
+    if (!firstPage) return
+    setAppState((current) => ({ ...current, selectedPageId: firstPage.id }))
+  }
+
+  const selectLastPage = () => {
+    if (!section) return
+    const pages = flattenPages(section.pages, 0, true)
+    const lastPage = pages[pages.length - 1]?.page
+    if (!lastPage) return
+    setAppState((current) => ({ ...current, selectedPageId: lastPage.id }))
+  }
+
+  const selectSectionByOffset = (offset: number) => {
+    if (!notebook || !section) return
+    const sections = notebook.sectionGroups.flatMap((group) =>
+      group.sections.map((entry) => ({ groupId: group.id, section: entry })),
+    )
+    const currentIndex = sections.findIndex((entry) => entry.section.id === section.id)
+    if (currentIndex === -1) return
+    const nextEntry = sections[currentIndex + offset]
+    const nextPage = nextEntry ? flattenPages(nextEntry.section.pages, 0, true)[0]?.page : undefined
+    if (!nextEntry || !nextPage) return
+    setAppState((current) => ({
+      ...current,
+      selectedPageId: nextPage.id,
+      selectedSectionGroupId: nextEntry.groupId,
+      selectedSectionId: nextEntry.section.id,
+    }))
+  }
+
   const selectNotebook = (notebookId: string) => {
     setAppState((current) => {
       const nextNotebook = current.notebooks.find((item) => item.id === notebookId)
@@ -178,12 +221,12 @@ export const useNavigationActions = ({
 
   const openTaskResult = (result: TaskResult) => {
     openSearchResult(result)
-    setActiveTab('Review')
+    setActiveTab('View')
   }
 
   const openTagResult = (result: TagResult) => {
     openSearchResult(result)
-    setActiveTab('Review')
+    setActiveTab('View')
   }
 
   const setPageSortMode = (nextMode: PageSortMode) => {
@@ -232,8 +275,14 @@ export const useNavigationActions = ({
     openSearchResult,
     openTagResult,
     openTaskResult,
+    selectFirstPage,
+    selectLastPage,
     selectNotebook,
+    selectNextPage: () => selectPageByOffset(1),
+    selectNextSection: () => selectSectionByOffset(1),
     selectPage,
+    selectPreviousPage: () => selectPageByOffset(-1),
+    selectPreviousSection: () => selectSectionByOffset(-1),
     selectSection,
     selectedPageLocation,
     setPageSortMode,

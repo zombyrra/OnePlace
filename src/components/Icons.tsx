@@ -6,13 +6,16 @@ import {
   AlignRight,
   ArrowDownNarrowWide,
   ArrowLeft,
+  Baseline,
   ArrowRight,
   ArrowUpAZ,
   ArrowUpDown,
   AudioLines,
+  Bell,
   Bold,
   BookDown,
   BookMarked,
+  Cloud,
   CalendarCheck,
   CalendarClock,
   CalendarDays,
@@ -39,8 +42,11 @@ import {
   Image,
   Indent,
   Italic,
+  Keyboard,
+  LayoutGrid,
   LayoutTemplate,
   LibraryBig,
+  Lightbulb,
   Link,
   Link2,
   List,
@@ -71,6 +77,8 @@ import {
   SearchX,
   SeparatorHorizontal,
   Settings,
+  Share2,
+  Smartphone,
   Sparkles,
   Strikethrough,
   Table2,
@@ -78,6 +86,7 @@ import {
   Underline,
   Undo2,
   UsersRound,
+  X,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -213,6 +222,7 @@ export const BrushIcon = luc(Paintbrush, 16)
 export const EditIcon = luc(Pencil)
 export const SettingsIcon = luc(Settings)
 export const ReplaceIcon = luc(Replace)
+export const KeyboardIcon = luc(Keyboard)
 
 // Text formatting — compact Home ribbon (default size 16)
 export const BoldIcon = luc(Bold, 16)
@@ -265,6 +275,7 @@ export const CircleCheckIcon = luc(CheckCircle2)
 
 // Draw
 export const PenIcon = luc(Pen, 16)
+export const BaselineIcon = luc(Baseline, 16)
 export const EraserIcon = luc(Eraser)
 export const HighlighterIcon = luc(Highlighter)
 
@@ -282,6 +293,17 @@ export const WidenPageIcon = luc(Maximize2)
 
 // General list icon
 export const ListLinesIcon = luc(List)
+
+// Close / dismiss (side-pane headers, dialogs)
+export const CloseIcon = luc(X, 16)
+
+// OneNote-web chrome: header + command bar + nav rail
+export const AppGridIcon = luc(LayoutGrid)
+export const BellIcon = luc(Bell)
+export const CloudIcon = luc(Cloud)
+export const LightbulbIcon = luc(Lightbulb, 16)
+export const SmartphoneIcon = luc(Smartphone)
+export const ShareIcon = luc(Share2, 16)
 
 // Backward-compat aliases — no longer used in RibbonBar but kept for safety
 export const InsertFormattingIcon = luc(LayoutTemplate)

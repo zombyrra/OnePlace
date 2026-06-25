@@ -8,7 +8,7 @@ import type {
   TaskStatusFilter,
 } from './appTypes'
 
-export const ribbonTabs = ['File', 'Home', 'Insert', 'Draw', 'History', 'Review', 'View'] as const
+export const ribbonTabs = ['File', 'Home', 'Insert', 'Draw', 'View', 'Help'] as const
 export const RECENT_NOTEBOOKS_KEY = 'oneplace-recent-notebooks'
 export const LAST_OPENED_NOTEBOOK_KEY = 'oneplace-last-opened-notebook'
 
@@ -137,4 +137,19 @@ export const taskStatusLabels: Record<TaskStatusFilter, string> = {
   open: 'Open',
 }
 
-export const builtInTags = ['Important', 'Question', 'Follow Up', 'Idea', 'Decision', 'Customer', 'Blocked', 'Urgent']
+export const builtInTags = [
+  'Important',
+  'Question',
+  'Remember for later',
+  'Definition',
+  'Highlight',
+  'Contact',
+  'Address',
+  'Phone number',
+  'Follow Up',
+  'Idea',
+  'Decision',
+  'Customer',
+  'Blocked',
+  'Urgent',
+]

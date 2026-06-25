@@ -1,0 +1,129 @@
+/* OneNote-web simplified ribbon (row C) — .op-ribbon: a single compact row
+   of controls with subtle group dividers and a trailing overflow chevron. */
+
+.op-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  height: 48px;
+  padding: 0 8px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.op-ribbon::-webkit-scrollbar {
+  height: 0;
+}
+
+.op-rib-sep {
+  width: 1px;
+  height: 24px;
+  margin: 0 5px;
+  flex-shrink: 0;
+  background: var(--line);
+}
+
+.op-rib-overflow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 28px;
+  margin-left: auto;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.op-rib-overflow:hover {
+  background: var(--fill-hover);
+}
+
+/* Ribbon buttons should not shrink/wrap in the scrolling row. */
+.op-ribbon .op-ribbon-btn,
+.op-ribbon .op-split,
+.op-ribbon .op-combobox {
+  flex-shrink: 0;
+}
+
+.op-flip {
+  transform: scaleX(-1);
+}
+
+.op-color-pop {
+  width: max-content;
+}
+
+/* Styles dropdown — each item previewed in its own style (OneNote-style). */
+.op-styles-menu {
+  min-width: 220px;
+  padding: 6px;
+}
+
+.op-style-item {
+  min-height: 0;
+  margin: 1px 0;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+}
+
+.op-style-item .op-menu-item-icon {
+  display: none;
+}
+
+.op-style-item .op-menu-item-label {
+  white-space: normal;
+}
+
+.op-style-normal .op-menu-item-label {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.op-style-heading-1 .op-menu-item-label {
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--iris);
+}
+
+.op-style-heading-2 .op-menu-item-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--iris-strong);
+}
+
+.op-style-callout .op-menu-item-label {
+  padding-left: 8px;
+  border-left: 3px solid var(--iris-edge);
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.op-style-code-block .op-menu-item-label {
+  padding: 2px 6px;
+  background: var(--surface-sunk);
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.op-tags-menu {
+  min-width: 180px;
+}
+
+/* Inserted tag chip (Home > Tags items). */
+.op-tag-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: var(--iris-tint);
+  color: var(--iris-strong);
+  font-size: 0.85em;
+  font-weight: 600;
+}

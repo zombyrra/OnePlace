@@ -1,0 +1,109 @@
+/* OneNote-web dropdown menu (.op-menu) — Radix DropdownMenu surface.
+   Portal-safe: mounted at document.body, so it consumes only :root tokens
+   and never relies on a .desktop-scene ancestor. */
+
+.op-menu,
+.op-popover {
+  z-index: 1500;
+}
+
+.op-menu {
+  min-width: 184px;
+  padding: 4px 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-pop);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--ink);
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+  animation: op-pop-in var(--dur-enter) var(--ease-out);
+}
+
+.op-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  padding: 0 14px 0 10px;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: default;
+  user-select: none;
+  outline: none;
+}
+
+.op-menu-item[data-highlighted] {
+  background: var(--fill-hover);
+}
+
+.op-menu-item[data-disabled] {
+  color: var(--ink-ghost);
+  pointer-events: none;
+}
+
+.op-menu-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--ink-soft);
+}
+
+.op-menu-item[data-disabled] .op-menu-item-icon {
+  color: var(--ink-ghost);
+}
+
+.op-menu-item-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.op-menu-item-shortcut {
+  margin-left: 16px;
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.op-menu-sep {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--line-soft);
+}
+
+.op-menu-label {
+  padding: 6px 12px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
+/* Shared entrance keyframes for every portaled OnePlace surface. */
+@keyframes op-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes op-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .op-menu,
+  .op-popover,
+  .op-tooltip,
+  .op-dialog,
+  .op-dialog-overlay {
+    animation: none;
+  }
+}

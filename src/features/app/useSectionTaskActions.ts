@@ -1,6 +1,9 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { buildSnippet, defaultTask, findPageById, flattenPages, hashSecret, recordPageVersion, updateNestedPages, verifySecret } from '../../app/appModel'
 import type { AppState, Page, PageUpdate, PageVersion, Section } from '../../app/appModel'
+import { dialogs } from '../../components/ui/dialogContext'
+
+export type TaskDuePreset = 'today' | 'tomorrow' | 'this-week' | 'next-week' | 'none'
 
 type Args = {
   appState: AppState
@@ -37,6 +40,24 @@ export const useSectionTaskActions = ({
   setUnlockedSectionIds,
   updatePage,
 }: Args) => {
+  const getTaskDueDate = (preset: TaskDuePreset) => {
+    if (preset === 'none') return null
+    const dueDate = new Date()
+    dueDate.setHours(23, 59, 59, 999)
+
+    if (preset === 'tomorrow') {
+      dueDate.setDate(dueDate.getDate() + 1)
+    } else if (preset === 'this-week') {
+      const daysUntilFriday = (5 - dueDate.getDay() + 7) % 7
+      dueDate.setDate(dueDate.getDate() + daysUntilFriday)
+    } else if (preset === 'next-week') {
+      const daysUntilFriday = (5 - dueDate.getDay() + 7) % 7
+      dueDate.setDate(dueDate.getDate() + daysUntilFriday + 7)
+    }
+
+    return dueDate.toISOString()
+  }
+
   const updatePageById = (pageId: string, updater: (targetPage: Page) => Page) => {
     setAppState((current) => ({
       ...current,
@@ -177,14 +198,21 @@ export const useSectionTaskActions = ({
     }))
   }
 
-  const setTaskDueDateForPage = (pageId: string) => {
+  const setTaskDueDateForPage = async (pageId: string) => {
     const target = appState.notebooks
       .flatMap((entry) => entry.sectionGroups.flatMap((group) => group.sections.flatMap((part) => flattenPages(part.pages, 0, true))))
       .find((item) => item.page.id === pageId)?.page
     if (!target) return
     const currentDue = target.task?.dueAt?.slice(0, 10) ?? ''
-    const value = window.prompt('Due date (YYYY-MM-DD), leave blank to clear', currentDue)?.trim()
-    if (value === undefined) return
+    const response = await dialogs.prompt({
+      title: 'Set due date',
+      label: 'Due date (YYYY-MM-DD)',
+      defaultValue: currentDue,
+      placeholder: 'Leave blank to clear',
+      confirmText: 'Set',
+    })
+    if (response === null) return
+    const value = response.trim()
     updatePageById(pageId, (note) => ({
       ...note,
       snippet: buildSnippet(note.title, note.content),
@@ -207,6 +235,46 @@ export const useSectionTaskActions = ({
   const toggleCurrentTaskComplete = () => {
     if (!page?.task) return
     updatePage({ task: { ...page.task, status: page.task.status === 'done' ? 'open' : 'done' } })
+  }
+
+  const setCurrentTaskDuePreset = (preset: TaskDuePreset) => {
+    if (!page) return
+    const dueAt = getTaskDueDate(preset)
+    updatePage({
+      task: {
+        ...(page.task ?? defaultTask()),
+        dueAt,
+      },
+    })
+    setSaveLabel(preset === 'none' ? 'Task date cleared' : 'Task date updated')
+  }
+
+  const clearCurrentPageTask = () => {
+    if (!page) return
+    updatePage({ task: null })
+    setSaveLabel('Task removed')
+  }
+
+  const toggleNamedTagOnCurrentPage = (tag: string) => {
+    if (!page) return
+    toggleTagOnPage(page.id, tag)
+  }
+
+  const markCurrentPageUnread = () => {
+    if (!page) return
+    const hasUnread = page.tags.some((tag) => tag.toLocaleLowerCase() === 'unread')
+    if (hasUnread) {
+      setSaveLabel('Page is already marked unread')
+      return
+    }
+    updatePage({ tags: [...page.tags, 'Unread'] })
+    setSelectedTagFilter('Unread')
+    setSaveLabel('Marked page as unread')
+  }
+
+  const clearCurrentPageTags = () => {
+    if (!page) return
+    updatePage({ tags: [], task: null })
   }
 
   const setCurrentTaskDueDate = () => {
@@ -312,7 +380,9 @@ export const useSectionTaskActions = ({
     addSelectedTagToCurrentPage,
     addTagToCurrentPage,
     clearTaskForPage,
+    clearCurrentPageTask,
     lockSection,
+    markCurrentPageUnread,
     protectSection,
     removeSectionProtection,
     renamePage,
@@ -321,9 +391,12 @@ export const useSectionTaskActions = ({
     restoreSelectedHistoryVersion,
     saveCurrentPageVersion,
     setCurrentTaskDueDate,
+    setCurrentTaskDuePreset,
     setTaskDueDateForPage,
+    clearCurrentPageTags,
     toggleCurrentTask,
     toggleCurrentTaskComplete,
+    toggleNamedTagOnCurrentPage,
     toggleTagOnPage,
     toggleTaskForPage,
     unlockSection,

@@ -1,5 +1,5 @@
 import type { PointerEvent as ReactPointerEvent } from 'react'
-import { createId } from './appFormatting'
+import { buildSnippet, createId } from './appFormatting'
 import type { Page, PageLocation, PageSortMode, Section, SectionGroup, VisiblePage } from './appTypes'
 
 export const sortPagesTree = (pages: Page[], mode: PageSortMode): Page[] => {
@@ -49,6 +49,22 @@ export const findPageById = (pages: Page[], pageId: string): Page | undefined =>
   }
   return undefined
 }
+
+export const clonePageTree = (page: Page, timestamp = new Date().toISOString()): Page => ({
+  ...page,
+  children: page.children.map((child) => clonePageTree(child, timestamp)),
+  createdAt: timestamp,
+  id: createId(),
+  inkStrokes: page.inkStrokes.map((stroke) => ({
+    ...stroke,
+    id: createId(),
+    points: stroke.points.map((point) => ({ ...point })),
+  })),
+  snippet: buildSnippet(page.title, page.content, timestamp),
+  tags: [...page.tags],
+  task: page.task ? { ...page.task } : null,
+  updatedAt: timestamp,
+})
 
 export const updateNestedPages = (pages: Page[], pageId: string, updater: (page: Page) => Page): Page[] =>
   pages.map((page) =>
@@ -110,6 +126,35 @@ export const insertPageRelative = (
 
     return [page]
   })
+
+export const movePageWithinSiblings = (
+  pages: Page[],
+  pageId: string,
+  direction: -1 | 1,
+): { moved: boolean; pages: Page[] } => {
+  for (let index = 0; index < pages.length; index += 1) {
+    const page = pages[index]
+
+    if (page.id === pageId) {
+      const targetIndex = index + direction
+      if (targetIndex < 0 || targetIndex >= pages.length) return { moved: false, pages }
+
+      const nextPages = [...pages]
+      const [movedPage] = nextPages.splice(index, 1)
+      nextPages.splice(targetIndex, 0, movedPage)
+      return { moved: true, pages: nextPages }
+    }
+
+    const nested = movePageWithinSiblings(page.children, pageId, direction)
+    if (nested.moved) {
+      const nextPages = [...pages]
+      nextPages[index] = { ...page, isCollapsed: false, children: nested.pages }
+      return { moved: true, pages: nextPages }
+    }
+  }
+
+  return { moved: false, pages }
+}
 
 export const pageContainsId = (page: Page, targetId: string): boolean =>
   page.id === targetId || page.children.some((child) => pageContainsId(child, targetId))
