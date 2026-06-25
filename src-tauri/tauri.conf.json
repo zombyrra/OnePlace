@@ -29,7 +29,7 @@
         "img-src": "'self' asset: http://asset.localhost data: https:",
         "media-src": "'self' data: blob:",
         "frame-src": "data:",
-        "connect-src": "ipc: http://ipc.localhost https://graph.microsoft.com https://login.microsoftonline.com",
+        "connect-src": "ipc: http://ipc.localhost https://api.crossref.org https://graph.microsoft.com https://login.microsoftonline.com",
         "font-src": "'self'",
         "object-src": "'none'",
         "base-uri": "'none'"

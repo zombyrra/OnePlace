@@ -4,6 +4,7 @@ import {
   buildReferenceBibliographyMarkup,
   buildReferenceCitationMarkup,
   formatReferenceCitationLabel,
+  importReferenceFromCrossrefWork,
   importReferencesFromText,
 } from '../src/features/app/referenceManager.ts'
 
@@ -75,4 +76,24 @@ test('renders citation and bibliography markup for native references', () => {
   assert.match(bibliography, /class="reference-bibliography"/)
   assert.match(bibliography, /Local-first citation workflows/)
   assert.match(bibliography, /https:\/\/doi\.org\/10\.1000\/example/)
+})
+
+test('imports a reference from Crossref work metadata', () => {
+  const reference = importReferenceFromCrossrefWork({
+    DOI: '10.1000/crossref',
+    URL: 'https://example.test/crossref',
+    author: [{ given: 'Ada', family: 'Lovelace' }],
+    'container-title': ['Journal of Source Lookup'],
+    issued: { 'date-parts': [[2026, 6, 25]] },
+    publisher: 'OnePlace Press',
+    title: ['Automatic citation lookup'],
+    type: 'journal-article',
+  })
+
+  assert.ok(reference)
+  assert.equal(reference.source, 'manual')
+  assert.equal(reference.title, 'Automatic citation lookup')
+  assert.equal(reference.year, '2026')
+  assert.equal(reference.containerTitle, 'Journal of Source Lookup')
+  assert.equal(formatReferenceCitationLabel(reference), 'Lovelace, 2026')
 })

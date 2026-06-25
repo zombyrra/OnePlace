@@ -80,12 +80,16 @@ export type SidePanesProps = {
   setReferenceQuery: Dispatch<SetStateAction<string>>
   referenceStyle: string
   setReferenceStyle: (value: string) => void
+  referenceLookupDraft: string
+  setReferenceLookupDraft: Dispatch<SetStateAction<string>>
   referenceImportDraft: string
   setReferenceImportDraft: Dispatch<SetStateAction<string>>
   referenceImportSummary: string
   manualReferenceDraft: ReferenceDraft
   editingReferenceId: string | null
+  isLookingUpReference: boolean
   canInsertReference: boolean
+  addReferenceByLookup: () => Promise<void> | void
   importReferenceText: (value: string) => void
   setManualReferenceField: (field: keyof ReferenceDraft, value: string) => void
   saveManualReference: () => void
@@ -215,12 +219,16 @@ export function SidePanes(props: SidePanesProps) {
     setReferenceQuery,
     referenceStyle,
     setReferenceStyle,
+    referenceLookupDraft,
+    setReferenceLookupDraft,
     referenceImportDraft,
     setReferenceImportDraft,
     referenceImportSummary,
     manualReferenceDraft,
     editingReferenceId,
+    isLookingUpReference,
     canInsertReference,
+    addReferenceByLookup,
     importReferenceText,
     setManualReferenceField,
     saveManualReference,
@@ -447,10 +455,32 @@ export function SidePanes(props: SidePanesProps) {
             <strong>Saved sources</strong>
             <span>
               {references.length === 0
-                ? 'Add sources here, then cite them in your notes.'
+                ? 'Paste a DOI or article URL to add your first source.'
                 : `${references.length} saved reference${references.length === 1 ? '' : 's'}`}
             </span>
           </div>
+          <section className="reference-lookup">
+            <label className="review-pane-field">
+              <span>Add by DOI or URL</span>
+              <input
+                onChange={(event) => setReferenceLookupDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    void addReferenceByLookup()
+                  }
+                }}
+                placeholder="10.1145/... or https://..."
+                type="text"
+                value={referenceLookupDraft}
+              />
+            </label>
+            <div className="references-pane-actions">
+              <button className="pane-primary" disabled={!referenceLookupDraft.trim() || isLookingUpReference} onClick={() => void addReferenceByLookup()} type="button">
+                {isLookingUpReference ? 'Looking Up...' : 'Add Source'}
+              </button>
+            </div>
+          </section>
           <section className="reference-editor">
             <div className="reference-editor-head">
               <strong>{editingReferenceId ? 'Edit reference' : 'Add reference'}</strong>
