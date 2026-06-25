@@ -9,8 +9,10 @@ import {
   buildReferenceBibliographyMarkup,
   buildReferenceCitationMarkup,
   buildReferenceMarkup,
+  importReferenceFromCrossrefWork,
   importReferencesFromText,
   referenceStyleOptions,
+  type CrossrefWork,
 } from './referenceManager'
 
 export type ReferenceDraft = {
@@ -35,6 +37,16 @@ type UseReferenceManagerArgs = {
 
 const getReferenceFingerprint = (reference: ReferenceItem) =>
   [reference.title.toLowerCase(), reference.year, reference.doi.toLowerCase(), reference.url.toLowerCase()].join('|')
+
+const CROSSREF_API_ROOT = 'https://api.crossref.org'
+const CROSSREF_MAILTO = 'oneplace@local.invalid'
+
+const doiPattern = /\b10\.\d{4,9}\/[-._;()/:A-Z0-9]+\b/i
+
+const extractDoi = (value: string) => {
+  const match = value.match(doiPattern)
+  return match?.[0].replace(/[.,;)\]]+$/, '') ?? ''
+}
 
 const emptyReferenceDraft = (): ReferenceDraft => ({
   authors: '',
@@ -90,6 +102,8 @@ export const useReferenceManager = ({
   const [isReferencesPaneOpen, setIsReferencesPaneOpen] = useState(false)
   const [referenceImportDraft, setReferenceImportDraft] = useState('')
   const [referenceImportSummary, setReferenceImportSummary] = useState('Import BibTeX, RIS, or CSL JSON exports.')
+  const [referenceLookupDraft, setReferenceLookupDraft] = useState('')
+  const [isLookingUpReference, setIsLookingUpReference] = useState(false)
   const [referenceQuery, setReferenceQuery] = useState('')
   const [referenceStyle, setReferenceStyle] = useState(referenceStyleOptions[0].id)
   const [editingReferenceId, setEditingReferenceId] = useState<string | null>(null)
@@ -157,6 +171,108 @@ export const useReferenceManager = ({
         ? `Imported ${inserted} reference${inserted === 1 ? '' : 's'}`
         : 'Reference library already up to date',
     )
+  }
+
+  const addReferenceItem = (reference: ReferenceItem, action = 'Added') => {
+    const nextFingerprint = getReferenceFingerprint(reference)
+    let saved = false
+    let duplicate = false
+
+    setAppState((current) => {
+      const duplicateReference = current.meta.references.find(
+        (item) => item.id !== reference.id && getReferenceFingerprint(item) === nextFingerprint,
+      )
+      if (duplicateReference) {
+        duplicate = true
+        return current
+      }
+
+      return {
+        ...current,
+        meta: {
+          ...current.meta,
+          references: [...current.meta.references, reference],
+        },
+      }
+    })
+
+    if (duplicate) {
+      setReferenceImportSummary('That reference is already in your library.')
+      setSaveLabel('Reference already exists')
+      return false
+    }
+
+    saved = true
+    if (saved) {
+      setReferenceImportSummary(`${action} ${reference.title}`)
+      setSaveLabel(`${action} reference`)
+    }
+    return true
+  }
+
+  const fetchCrossrefWork = async (value: string) => {
+    const query = normalizeDraftValue(value)
+    const doi = extractDoi(query)
+    const params = new URLSearchParams({ mailto: CROSSREF_MAILTO })
+    const url = doi
+      ? `${CROSSREF_API_ROOT}/works/${encodeURIComponent(doi)}?${params.toString()}`
+      : `${CROSSREF_API_ROOT}/works?${new URLSearchParams({
+          mailto: CROSSREF_MAILTO,
+          rows: '1',
+          'query.bibliographic': query,
+        }).toString()}`
+
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), 7000)
+    try {
+      const response = await fetch(url, {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      })
+      if (!response.ok) {
+        throw new Error(`Crossref responded with ${response.status}`)
+      }
+
+      const payload = await response.json()
+      const message = payload?.message
+      return doi ? message as CrossrefWork | undefined : message?.items?.[0] as CrossrefWork | undefined
+    } finally {
+      window.clearTimeout(timeoutId)
+    }
+  }
+
+  const addReferenceByLookup = async () => {
+    const lookup = normalizeDraftValue(referenceLookupDraft)
+    if (!lookup) {
+      setReferenceImportSummary('Paste a DOI, article URL, or citation to look up.')
+      return
+    }
+
+    setIsLookingUpReference(true)
+    setReferenceImportSummary('Looking up source metadata...')
+    try {
+      const work = await fetchCrossrefWork(lookup)
+      const reference = work ? importReferenceFromCrossrefWork(work, /^https?:\/\//i.test(lookup) ? lookup : '') : null
+      if (!reference) {
+        setManualReferenceDraft((current) => ({
+          ...current,
+          title: /^https?:\/\//i.test(lookup) ? new URL(lookup).hostname.replace(/^www\./, '') : current.title,
+          url: /^https?:\/\//i.test(lookup) ? lookup : current.url,
+        }))
+        setReferenceImportSummary('No metadata found. I put what I could into the editor below.')
+        setSaveLabel('Reference lookup needs details')
+        return
+      }
+
+      if (addReferenceItem(reference)) {
+        setReferenceLookupDraft('')
+      }
+    } catch {
+      setReferenceImportSummary('Could not look up that source. Check the DOI or URL, or add details below.')
+      setSaveLabel('Reference lookup failed')
+    } finally {
+      setIsLookingUpReference(false)
+    }
   }
 
   const removeReference = (referenceId: string) => {
@@ -281,10 +397,13 @@ export const useReferenceManager = ({
     insertReferenceEntry,
     editReference,
     editingReferenceId,
+    addReferenceByLookup,
+    isLookingUpReference,
     isReferencesPaneOpen,
     manualReferenceDraft,
     referenceImportDraft,
     referenceImportSummary,
+    referenceLookupDraft,
     referenceQuery,
     referenceStyle,
     references,
@@ -294,6 +413,7 @@ export const useReferenceManager = ({
     setIsReferencesPaneOpen,
     setReferenceImportDraft,
     setManualReferenceField,
+    setReferenceLookupDraft,
     setReferenceQuery,
     setReferenceStyle,
   }

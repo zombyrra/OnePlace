@@ -33,6 +33,25 @@ type CslReference = {
   type?: string
 }
 
+type CrossrefPerson = {
+  family?: string
+  given?: string
+  name?: string
+}
+
+export type CrossrefWork = {
+  DOI?: string
+  URL?: string
+  author?: CrossrefPerson[]
+  'container-title'?: string[]
+  issued?: {
+    'date-parts'?: Array<Array<number | string>>
+  }
+  publisher?: string
+  title?: string[]
+  type?: string
+}
+
 const sourceRank: Record<ReferenceSource, number> = {
   manual: 0,
   'CSL JSON': 1,
@@ -104,6 +123,17 @@ const cslCreatorToPerson = (creator: CslCreator): ReferencePerson => {
   if (creator.literal?.trim()) return normalizePerson(creator.literal)
   const firstName = creator.given?.trim() ?? ''
   const lastName = creator.family?.trim() ?? ''
+  return {
+    firstName,
+    lastName,
+    name: [firstName, lastName].filter(Boolean).join(' ') || lastName || firstName,
+  }
+}
+
+const crossrefPersonToPerson = (person: CrossrefPerson): ReferencePerson => {
+  if (person.name?.trim()) return normalizePerson(person.name)
+  const firstName = normalizeWhitespace(person.given ?? '')
+  const lastName = normalizeWhitespace(person.family ?? '')
   return {
     firstName,
     lastName,
@@ -316,4 +346,22 @@ export const importReferencesFromText = (value: string) => {
       seen.add(key)
       return true
     })
+}
+
+export const importReferenceFromCrossrefWork = (work: CrossrefWork, fallbackUrl = ''): ReferenceItem | null => {
+  const title = normalizeWhitespace(work.title?.[0] ?? '')
+  if (!title) return null
+
+  return {
+    authors: work.author?.map(crossrefPersonToPerson).filter((person) => getPersonDisplayName(person)) ?? [],
+    containerTitle: normalizeWhitespace(work['container-title']?.[0] ?? ''),
+    doi: normalizeWhitespace(work.DOI ?? ''),
+    id: getReferenceKey('manual', work.DOI ?? fallbackUrl, title, 0),
+    itemType: normalizeWhitespace(work.type ?? 'reference'),
+    publisher: normalizeWhitespace(work.publisher ?? ''),
+    source: 'manual',
+    title,
+    url: normalizeWhitespace(work.URL ?? fallbackUrl),
+    year: getYearFromValue(String(work.issued?.['date-parts']?.[0]?.[0] ?? '')),
+  }
 }
