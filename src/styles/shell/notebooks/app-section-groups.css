@@ -1,0 +1,195 @@
+.section-list {
+  border-top: 1px solid #dfe1e7;
+  display: grid;
+  gap: 6px;
+  padding: 8px 6px 8px;
+}
+
+.section-group {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid #dde6ef;
+  border-radius: 16px;
+  display: grid;
+  gap: 2px;
+  padding: 6px 6px 5px;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.section-group.drag-target:hover {
+  background: #f4f7fc;
+  border-color: #c9d5e4;
+}
+
+.drag-active .section-group.drag-target {
+  border-style: dashed;
+}
+
+.section-group-header,
+.section-group-actions,
+.section-item-row {
+  align-items: center;
+  display: flex;
+}
+
+.section-group-header {
+  gap: 4px;
+  padding: 0 2px;
+}
+
+.section-group-toggle,
+.section-group-button,
+.section-group-actions button,
+.section-rename-button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.section-group-toggle {
+  align-items: center;
+  border-radius: 2px;
+  color: #697384;
+  display: inline-flex;
+  flex: 0 0 20px;
+  height: 22px;
+  justify-content: center;
+  transition: background 140ms ease, color 140ms ease;
+  width: 20px;
+}
+
+.section-group-toggle:hover {
+  background: rgba(113, 129, 153, 0.1);
+  color: #425062;
+}
+
+.section-group-toggle svg {
+  transition: transform 140ms ease;
+}
+
+.section-group-toggle.collapsed svg {
+  transform: rotate(-90deg);
+}
+
+.section-group-button {
+  align-items: center;
+  border-radius: 10px;
+  color: #37414f;
+  display: inline-flex;
+  flex: 1;
+  font-size: 0.8rem;
+  font-weight: 700;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 6px;
+  text-align: left;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.section-group-button:hover {
+  background: rgba(113, 129, 153, 0.08);
+}
+
+.section-group-button.active {
+  background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    0 8px 18px rgba(47, 111, 237, 0.08);
+  color: var(--text-strong);
+}
+
+.notebook-item.dragging,
+.section-group-button.dragging,
+.section-item.dragging,
+.page-card.dragging {
+  opacity: 0.58;
+  transform: scale(0.985);
+}
+
+.section-group-actions {
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(4px);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.section-group-actions button,
+.section-rename-button {
+  align-items: center;
+  border-radius: 2px;
+  color: #697384;
+  display: inline-flex;
+  height: 22px;
+  justify-content: center;
+  width: 22px;
+}
+
+.section-group-actions button:hover,
+.section-rename-button:hover {
+  background: rgba(113, 129, 153, 0.1);
+}
+
+.section-group-actions button.danger,
+.section-rename-button.danger,
+.notebook-action-button.danger,
+.pages-actions button.danger {
+  color: #9e3840;
+}
+
+.section-group-actions button:disabled,
+.section-rename-button:disabled,
+.notebook-action-button:disabled,
+.pages-actions button:disabled {
+  color: #a1acbb;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.section-group-actions button:disabled:hover,
+.section-rename-button:disabled:hover,
+.notebook-action-button:disabled:hover,
+.pages-actions button:disabled:hover {
+  background: transparent;
+}
+
+.section-group-sections {
+  display: grid;
+  gap: 2px;
+}
+
+.section-group.collapsed .section-group-sections {
+  display: none;
+}
+
+.section-group.drop-inside {
+  background: linear-gradient(180deg, rgba(246, 250, 255, 0.98) 0%, rgba(239, 246, 255, 0.98) 100%);
+  border-color: #9ab8da;
+  box-shadow:
+    0 0 0 2px rgba(108, 154, 214, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.section-item-row {
+  gap: 4px;
+}
+
+.section-item-row .section-rename-button {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(4px);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.notebook-row:hover .notebook-actions,
+.notebook-row:focus-within .notebook-actions,
+.section-group-header:hover .section-group-actions,
+.section-group-header:focus-within .section-group-actions,
+.section-item-row:hover .section-rename-button,
+.section-item-row:focus-within .section-rename-button {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+

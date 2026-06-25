@@ -1,0 +1,167 @@
+.history-pane-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px 14px 14px;
+}
+
+.history-pane-summary,
+.history-pane-preview {
+  background: #fff;
+  border: 1px solid #e8e2e7;
+  border-radius: 10px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.history-pane-summary strong,
+.history-pane-preview strong,
+.history-pane-entry strong {
+  color: #272427;
+}
+
+.history-pane-summary span,
+.history-pane-preview span,
+.history-pane-preview p,
+.history-pane-entry span,
+.history-pane-entry p,
+.history-pane-entry-title {
+  color: #6f6770;
+  font-size: 0.73rem;
+}
+
+.history-pane-preview p,
+.history-pane-entry p {
+  line-height: 1.45;
+  margin: 0;
+}
+
+.history-pane-preview-head,
+.history-pane-entry-head {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.history-pane-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.history-pane-actions button,
+.history-pane-entry {
+  background: #fff;
+  border: 1px solid #ddd6dc;
+  border-radius: 8px;
+  color: #554d56;
+  cursor: pointer;
+  font: inherit;
+}
+
+.history-pane-actions button {
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+.history-pane-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.history-pane-list {
+  display: grid;
+  gap: 10px;
+  max-height: 340px;
+  overflow: auto;
+}
+
+.history-pane-entry {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  text-align: left;
+}
+
+.history-pane-entry.active {
+  background: #f2ebf6;
+  border-color: #d5c6df;
+}
+
+.history-pane-entry-title {
+  font-weight: 700;
+}
+
+.review-pane-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px 14px 14px;
+}
+
+.review-pane-field {
+  display: grid;
+  gap: 6px;
+}
+
+.review-pane-field span {
+  color: #6f6770;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.review-pane-field input,
+.review-pane-field textarea {
+  background: #fff;
+  border: 1px solid #ddd6dc;
+  border-radius: 8px;
+  color: #554d56;
+  font: inherit;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.review-pane-field textarea {
+  line-height: 1.35;
+  resize: vertical;
+}
+
+.review-pane-summary {
+  background: #fff;
+  border: 1px solid #e8e2e7;
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+}
+
+.review-pane-summary strong {
+  color: #272427;
+  font-size: 1rem;
+}
+
+.review-pane-summary span {
+  color: #6f6770;
+  font-size: 0.72rem;
+}
+
+.review-pane-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.review-pane-actions button {
+  background: #fff;
+  border: 1px solid #ddd6dc;
+  border-radius: 8px;
+  color: #554d56;
+  cursor: pointer;
+  font: inherit;
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+.review-pane-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+

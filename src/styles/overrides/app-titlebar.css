@@ -1,0 +1,147 @@
+/* Final OneNote reference pass */
+
+.desktop-scene {
+  background: #ece8ec;
+}
+
+.titlebar,
+.tab-row {
+  background: linear-gradient(180deg, #1683d1 0%, #0e6fb9 100%);
+  border-bottom: 0;
+}
+
+.titlebar {
+  color: #fff;
+  gap: 16px;
+  grid-template-columns: auto minmax(340px, 1fr) auto;
+  min-height: 30px;
+  padding: 0 10px 0 6px;
+  position: relative;
+  z-index: 30;
+}
+
+.titlebar-left,
+.titlebar-brand,
+.titlebar-workspace,
+.titlebar-right,
+.copilot-pane-toolbar,
+.copilot-compose-actions,
+.note-toolbar-inline {
+  align-items: center;
+  display: flex;
+}
+
+.titlebar-left,
+.titlebar-workspace,
+.titlebar-right {
+  gap: 8px;
+}
+
+.titlebar-brand {
+  gap: 4px;
+}
+
+.app-badge {
+  background: transparent;
+  box-shadow: none;
+  height: 16px;
+  width: 16px;
+}
+
+.quick-action {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.quick-action:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.quick-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.window-title,
+.search-scope-picker {
+  display: none;
+}
+
+.titlebar-workspace {
+  color: #fff;
+  font-size: 0.73rem;
+  min-width: 0;
+}
+
+.workspace-name,
+.workspace-pill,
+.workspace-app {
+  white-space: nowrap;
+}
+
+.workspace-pill {
+  color: #d7efff;
+}
+
+.workspace-dot {
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  display: inline-block;
+  flex: 0 0 4px;
+  height: 4px;
+  width: 4px;
+}
+
+.titlebar-search {
+  background: #eef7fd;
+  border: 1px solid rgba(9, 84, 135, 0.45);
+  border-radius: 2px;
+  box-shadow: none;
+  height: 26px;
+  max-width: 490px;
+  overflow: visible;
+  padding: 0 10px;
+  position: relative;
+  z-index: 40;
+}
+
+.search-icon {
+  color: #507694;
+}
+
+.titlebar-search input {
+  color: #214865;
+  font-size: 0.76rem;
+}
+
+.titlebar-search input::placeholder {
+  color: #6c88a0;
+}
+
+.titlebar-chip,
+.titlebar-share {
+  background: #eef7fd;
+  border: 1px solid rgba(9, 84, 135, 0.35);
+  border-radius: 2px;
+  color: #1e405c;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.68rem;
+  height: 20px;
+  padding: 0 7px;
+}
+
+.titlebar-share {
+  font-weight: 600;
+  padding: 0 8px;
+}
+
+.titlebar-chip:hover,
+.titlebar-share:hover {
+  background: #ffffff;
+}
+
+.profile-chip {
+  background: #d6b68e;
+  color: #fff;
+}

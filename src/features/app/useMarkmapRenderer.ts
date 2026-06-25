@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from 'react'
 import { decodeMarkmapMarkdown, getMarkmapTitle } from './markmapFeature'
-import { renderMarkmapSvg, type RenderedMarkmap } from './markmapRenderer'
+import type { RenderedMarkmap } from './markmapRenderer'
 
 export const useMarkmapRenderer = (
   editorRef: RefObject<HTMLDivElement | null>,
@@ -15,7 +15,10 @@ export const useMarkmapRenderer = (
     let frameId = 0
     const markmaps: RenderedMarkmap[] = []
 
-    const renderCards = () => {
+    const renderCards = async () => {
+      const { renderMarkmapSvg } = await import('./markmapRenderer')
+      if (isDisposed) return
+
       const cards = Array.from(editor.querySelectorAll<HTMLElement>('.markmap-card[data-markmap-markdown]'))
 
       cards.forEach((card) => {
@@ -50,7 +53,9 @@ export const useMarkmapRenderer = (
       })
     }
 
-    frameId = window.requestAnimationFrame(renderCards)
+    frameId = window.requestAnimationFrame(() => {
+      void renderCards()
+    })
 
     return () => {
       isDisposed = true

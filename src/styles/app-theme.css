@@ -1,0 +1,152 @@
+/* =====================================================================
+   OnePlace — "Ink & Porcelain" design tokens (single source of truth)
+   Loaded last; owns the palette, type, radii, shadows and base element
+   defaults. Legacy variable names are remapped here so every existing
+   rule that consumes them picks up the new identity automatically.
+   ===================================================================== */
+
+:root {
+  /* Type roles */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-ui: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Spline Sans Mono", "Cascadia Mono", Consolas, monospace;
+
+  /* Porcelain & desk surfaces — a deliberate tonal ramp:
+     desk (deepest) → chrome/rail → pages → paper (lightest, the sheet) */
+  --paper: #fcfcfb;
+  --desk: #e1dfd7;
+  --chrome: #ebe8e1;
+  --surface-raised: #fbfaf7;
+  --surface-sunk: #f4f2ec;
+  --surface-tint: #f0eee8;
+
+  /* Dried-ink text */
+  --ink: #1c1b22;
+  --ink-soft: #57565f;
+  --ink-faint: #8b8a94;
+  --ink-ghost: #a8a79c;
+
+  /* Iris — the fountain-pen accent */
+  --iris: #4b3fa7;
+  --iris-spine: #5b4fc4;
+  --iris-strong: #3a2f8f;
+  --iris-tint: #efeef9;
+  --iris-tint-strong: #e6e4f6;
+  --iris-edge: #d7d3f0;
+
+  /* Index-tab hues (curated, archival) */
+  --hue-teal: #2e8c82;
+  --hue-amber: #c98a2e;
+  --hue-slate: #4a6b8a;
+  --hue-rose: #c25a6e;
+  --hue-moss: #6e8b4a;
+  --hue-teal-tint: #e6f2ef;
+  --hue-amber-tint: #f7efe1;
+
+  /* Borders */
+  --line-soft: #dcd9d1;
+  --line: #d2cfc6;
+  --line-strong: #c4c1b7;
+
+  /* Radii */
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-pill: 999px;
+
+  /* Shadows — restrained, paper-on-desk */
+  --sh-sm: 0 1px 2px rgba(40, 38, 55, 0.05);
+  --sh-sheet: 0 1px 3px rgba(40, 38, 55, 0.05), 0 10px 30px rgba(40, 38, 55, 0.05);
+  --sh-pop: 0 10px 28px rgba(28, 27, 34, 0.14), 0 2px 6px rgba(28, 27, 34, 0.08);
+
+  /* Motion — a small, named vocabulary so every transition speaks the same
+     language. --ease stays a duration+curve shorthand (consumed as
+     `transition: prop var(--ease)`); the rest are split tokens. */
+  --ease: 160ms cubic-bezier(0.2, 0.6, 0.2, 1);
+  --ease-out: cubic-bezier(0.2, 0.6, 0.2, 1);     /* the house curve, extracted */
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1); /* a hint of overshoot for entrances */
+  --dur-press: 80ms;   /* tactile click feedback */
+  --dur-hover: 130ms;  /* hover state changes */
+  --dur-base: 180ms;   /* general state transitions */
+  --dur-enter: 240ms;  /* surfaces arriving on screen */
+}
+
+/* Remap the legacy token names the existing stylesheets consume, so the
+   whole app shifts to Ink & Porcelain without touching every rule. */
+.desktop-scene {
+  --chrome-top: var(--chrome);
+  --chrome-bottom: var(--chrome);
+  --surface-0: var(--desk);
+  --surface-1: #ffffff;
+  --surface-2: var(--surface-raised);
+  --surface-3: var(--surface-sunk);
+  --surface-4: var(--surface-tint);
+  --border-soft: var(--line-soft);
+  --border-strong: var(--line);
+  --text-strong: var(--ink);
+  --text: var(--ink-soft);
+  --text-muted: var(--ink-faint);
+  --accent: var(--iris);
+  --accent-soft: var(--iris-tint);
+  --accent-strong: var(--iris-strong);
+  --shadow-sm: var(--sh-sm);
+  --shadow-md: var(--sh-sheet);
+  --shadow-lg: var(--sh-sheet);
+
+  /* Active notebook hue — overridden per-notebook where data allows */
+  --active-hue: var(--iris-spine);
+
+  background: var(--desk);
+  font-family: var(--font-ui);
+  color: var(--ink);
+}
+
+/* Base element defaults */
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-ui);
+}
+
+.desktop-scene ::selection {
+  background: var(--iris-tint-strong);
+  color: var(--ink);
+}
+
+/* One calm, consistent focus ring everywhere */
+.desktop-scene :focus-visible {
+  outline: 2px solid var(--iris);
+  outline-offset: 1px;
+  border-radius: var(--r-sm);
+}
+
+/* Quiet, paper-toned scrollbars */
+.desktop-scene *::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+.desktop-scene *::-webkit-scrollbar-thumb {
+  background: rgba(120, 116, 130, 0.32);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: var(--r-pill);
+}
+.desktop-scene *::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 116, 130, 0.5);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+}
+.desktop-scene *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktop-scene *,
+  .desktop-scene *::before,
+  .desktop-scene *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

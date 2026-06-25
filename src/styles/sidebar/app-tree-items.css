@@ -1,0 +1,116 @@
+.notebook-list,
+.section-list,
+.page-cards {
+  padding: 6px 5px;
+}
+
+.notebook-tree {
+  display: grid;
+  gap: 10px;
+  overflow: auto;
+  padding: 8px 6px 12px;
+}
+
+.notebook-tree-group {
+  display: grid;
+  gap: 2px;
+}
+
+.notebook-list,
+.section-list {
+  display: grid;
+  gap: 2px;
+}
+
+.section-list {
+  border-top: 0;
+}
+
+.notebook-row,
+.section-item-row,
+.page-row {
+  gap: 0;
+}
+
+.notebook-item,
+.section-group,
+.section-group-button,
+.section-item,
+.page-card {
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  box-shadow: none;
+}
+
+.notebook-item,
+.section-group-button,
+.section-item,
+.page-card {
+  min-height: 24px;
+  padding: 4px 8px;
+}
+
+.notebook-item,
+.notebook-section-link,
+.notebook-new-section,
+.notebook-new-group,
+.section-group-button,
+.section-item {
+  color: #3e3940;
+  font-size: 0.73rem;
+  font-weight: 500;
+}
+
+.notebook-quick-actions {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.notebook-sections {
+  display: grid;
+  gap: 2px;
+  padding-left: 14px;
+}
+
+.notebook-section-link,
+.notebook-new-section,
+.notebook-new-group {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  color: #4a444b;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 6px;
+  min-height: 22px;
+  padding: 3px 8px;
+  text-align: left;
+}
+
+.notebook-new-section,
+.notebook-new-group {
+  color: #7f5ba7;
+  flex: 1 1 0;
+}
+
+.empty-section-group-action {
+  align-items: center;
+  background: transparent;
+  border: 1px dashed rgba(127, 91, 167, 0.35);
+  border-radius: 6px;
+  color: #7f5ba7;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: 0.72rem;
+  justify-content: flex-start;
+  margin: 2px 0 4px 26px;
+  min-height: 28px;
+  padding: 4px 8px;
+  text-align: left;
+}
+

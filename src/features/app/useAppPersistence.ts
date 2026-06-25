@@ -1,4 +1,4 @@
-import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
+import { useCallback, useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
 import {
   checkForDesktopUpdate,
   downloadAndInstallDesktopUpdate,
@@ -91,7 +91,54 @@ export const useAppPersistence = ({
   saveTimerRef,
   trackedRecentPageRef,
 }: UseAppPersistenceArgs) => {
+  const appStateRef = useRef(appState)
   const saveAttemptRef = useRef(0)
+
+  useEffect(() => {
+    appStateRef.current = appState
+  }, [appState])
+
+  const flushPendingSave = useCallback(
+    async ({ silent = false, throwOnError = false } = {}) => {
+      if (!isLoaded) return
+
+      const payload = JSON.stringify(appStateRef.current)
+      if (payload === lastSavedPayloadRef.current) {
+        if (!silent) setIsDirty(false)
+        return
+      }
+
+      if (saveTimerRef.current) {
+        window.clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = null
+      }
+
+      const saveAttempt = saveAttemptRef.current + 1
+      saveAttemptRef.current = saveAttempt
+
+      if (!silent) {
+        setIsDirty(true)
+        setSaveLabel('Saving...')
+      }
+
+      try {
+        const result = await saveDesktopData(payload)
+        if (saveAttempt !== saveAttemptRef.current) return
+        lastSavedPayloadRef.current = payload
+        if (!silent) {
+          setIsDirty(false)
+          setSaveLabel(`Saved ${formatDate(result.savedAt)}`)
+        }
+      } catch (error) {
+        if (saveAttempt === saveAttemptRef.current && !silent) {
+          setIsDirty(true)
+          setSaveLabel(`Save failed: ${getErrorMessage(error)}`)
+        }
+        if (throwOnError) throw error
+      }
+    },
+    [isLoaded, lastSavedPayloadRef, saveTimerRef, setIsDirty, setSaveLabel],
+  )
 
   useEffect(() => {
     const load = async () => {
@@ -114,10 +161,11 @@ export const useAppPersistence = ({
         trackedRecentPageRef.current = nextState.selectedPageId
         setIsDirty(false)
         setSaveLabel('All changes saved')
-      } catch {
-        setSaveLabel('Loaded sample notebook')
-      } finally {
         setIsLoaded(true)
+      } catch (error) {
+        setIsDirty(true)
+        setIsLoaded(false)
+        setSaveLabel(`Load failed: ${getErrorMessage(error)}`)
       }
     }
 
@@ -148,20 +196,8 @@ export const useAppPersistence = ({
 
     setIsDirty(true)
     setSaveLabel('Saving...')
-    const saveAttempt = saveAttemptRef.current + 1
-    saveAttemptRef.current = saveAttempt
-
     saveTimerRef.current = window.setTimeout(() => {
-      void saveDesktopData(payload).then((result) => {
-        if (saveAttempt !== saveAttemptRef.current) return
-        lastSavedPayloadRef.current = payload
-        setIsDirty(false)
-        setSaveLabel(`Saved ${formatDate(result.savedAt)}`)
-      }).catch((error) => {
-        if (saveAttempt !== saveAttemptRef.current) return
-        setIsDirty(true)
-        setSaveLabel(`Save failed: ${getErrorMessage(error)}`)
-      })
+      void flushPendingSave()
     }, 250)
 
     return () => {
@@ -169,7 +205,23 @@ export const useAppPersistence = ({
         window.clearTimeout(saveTimerRef.current)
       }
     }
-  }, [appState, isLoaded, lastSavedPayloadRef, saveTimerRef, setIsDirty, setSaveLabel])
+  }, [appState, flushPendingSave, isLoaded, lastSavedPayloadRef, saveTimerRef, setIsDirty, setSaveLabel])
+
+  useEffect(() => {
+    if (!isLoaded) return
+
+    const flushBeforeExit = () => {
+      void flushPendingSave({ silent: true })
+    }
+
+    window.addEventListener('beforeunload', flushBeforeExit)
+    window.addEventListener('pagehide', flushBeforeExit)
+
+    return () => {
+      window.removeEventListener('beforeunload', flushBeforeExit)
+      window.removeEventListener('pagehide', flushBeforeExit)
+    }
+  }, [flushPendingSave, isLoaded])
 
   useEffect(() => {
     if (!isLoaded) return
@@ -191,9 +243,10 @@ export const useAppPersistence = ({
           return
         }
 
+        await flushPendingSave({ throwOnError: true })
         await downloadAndInstallUpdate(update.version, setSaveLabel, () => cancelled)
-      } catch {
-        if (!cancelled) setSaveLabel('Update check failed')
+      } catch (error) {
+        if (!cancelled) setSaveLabel(`Update failed: ${getErrorMessage(error)}`)
       } finally {
         isCheckingForUpdatesRef.current = false
         if (!cancelled) setIsCheckingForUpdates(false)
@@ -205,7 +258,7 @@ export const useAppPersistence = ({
     return () => {
       cancelled = true
     }
-  }, [isCheckingForUpdatesRef, isLoaded, setIsCheckingForUpdates, setSaveLabel])
+  }, [flushPendingSave, isCheckingForUpdatesRef, isLoaded, setIsCheckingForUpdates, setSaveLabel])
 
   const runUpdateCheck = async (mode: 'automatic' | 'manual' = 'manual') => {
     if (isCheckingForUpdatesRef.current) return
@@ -226,9 +279,10 @@ export const useAppPersistence = ({
         return
       }
 
+      await flushPendingSave({ throwOnError: true })
       await downloadAndInstallUpdate(update.version, setSaveLabel)
-    } catch {
-      setSaveLabel('Update check failed')
+    } catch (error) {
+      setSaveLabel(`Update failed: ${getErrorMessage(error)}`)
     } finally {
       isCheckingForUpdatesRef.current = false
       setIsCheckingForUpdates(false)

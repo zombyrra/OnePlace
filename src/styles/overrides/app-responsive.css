@@ -1,0 +1,38 @@
+@media (max-width: 1200px) {
+  .titlebar-workspace {
+    display: none;
+  }
+
+  .workspace {
+    grid-template-columns: 120px 152px minmax(0, 1fr);
+  }
+
+  .note-pane {
+    grid-template-columns: minmax(0, 1fr) 240px;
+  }
+
+  .note-pane.side-pane-closed {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  body {
+    min-width: 0;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .note-pane {
+    grid-template-columns: 1fr;
+  }
+
+  .side-pane-stack,
+  .copilot-pane {
+    border-left: 0;
+    border-top: 1px solid #ddd8dd;
+  }
+}
+

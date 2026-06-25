@@ -1,0 +1,53 @@
+.page-cards {
+  gap: 2px;
+}
+
+.page-card {
+  align-items: flex-start;
+  min-height: 22px;
+  padding: 4px 8px;
+}
+
+.page-card-body {
+  display: block;
+}
+
+.page-card strong {
+  color: #3e3940;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.notebook-section-link .section-color {
+  border-radius: 999px;
+  display: inline-block;
+  height: 10px;
+  width: 3px;
+}
+
+.subpage-card strong {
+  padding-left: 10px;
+}
+
+@media (max-width: 1280px) {
+  .workspace {
+    gap: 0;
+    grid-template-columns: 140px 172px 1fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .workspace {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .notebooks-pane,
+  .pages-pane,
+  .note-pane {
+    border: 1px solid #ddd8dd;
+  }
+}
+
+

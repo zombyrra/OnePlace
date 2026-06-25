@@ -8,7 +8,7 @@ const tauriConfigPath = path.join(repoRoot, 'src-tauri', 'tauri.conf.json')
 const tauriConfig = JSON.parse(readFileSync(tauriConfigPath, 'utf8'))
 const version = tauriConfig.version
 const tag = `v${version}`
-const repo = process.env.GITHUB_REPOSITORY || 'ShadowKernal/OnePlace'
+const repo = process.env.GITHUB_REPOSITORY || 'kernal201/OnePlace'
 const bundleRoot = path.join(repoRoot, 'src-tauri', 'target', 'release', 'bundle')
 const changelogPath = path.join(repoRoot, 'CHANGELOG.md')
 

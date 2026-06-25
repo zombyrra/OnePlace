@@ -1,0 +1,33 @@
+.task-pane-toolbar,
+.copilot-pane-toolbar {
+  border-bottom: 1px solid #e5dfe4;
+  color: #8c7f8f;
+  gap: 12px;
+  height: 40px;
+  padding: 0 14px;
+}
+
+.task-pane-toolbar button,
+.copilot-pane-toolbar button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.copilot-pane-spacer {
+  flex: 1;
+}
+
+.task-pane-body,
+.copilot-pane-body {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 56px 18px 18px;
+  text-align: left;
+}
+

@@ -6,6 +6,11 @@ import path from 'node:path'
 const defaultKeyPath = path.join(homedir(), '.tauri', 'oneplace.key')
 const signingKeyPath = process.env.TAURI_SIGNING_PRIVATE_KEY_PATH || defaultKeyPath
 const signingKeyFromEnv = process.env.TAURI_SIGNING_PRIVATE_KEY?.trim()
+const releaseConfig = JSON.stringify({
+  bundle: {
+    createUpdaterArtifacts: 'v1Compatible',
+  },
+})
 
 if (!signingKeyFromEnv && !existsSync(signingKeyPath)) {
   console.error(`Signing key not found at ${signingKeyPath}`)
@@ -19,8 +24,8 @@ const signingKey = signingKeyFromEnv || readFileSync(signingKeyPath, 'utf8')
 
 const command =
   process.platform === 'win32'
-    ? ['cmd.exe', ['/d', '/s', '/c', 'npx tauri build']]
-    : ['npx', ['tauri', 'build']]
+    ? ['npx.cmd', ['tauri', 'build', '--config', releaseConfig]]
+    : ['npx', ['tauri', 'build', '--config', releaseConfig]]
 
 const result = spawnSync(command[0], command[1], {
   cwd: process.cwd(),

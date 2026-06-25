@@ -1,0 +1,56 @@
+.ribbon-home {
+  background: #f3f0f1;
+  border-bottom: 1px solid #d7d1d5;
+  flex-wrap: wrap;
+  min-height: 74px;
+  overflow-x: hidden;
+  overflow-y: visible;
+  padding: 0 6px;
+}
+
+.ribbon-home .ribbon-cluster {
+  min-width: 0;
+}
+
+.home-basic-text,
+.home-styles,
+.home-tags,
+.home-quick-actions {
+  min-width: 0;
+}
+
+.home-quick-actions {
+  flex-wrap: wrap;
+}
+
+.home-vertical-action {
+  min-width: 56px;
+  padding: 0 8px;
+}
+
+.picker-menu-floating,
+.style-dropdown-menu,
+.search-results-floating {
+  z-index: 2000;
+}
+
+.picker-menu-floating {
+  max-height: min(420px, calc(100vh - 24px));
+  overflow-y: auto;
+  position: fixed;
+}
+
+.search-results {
+  display: grid;
+  gap: 0;
+  max-height: 420px;
+  width: min(520px, calc(100vw - 40px));
+}
+
+.search-results-floating {
+  left: 0;
+  max-height: min(420px, calc(100vh - 120px));
+  right: auto;
+  top: calc(100% + 4px);
+}
+

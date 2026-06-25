@@ -1,0 +1,160 @@
+.markmap-pane-body {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+  padding: 16px 14px 14px;
+}
+
+.markmap-pane-status {
+  background: #fff;
+  border: 1px solid #d8e3ec;
+  border-radius: 10px;
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+}
+
+.markmap-pane-status strong {
+  color: #272427;
+  font-size: 0.86rem;
+}
+
+.markmap-pane-status span {
+  color: #61717d;
+  font-size: 0.72rem;
+}
+
+.markmap-source {
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  min-height: 138px;
+  resize: vertical;
+}
+
+.markmap-tree-editor {
+  background: #fff;
+  border: 1px solid #e1e8ee;
+  border-radius: 10px;
+  max-height: 320px;
+  min-height: 190px;
+  overflow: auto;
+  padding: 14px 12px 14px 14px;
+}
+
+.markmap-tree-list,
+.markmap-tree-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.markmap-tree-list {
+  display: grid;
+  gap: 10px;
+}
+
+.markmap-tree-children {
+  border-left: 1px solid #cfdde6;
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0 18px;
+  padding-left: 16px;
+}
+
+.markmap-tree-item {
+  min-width: 0;
+  position: relative;
+}
+
+.markmap-tree-children > .markmap-tree-item::before {
+  background: #cfdde6;
+  content: '';
+  height: 1px;
+  left: -16px;
+  position: absolute;
+  top: 17px;
+  width: 14px;
+}
+
+.markmap-tree-node {
+  align-items: center;
+  background: #f8fbfd;
+  border: 1px solid #dce7ef;
+  border-radius: 999px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 34px;
+  padding: 4px 5px 4px 12px;
+}
+
+.markmap-tree-node.root {
+  background: #edf6f9;
+  border-color: #b9d8e3;
+  box-shadow: inset 0 0 0 1px rgba(78, 125, 150, 0.08);
+}
+
+.markmap-tree-node input {
+  background: transparent;
+  border: 0;
+  color: #26343b;
+  font: inherit;
+  font-size: 0.78rem;
+  min-width: 0;
+  outline: 0;
+  padding: 3px 0;
+}
+
+.markmap-tree-node input:disabled {
+  opacity: 0.72;
+}
+
+.markmap-node-controls {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 3px;
+}
+
+.markmap-node-controls button {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d4e0e7;
+  border-radius: 999px;
+  color: #4e6673;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.7rem;
+  height: 24px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 24px;
+}
+
+.markmap-node-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.markmap-pane-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.markmap-pane-actions button {
+  background: #fff;
+  border: 1px solid #d7dedf;
+  border-radius: 999px;
+  color: #44535b;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  min-height: 28px;
+  padding: 0 10px;
+}
+
+.markmap-pane-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+

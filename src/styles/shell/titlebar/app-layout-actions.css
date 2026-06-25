@@ -1,0 +1,97 @@
+.titlebar,
+.tab-row {
+  background: rgba(247, 249, 252, 0.9);
+}
+
+.titlebar {
+  align-items: center;
+  border-bottom: 1px solid rgba(196, 208, 222, 0.85);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto 1fr auto;
+  min-height: 60px;
+  padding: 0 18px;
+}
+
+.titlebar-left,
+.titlebar-right,
+.tab-row,
+.ribbon-row-compact,
+.pages-header,
+.pages-actions,
+.pane-heading,
+.notebook-item,
+.section-item,
+.page-card,
+.page-card-body,
+.pages-footer,
+.note-date-row,
+.status-strip {
+  align-items: center;
+  display: flex;
+}
+
+.titlebar-left,
+.titlebar-right {
+  gap: 8px;
+}
+
+.app-badge {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 7px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  display: grid;
+  height: 24px;
+  overflow: hidden;
+  place-items: center;
+  width: 24px;
+}
+
+.app-badge-image {
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.quick-action,
+.tab-button,
+.ribbon-cluster button,
+.notebook-item,
+.section-item,
+.page-card,
+.settings-button,
+.add-notebook-link {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.quick-action {
+  align-items: center;
+  border-radius: 8px;
+  color: #6b7789;
+  display: inline-flex;
+  font-size: 0.8rem;
+  justify-content: center;
+  transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
+  padding: 0;
+}
+
+.quick-action.small {
+  width: 16px;
+}
+
+.quick-action.icon-only {
+  height: 28px;
+  width: 28px;
+}
+
+.quick-action:hover {
+  background: rgba(47, 111, 237, 0.08);
+  color: var(--text-strong);
+}
+

@@ -1,0 +1,69 @@
+.ribbon-home {
+  align-items: stretch;
+  background: #f3f0f1;
+  border-bottom: 1px solid #d7d1d5;
+  gap: 0;
+  min-height: 72px;
+  overflow-x: auto;
+  padding: 0 8px;
+}
+
+.ribbon-home .ribbon-cluster {
+  background: transparent;
+  border: 0;
+  border-right: 1px solid #d8d2d6;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 72px;
+  padding: 5px 10px 14px;
+}
+
+.ribbon-home .ribbon-cluster:last-child {
+  border-right: 0;
+}
+
+.ribbon-home .ribbon-big {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  min-height: 48px;
+  padding: 0;
+}
+
+.ribbon-home .ribbon-big button {
+  gap: 2px;
+}
+
+.ribbon-home .ribbon-stack button,
+.ribbon-home .ribbon-row-compact button,
+.ribbon-home .picker {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  min-height: 24px;
+  padding: 0 4px;
+}
+
+.ribbon-home .ribbon-stack button:hover,
+.ribbon-home .ribbon-row-compact button:hover,
+.ribbon-home .picker:hover {
+  background: #ebe7ea;
+  border-color: transparent;
+}
+
+.home-basic-text {
+  gap: 3px;
+  min-width: 210px;
+}
+
+.home-basic-text .ribbon-row-compact {
+  gap: 2px;
+}
+
+.home-basic-text .picker {
+  background: #ffffff;
+  border: 1px solid #cfc8cd;
+  border-radius: 2px;
+  min-height: 26px;
+}
+

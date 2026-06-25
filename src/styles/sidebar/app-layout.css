@@ -1,0 +1,100 @@
+/* Sidebar simplification to match the provided reference more closely */
+
+.workspace {
+  background: #efedf0;
+  gap: 0;
+  grid-template-columns: 154px 186px 1fr;
+  padding: 0;
+}
+
+.notebooks-pane,
+.pages-pane {
+  backdrop-filter: none;
+  background: #f4f1f4;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.notebooks-pane {
+  border-right: 1px solid #ddd8dd;
+  padding-top: 0;
+}
+
+.notebooks-pane > .pane-heading {
+  display: none;
+}
+
+.pages-pane {
+  background: #f7f6f7;
+  border-right: 1px solid #ddd8dd;
+}
+
+.notebook-spotlight,
+.pane-footer,
+.pane-count,
+.pane-subheading,
+.recent-pages-panel,
+.add-notebook-link,
+.pages-actions-secondary,
+.section-item-row .section-rename-button,
+.notebook-actions {
+  display: none;
+}
+
+.pane-heading,
+.pages-header {
+  background: #f2eff2;
+  border-bottom: 1px solid #ddd8dd;
+  gap: 8px;
+  min-height: 38px;
+  padding: 6px 8px;
+}
+
+.pane-heading-copy,
+.pages-heading-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.heading-icon,
+.pane-kicker {
+  display: none;
+}
+
+.pane-heading strong,
+.pages-header h2 {
+  color: #343136;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.pane-heading-action,
+.pages-actions-primary .pages-action-pill:not(.primary),
+.pages-context {
+  display: none;
+}
+
+.pages-actions {
+  margin-left: auto;
+}
+
+.pages-actions-primary {
+  width: auto;
+}
+
+.pages-actions-primary .pages-action-pill.primary {
+  background: #ffffff;
+  border: 1px solid #d5cfd4;
+  border-radius: 4px;
+  box-shadow: none;
+  color: #6b4aa0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  gap: 5px;
+  height: 26px;
+  padding: 0 8px;
+}
+

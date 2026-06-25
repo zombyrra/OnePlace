@@ -16,6 +16,7 @@ import {
   escapeAttribute,
   escapeHtml,
   formatElapsedTime,
+  isSafeDownloadDataUrl,
   sanitizePastedHtml,
 } from '../../app/appModel'
 import type { AppAsset, AudioInputDevice, InkStroke, Page, PageUpdate } from '../../app/appModel'
@@ -791,7 +792,7 @@ export const useMediaAndDrawing = ({
     const asset = assetId ? appState.meta.assets[assetId] : undefined
     const downloadUrl = assetCard.dataset.downloadUrl ?? asset?.dataUrl
     const fileName = assetCard.dataset.fileName ?? asset?.name ?? 'attachment'
-    if (downloadUrl) {
+    if (downloadUrl && isSafeDownloadDataUrl(downloadUrl)) {
       const anchor = document.createElement('a')
       anchor.href = downloadUrl
       anchor.download = fileName

@@ -1,0 +1,37 @@
+@media (max-width: 1280px) {
+  .workspace {
+    gap: 12px;
+    grid-template-columns: 260px 304px 1fr;
+  }
+
+  .ribbon-cluster.font {
+    min-width: 300px;
+  }
+
+  .ribbon-cluster.styles {
+    min-width: 360px;
+  }
+
+  .note-header,
+  .note-canvas-shell {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .notebooks-pane,
+  .pages-pane {
+    max-height: 320px;
+  }
+
+  .note-pane {
+    min-height: 60vh;
+  }
+}
+
+

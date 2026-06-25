@@ -1,0 +1,75 @@
+.markmap-preview-shell {
+  background: #fff;
+  border: 1px solid #e3e7eb;
+  border-radius: 10px;
+  min-height: 220px;
+  overflow: hidden;
+}
+
+.markmap-preview,
+.markmap-render {
+  height: 100%;
+  min-height: 220px;
+  width: 100%;
+}
+
+.markmap-preview svg,
+.markmap-render svg {
+  display: block;
+  height: 100%;
+  min-height: 220px;
+  width: 100%;
+}
+
+.markmap-empty {
+  align-items: center;
+  color: #6f6770;
+  display: flex;
+  font-size: 0.76rem;
+  justify-content: center;
+  min-height: 220px;
+}
+
+.markmap-card {
+  background: #fbfdff;
+  border: 1px solid #dbe5ec;
+  border-left: 4px solid #4e7d96;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.markmap-card-head {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.markmap-card-head strong {
+  color: #272427;
+  font-size: 0.88rem;
+}
+
+.markmap-card-head span {
+  color: #61717d;
+  font-size: 0.7rem;
+}
+
+.markmap-fallback pre {
+  background: #f5f8fa;
+  border: 1px solid #e2e8ee;
+  border-radius: 6px;
+  color: #44535b;
+  font-size: 0.72rem;
+  margin: 0;
+  max-height: 148px;
+  overflow: auto;
+  padding: 10px;
+}
+
+.markmap-card.markmap-card-rendered .markmap-fallback {
+  display: none;
+}
+

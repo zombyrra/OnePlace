@@ -1,0 +1,71 @@
+.note-thumbnail {
+  margin: 0;
+  width: 360px;
+}
+
+.thumbnail-ui {
+  border: 2px solid #dbdbdb;
+  border-radius: 2px;
+  height: 236px;
+  overflow: hidden;
+  position: relative;
+  width: 360px;
+}
+
+.thumbnail-sidebar {
+  background: #ece5f0;
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 74px;
+}
+
+.thumbnail-content {
+  left: 74px;
+  padding: 12px;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.thumbnail-top,
+.thumbnail-footer,
+.thumbnail-row span {
+  background: #ececec;
+  border-radius: 4px;
+  display: block;
+}
+
+.thumbnail-top {
+  height: 22px;
+  margin-bottom: 18px;
+  width: 74%;
+}
+
+.thumbnail-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.thumbnail-row span {
+  flex: 1;
+  height: 54px;
+}
+
+.thumbnail-row.wide span {
+  height: 72px;
+}
+
+.thumbnail-footer {
+  height: 26px;
+  margin-top: 18px;
+  width: 62%;
+}
+
+.note-thumbnail figcaption {
+  font-size: 0.98rem;
+  margin-top: 12px;
+}
+

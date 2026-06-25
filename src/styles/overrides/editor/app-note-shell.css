@@ -1,0 +1,88 @@
+.note-pane {
+  background: #ffffff;
+  border-radius: 0;
+  box-shadow: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  overflow: hidden;
+}
+
+.note-pane.side-pane-closed {
+  grid-template-columns: 1fr;
+}
+
+.note-document {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.note-header {
+  background: #fff;
+  border-bottom: 1px solid #e1dde1;
+  padding: 14px 28px 10px 22px;
+}
+
+.note-header-main {
+  display: block;
+}
+
+.note-location,
+.note-command-bar,
+.note-meta-strip,
+.note-summary-pills,
+.note-quick-actions {
+  display: none;
+}
+
+.note-title {
+  border-bottom: 1px solid #b8b0b4;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  max-width: 420px;
+  padding: 0 0 2px;
+}
+
+.note-date-row {
+  color: #7b787d;
+  font-size: 0.72rem;
+  gap: 24px;
+  margin-top: 4px;
+}
+
+.note-toolbar-inline {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.app-version-badge {
+  background: #f3eef7;
+  border: 1px solid #dad4e1;
+  border-radius: 999px;
+  color: #5f4d74;
+  display: inline-flex;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+  margin-right: 8px;
+  padding: 6px 10px;
+}
+
+.note-toolbar-inline button {
+  background: #fff;
+  border: 1px solid #dad4d8;
+  border-radius: 2px;
+  color: #5b5760;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  height: 24px;
+  padding: 0 8px;
+}
+

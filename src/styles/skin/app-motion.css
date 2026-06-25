@@ -1,0 +1,110 @@
+/* =====================================================================
+   Motion system — entrances & finish
+   All additive, loaded last. Every animation here is neutralized by the
+   prefers-reduced-motion kill-switch in app-theme.css (extended below to
+   also zero animation-delay so nothing flashes during a held delay).
+   ===================================================================== */
+
+/* — Floating surfaces: a quiet pop from their anchor —————————————————
+   Menus, dropdowns and search results mount on demand, so the animation
+   plays once each time they open. */
+@keyframes op-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.picker-menu,
+.picker-menu-floating,
+.style-dropdown-menu,
+.search-results,
+.context-menu {
+  animation: op-pop var(--dur-enter) var(--ease-out);
+  transform-origin: top;
+}
+
+/* — Side panes: slide in from the right edge ——————————————————————————
+   Panes toggle via the `hidden` attribute (SidePanes.tsx), so this rule
+   fires exactly once when a pane is shown and never while hidden. */
+@keyframes op-pane-in {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.side-pane-stack > aside:not([hidden]) {
+  animation: op-pane-in var(--dur-enter) var(--ease-out);
+}
+
+/* — Note / page-switch: a coordinated assembly ————————————————————————
+   .note-document is keyed by page id (NotePane.tsx) → it remounts on every
+   page switch, replaying these. The frame fades+rises as a unit; the canvas
+   content arrives a beat later; the active-hue crown inks in last. */
+.note-document {
+  animation: op-settle var(--dur-enter) var(--ease-out);
+}
+
+@keyframes op-arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.note-document .note-canvas-shell {
+  animation: op-arrive var(--dur-enter) var(--ease-out) backwards;
+  animation-delay: 60ms;
+}
+
+/* The colored index-tab crown inks in just after the page settles. The
+   `to` state is inherited from the base .note-header rule (active-hue). */
+@keyframes op-spine-ink {
+  from {
+    border-top-color: transparent;
+  }
+}
+
+.note-document .note-header {
+  animation: op-spine-ink var(--dur-base) var(--ease-out) backwards;
+  animation-delay: 90ms;
+}
+
+/* — Canvas warmth — a whisper of paper under soft light ————————————————
+   Lives on the surface (parent of .editor-canvas), so it sits beneath the
+   transparent canvas and never fights rule-lines mode, which paints the
+   child. Intentionally near-invisible: warmth, not a gradient. */
+.note-editor-surface {
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(150% 120% at 50% -12%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, var(--paper) 0%, var(--paper) 74%, var(--surface-tint) 100%);
+}
+
+/* — Scroll containment — stop scroll chaining between regions —————————— */
+.note-canvas-shell,
+.side-pane-stack,
+.pages-pane,
+.notebooks-pane {
+  overscroll-behavior: contain;
+}
+
+/* — Reduced motion — also drop held delays so nothing flashes —————————— */
+@media (prefers-reduced-motion: reduce) {
+  .desktop-scene *,
+  .desktop-scene *::before,
+  .desktop-scene *::after {
+    animation-delay: 0ms !important;
+  }
+}

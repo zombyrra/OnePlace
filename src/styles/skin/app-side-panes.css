@@ -1,0 +1,192 @@
+/* ---------- Side panes ---------- */
+
+.side-pane-stack {
+  background: var(--surface-sunk);
+  border-left: 1px solid var(--line);
+}
+
+.review-pane,
+.history-pane,
+.meeting-pane,
+.audio-pane,
+.markmap-pane,
+.references-pane,
+.template-pane,
+.tag-pane,
+.task-pane,
+.copilot-pane {
+  background: var(--surface-sunk);
+}
+
+.task-pane-toolbar,
+.copilot-pane-toolbar {
+  border-bottom-color: var(--line);
+  color: var(--ink-faint);
+}
+
+.template-pane-card.active,
+.history-pane-entry.active,
+.tag-pane-catalog button.active,
+.task-pane-filters button.active,
+.search-filter-chip.active {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+  color: var(--iris-strong);
+}
+
+.tag-pane-catalog button.active strong {
+  color: var(--iris-strong);
+}
+
+.task-pane-link {
+  color: var(--iris);
+}
+
+/* References pane — buttons */
+.references-pane-actions button,
+.reference-card-actions button,
+.references-file-button {
+  background: var(--paper);
+  border-color: var(--line);
+}
+
+.references-pane-actions button:hover:not(:disabled),
+.reference-card-actions button:hover:not(:disabled) {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+  color: var(--iris-strong);
+}
+
+/* Tag pane — buttons + catalog chips */
+.tag-pane-actions > button,
+.tag-pane-custom button,
+.tag-pane-catalog button {
+  background: var(--paper);
+  border-color: var(--line);
+  color: var(--ink-soft);
+}
+
+.tag-pane-catalog button strong {
+  color: var(--ink-ghost);
+}
+
+/* Task pane — filters + cards */
+.task-pane-filters button,
+.task-pane-card-row button,
+.task-pane-card-actions button {
+  background: var(--paper);
+  border-color: var(--line);
+  color: var(--ink-soft);
+}
+
+.task-pane-summary span,
+.task-pane-empty,
+.task-pane-card p,
+.task-pane-card-meta {
+  color: var(--ink-soft);
+}
+
+.task-pane-card {
+  background: var(--paper);
+  border-color: var(--line-soft);
+  border-radius: var(--r-md);
+}
+
+.task-pane-card.overdue {
+  border-color: rgba(201, 138, 46, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(201, 138, 46, 0.06);
+}
+
+/* History pane — card theming */
+.history-pane-summary,
+.history-pane-preview {
+  background: var(--paper);
+  border-color: var(--line-soft);
+  border-radius: var(--r-md);
+}
+
+.history-pane-summary strong,
+.history-pane-preview strong,
+.history-pane-entry strong {
+  color: var(--ink);
+}
+
+.history-pane-summary span,
+.history-pane-preview span,
+.history-pane-preview p,
+.history-pane-entry span,
+.history-pane-entry p,
+.history-pane-entry-title {
+  color: var(--ink-soft);
+}
+
+.history-pane-actions button,
+.history-pane-entry {
+  background: var(--paper);
+  border-color: var(--line);
+}
+
+.history-pane-actions button:hover {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+  color: var(--iris-strong);
+}
+
+/* Copilot pane — Ink & Porcelain prose */
+.copilot-pane-body h3 {
+  color: var(--ink);
+  font-family: var(--font-display);
+}
+
+.copilot-pane-body p {
+  color: var(--ink-soft);
+}
+
+.copilot-orb {
+  background: radial-gradient(circle at 35% 35%, #8478d8 0%, var(--iris) 58%, var(--iris-strong) 100%);
+  box-shadow: 0 10px 26px rgba(75, 63, 167, 0.4);
+}
+
+.copilot-prompt-card:hover,
+.copilot-compose:focus-within {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+}
+
+/* Search results dropdown */
+.search-results-toolbar,
+.search-results-summary {
+  background: var(--surface-sunk);
+  border-bottom-color: var(--line-soft);
+}
+
+.search-scope-chip,
+.search-filter-chip {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  color: var(--ink-soft);
+}
+
+.search-result:hover {
+  background: var(--iris-tint);
+}
+
+.search-result strong {
+  color: var(--ink);
+}
+
+.search-result-meta em {
+  background: var(--iris-tint);
+  color: var(--iris-strong);
+}
+
+.search-results-summary strong {
+  color: var(--ink);
+}
+
+.search-highlight {
+  background: var(--hue-amber-tint);
+  border-radius: 2px;
+}
+

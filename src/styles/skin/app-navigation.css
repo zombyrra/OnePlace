@@ -1,0 +1,191 @@
+/* ---------- Workspace + navigation panes ---------- */
+
+.workspace {
+  background: var(--desk);
+}
+
+.notebooks-pane {
+  background: var(--chrome);
+  border-right: 1px solid var(--line);
+}
+
+.pages-pane {
+  background: var(--surface-sunk);
+  border-right: 1px solid var(--line);
+}
+
+.pane-heading,
+.pages-header {
+  background: var(--chrome);
+  border-bottom: 1px solid var(--line);
+  padding: 9px 10px;
+}
+
+.pane-heading strong,
+.pages-header h2 {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.pages-context {
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+}
+
+/* Hover — a faint wash of iris, the binder coming alive */
+.notebook-item:hover,
+.notebook-section-link:hover,
+.notebook-new-section:hover,
+.notebook-new-group:hover,
+.empty-section-group-action:hover,
+.section-group-button:hover,
+.section-item:hover,
+.page-card:hover,
+.recent-page-item:hover {
+  background: rgba(75, 63, 167, 0.06);
+  border-color: transparent;
+}
+
+/* Active — the index tab: iris wash + a colored spine on the leading edge */
+.notebook-item.active,
+.notebook-section-link.active,
+.section-item.active,
+.page-card.active,
+.page-card.has-selected-child:not(.active),
+.recent-page-item.active {
+  background: var(--iris-tint);
+  box-shadow: inset 3px 0 0 var(--iris-spine);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  color: var(--ink);
+}
+
+/* Active section gets a weight bump for clear selection signal */
+.notebook-section-link.active,
+.section-item.active {
+  font-weight: 600;
+}
+
+.notebook-item,
+.notebook-section-link,
+.section-group-button,
+.section-item {
+  color: var(--ink-soft);
+  font-family: var(--font-ui);
+}
+
+.notebook-item {
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Section colour chips become real index tabs */
+.notebook-section-link .section-color,
+.section-item .section-color {
+  display: inline-block;
+  width: 4px;
+  height: 16px;
+  border-radius: var(--r-pill);
+}
+
+/* New-group / new-section / toggles in iris, not OneNote purple */
+.notebook-new-section,
+.notebook-new-group,
+.empty-section-group-action,
+.section-group-toggle,
+.section-group-add-button,
+.section-group-rename-button {
+  color: var(--iris);
+}
+
+.empty-section-group-action {
+  border-color: var(--iris-edge);
+}
+
+.section-group-add-button {
+  background: var(--surface-raised);
+  border: 1px solid var(--iris-edge);
+}
+
+.section-group-toggle:hover,
+.section-group-add-button:hover,
+.section-group-rename-button:hover {
+  background: var(--iris-tint);
+}
+
+/* Primary "Add page" — a confident filled iris action */
+.pages-actions-primary .pages-action-pill.primary {
+  background: var(--iris);
+  border: 1px solid var(--iris-strong);
+  color: #ffffff;
+}
+
+.pages-actions-primary .pages-action-pill.primary:hover {
+  background: var(--iris-strong);
+}
+
+.pages-actions-secondary button:hover,
+.pages-sort-picker:hover {
+  background: var(--iris-tint);
+}
+
+.pages-sort-picker {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+/* Page cards: title + a quiet mono timestamp */
+.page-card strong {
+  color: var(--ink);
+  font-size: 0.77rem;
+  font-weight: 600;
+}
+
+.page-card.active strong {
+  color: var(--ink);
+}
+
+.page-card .page-date {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-ghost);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  line-height: 1.3;
+}
+
+.page-inline-action {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  color: var(--ink-faint);
+  border-radius: var(--r-sm);
+}
+
+.page-inline-action:hover {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+  color: var(--iris-strong);
+}
+
+.page-inline-action.danger:hover {
+  background: rgba(194, 90, 110, 0.07);
+  border-color: rgba(194, 90, 110, 0.35);
+  color: var(--hue-rose);
+}
+
+.recent-page-item strong {
+  color: var(--ink);
+}
+
+.recent-page-item span {
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+}
+

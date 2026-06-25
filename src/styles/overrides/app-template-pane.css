@@ -1,0 +1,101 @@
+.side-pane-stack {
+  background: #fbf9fb;
+  border-left: 1px solid #ddd8dd;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.review-pane,
+.history-pane,
+.meeting-pane,
+.audio-pane,
+.markmap-pane,
+.references-pane,
+.template-pane,
+.tag-pane,
+.task-pane,
+.copilot-pane {
+  background: #fbf9fb;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.review-pane[hidden],
+.history-pane[hidden],
+.meeting-pane[hidden],
+.audio-pane[hidden],
+.markmap-pane[hidden],
+.references-pane[hidden],
+.template-pane[hidden],
+.tag-pane[hidden],
+.task-pane[hidden],
+.copilot-pane[hidden] {
+  display: none;
+}
+
+.template-pane-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px 14px 14px;
+}
+
+.template-pane-list {
+  display: grid;
+  gap: 10px;
+}
+
+.template-pane-card,
+.template-pane-actions button {
+  background: #fff;
+  border: 1px solid #ddd6dc;
+  border-radius: 8px;
+  color: #554d56;
+  cursor: pointer;
+  font: inherit;
+}
+
+.template-pane-card {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  text-align: left;
+}
+
+.template-pane-card span,
+.template-pane-preview p {
+  color: #6f6770;
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+
+.template-pane-card.active {
+  background: #f2ebf6;
+  border-color: #d5c6df;
+}
+
+.template-pane-preview {
+  background: #fff;
+  border: 1px solid #e8e2e7;
+  border-radius: 10px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.template-pane-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.template-pane-actions button {
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+.template-pane-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+

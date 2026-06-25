@@ -1,0 +1,61 @@
+.notebook-item:hover,
+.notebook-section-link:hover,
+.notebook-new-section:hover,
+.notebook-new-group:hover,
+.empty-section-group-action:hover,
+.section-group-button:hover,
+.section-item:hover,
+.page-card:hover,
+.recent-page-item:hover {
+  background: #ece8ec;
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.notebook-item.active,
+.notebook-section-link.active,
+.section-group-button.active,
+.section-item.active,
+.page-card.active,
+.page-card.has-selected-child:not(.active),
+.recent-page-item.active {
+  background: #dfdadd;
+  border: 0;
+  box-shadow: none;
+  color: #2f2b31;
+}
+
+.notebook-item.drop-before,
+.section-group-button.drop-before,
+.section-item.drop-before,
+.page-card.drop-before,
+.notebook-item.drop-after,
+.section-group-button.drop-after,
+.section-item.drop-after,
+.page-card.drop-after {
+  box-shadow: none;
+}
+
+.notebook-section-link.dragging {
+  opacity: 0.58;
+}
+
+.notebook-section-link.drop-before {
+  box-shadow: inset 0 3px 0 #8b63ba;
+}
+
+.notebook-section-link.drop-after {
+  box-shadow: inset 0 -3px 0 #8b63ba;
+}
+
+.notebook-glyph,
+.page-accent,
+.page-date,
+.page-snippet,
+.page-disclosure,
+.page-disclosure-placeholder,
+.section-protected-badge {
+  display: none;
+}
+

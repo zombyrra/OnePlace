@@ -4,6 +4,7 @@ import {
   useState,
   type ClipboardEvent as ReactClipboardEvent,
   type DragEvent as ReactDragEvent,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
@@ -136,7 +137,10 @@ export function NotePane(props: NotePaneProps) {
   }, [pageRenderKey, pageWidthMode, showRuleLines, showInkLayer])
 
   return (
-    <section className={`note-pane ${hasSidePane ? 'side-pane-open' : 'side-pane-closed'}`}>
+    <section
+      className={`note-pane ${hasSidePane ? 'side-pane-open' : 'side-pane-closed'}`}
+      style={{ '--active-hue': section?.color || page?.accent || 'var(--iris-spine)' } as CSSProperties}
+    >
       <div className="note-document" key={pageRenderKey}>
         <div className="note-header">
           <div className="note-header-main">
@@ -145,6 +149,7 @@ export function NotePane(props: NotePaneProps) {
                 className="note-title"
                 disabled={isCurrentSectionLocked}
                 onChange={(event) => updatePage({ title: event.target.value })}
+                placeholder="Untitled"
                 type="text"
                 value={page?.title ?? ''}
               />

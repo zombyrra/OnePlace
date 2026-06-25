@@ -15,38 +15,83 @@ import {
   stylePresets,
 } from '../../app/appModel'
 import {
+  AlignCenterIcon,
+  AlignJustifyIcon,
   AlignLeftIcon,
+  AlignRightIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
   AttachmentIcon,
+  AudioLinesIcon,
   BoldIcon,
+  BookDownIcon,
   BrushIcon,
   BulletsIcon,
+  CalendarCheckIcon,
+  CalendarClockIcon,
+  CalendarDaysIcon,
+  CaptionsIcon,
+  CheckSquareIcon,
   ChevronDownIcon,
+  CircleCheckIcon,
+  ClipboardListIcon,
+  ClockIcon,
   CopyIcon,
+  CrosshairIcon,
   CutIcon,
-  EditIcon,
+  DeleteIcon,
+  EraserIcon,
+  FileDownIcon,
+  FilePlusIcon,
+  FileStackIcon,
+  FileUpIcon,
   FolderIcon,
-  FormatMotivationIcon,
+  FolderPlusIcon,
+  GripVerticalIcon,
+  HighlighterIcon,
+  HistoryIcon,
   ImageIcon,
   IndentIcon,
-  InsertFormattingIcon,
   ItalicIcon,
+  LayoutTemplateIcon,
+  LibraryBigIcon,
+  Link2Icon,
   LinkIcon,
-  ListLinesIcon,
-  NotebookStackIcon,
+  ListChecksIcon,
+  ListOrderedIcon,
+  MailIcon,
+  MicIcon,
+  NetworkIcon,
+  PanelLeftIcon,
+  PanelRightIcon,
   PasteIcon,
   PenIcon,
-  ProjectIcon,
+  PilcrowIcon,
+  PrinterIcon,
+  Redo2Icon,
+  RefreshCcwIcon,
+  ReplaceIcon,
+  RotateCcwIcon,
+  SaveAllIcon,
   SaveIcon,
+  ScanSearchIcon,
   SearchIcon,
+  SearchXIcon,
   SectionBookIcon,
-  ShowIcon,
-  SortIcon,
+  SelectAllIcon,
+  SeparatorHorizontalIcon,
+  SortAZIcon,
+  SortNewestIcon,
+  SparklesIcon,
+  StrikethroughIcon,
   TableIcon,
   TagsIcon,
   TextSizeDownIcon,
   TextSizeUpIcon,
   UnderlineIcon,
   UndoIcon,
+  UsersRoundIcon,
+  WidenPageIcon,
 } from '../Icons'
 
 type RibbonBarProps = {
@@ -165,8 +210,8 @@ const FloatingPickerMenu = ({ anchorRef, children, className = '', isOpen, panel
 
   useLayoutEffect(() => {
     if (!isOpen) {
-      setPosition(null)
-      return
+      const resetFrame = window.requestAnimationFrame(() => setPosition(null))
+      return () => window.cancelAnimationFrame(resetFrame)
     }
 
     let animationFrame = 0
@@ -355,15 +400,15 @@ export function RibbonBar(props: RibbonBarProps) {
               <span>Open Notebook</span>
             </button>
             <button disabled={isImportingOneNoteExport} onClick={() => void importOneNoteExport()} type="button">
-              <NotebookStackIcon size={26} />
+              <FileDownIcon size={26} />
               <span>{isImportingOneNoteExport ? 'Importing OneNote...' : 'Import OneNote'}</span>
             </button>
             <button onClick={() => void saveNotebookAs()} type="button">
-              <SaveIcon size={26} />
+              <SaveAllIcon size={26} />
               <span>Save Notebook As</span>
             </button>
             <button onClick={() => void exportCurrentPage()} type="button">
-              <ProjectIcon size={26} />
+              <FileUpIcon size={26} />
               <span>Export Page</span>
             </button>
             <button onClick={() => void saveNow()} type="button">
@@ -371,11 +416,11 @@ export function RibbonBar(props: RibbonBarProps) {
               <span>Save Notebook</span>
             </button>
             <button onClick={addPage} type="button">
-              <EditIcon size={26} />
+              <FilePlusIcon size={26} />
               <span>New Page</span>
             </button>
             <button onClick={addSubpage} type="button">
-              <ListLinesIcon size={26} />
+              <FileStackIcon size={26} />
               <span>New Subpage</span>
             </button>
             <button onClick={() => promptCreateSection()} type="button">
@@ -383,11 +428,11 @@ export function RibbonBar(props: RibbonBarProps) {
               <span>New Section</span>
             </button>
             <button onClick={addSectionGroup} type="button">
-              <FolderIcon size={26} />
+              <FolderPlusIcon size={26} />
               <span>New Section Group</span>
             </button>
             <button onClick={createNotebook} type="button">
-              <NotebookStackIcon size={26} />
+              <LibraryBigIcon size={26} />
               <span>New Notebook</span>
             </button>
           </div>
@@ -410,11 +455,11 @@ export function RibbonBar(props: RibbonBarProps) {
         <section className="ribbon ribbon-insert">
           <div className="ribbon-cluster styles insert-pages">
             <button disabled={isCurrentSectionLocked} onClick={addPage} type="button">
-              <EditIcon size={26} />
+              <FilePlusIcon size={26} />
               <span>Blank Page</span>
             </button>
             <button disabled={!canEditPage} onClick={addSubpage} type="button">
-              <ListLinesIcon size={26} />
+              <FileStackIcon size={26} />
               <span>Subpage</span>
             </button>
             <button onClick={() => promptCreateSection()} type="button">
@@ -429,14 +474,14 @@ export function RibbonBar(props: RibbonBarProps) {
               onClick={() => setIsReferencesPaneOpen(true)}
               type="button"
             >
-              <ProjectIcon size={26} />
+              <BookDownIcon size={26} />
               <span>Zotero Import</span>
             </button>
             <span className="ribbon-label">Zotero</span>
           </div>
           <div className="ribbon-cluster styles insert-content">
             <button disabled={!canEditPage} onClick={insertChecklist} type="button">
-              <TagsIcon size={26} />
+              <ListChecksIcon size={26} />
               <span>Checklist</span>
             </button>
             <button disabled={!canEditPage} onClick={insertTable} type="button">
@@ -448,7 +493,7 @@ export function RibbonBar(props: RibbonBarProps) {
               <span>Link</span>
             </button>
             <button disabled={!canEditPage} onClick={insertInternalPageLink} type="button">
-              <ProjectIcon size={26} />
+              <Link2Icon size={26} />
               <span>Page Link</span>
             </button>
             <button
@@ -456,23 +501,23 @@ export function RibbonBar(props: RibbonBarProps) {
               onClick={openMarkmapPane}
               type="button"
             >
-              <ProjectIcon size={26} />
+              <NetworkIcon size={26} />
               <span>Mind Map</span>
             </button>
             <button disabled={!canEditPage} onClick={insertDateStamp} type="button">
-              <FormatMotivationIcon size={26} />
+              <CalendarDaysIcon size={26} />
               <span>Date</span>
             </button>
             <button disabled={!canEditPage} onClick={insertTimeStamp} type="button">
-              <SaveIcon size={26} />
+              <ClockIcon size={26} />
               <span>Time</span>
             </button>
             <button disabled={!canEditPage} onClick={insertDateTimeStamp} type="button">
-              <ShowIcon size={26} />
+              <CalendarClockIcon size={26} />
               <span>Date &amp; Time</span>
             </button>
             <button disabled={!canEditPage} onClick={insertDivider} type="button">
-              <ListLinesIcon size={26} />
+              <SeparatorHorizontalIcon size={26} />
               <span>Divider</span>
             </button>
             <span className="ribbon-label">Content</span>
@@ -483,11 +528,11 @@ export function RibbonBar(props: RibbonBarProps) {
               <span>Picture</span>
             </button>
             <button disabled={!canEditPage} onClick={openPrintoutPicker} type="button">
-              <ShowIcon size={26} />
+              <PrinterIcon size={26} />
               <span>Printout</span>
             </button>
             <button disabled={!canEditPage} onClick={openAudioPane} type="button">
-              <SaveIcon size={26} />
+              <AudioLinesIcon size={26} />
               <span>{isRecordingAudio ? 'Audio Controls' : 'Audio Note'}</span>
             </button>
             <button disabled={!canEditPage} onClick={openAttachmentPicker} type="button">
@@ -498,35 +543,35 @@ export function RibbonBar(props: RibbonBarProps) {
           </div>
           <div className="ribbon-cluster styles insert-meeting-tools">
             <button disabled={!canEditPage} onClick={addTagToCurrentPage} type="button">
-              <TagsIcon size={26} />
+              <ListChecksIcon size={26} />
               <span>To Do Tag</span>
             </button>
             <button disabled={!canEditPage} onClick={openMeetingDetailsPane} type="button">
-              <TableIcon size={26} />
+              <UsersRoundIcon size={26} />
               <span>Meeting</span>
             </button>
             <button disabled={!page} onClick={() => setIsTaskPaneOpen(true)} type="button">
-              <FormatMotivationIcon size={26} />
+              <ClipboardListIcon size={26} />
               <span>Outlook Tasks</span>
             </button>
             <button disabled={!page} onClick={emailCurrentPage} type="button">
-              <ProjectIcon size={26} />
+              <MailIcon size={26} />
               <span>Email Page</span>
             </button>
             <button disabled={!canEditPage} onClick={applyPageTemplate} type="button">
-              <InsertFormattingIcon size={26} />
+              <LayoutTemplateIcon size={26} />
               <span>Template</span>
             </button>
             <button disabled={!canEditPage} onClick={startDictation} type="button">
-              <SaveIcon size={26} />
+              <MicIcon size={26} />
               <span>{isDictating ? 'Stop Dictate' : 'Dictate'}</span>
             </button>
             <button disabled={!canEditPage} onClick={startSpeechTranscription} type="button">
-              <ShowIcon size={26} />
+              <CaptionsIcon size={26} />
               <span>{isTranscribing ? 'Stop Transcribe' : 'Transcribe'}</span>
             </button>
             <button disabled={!page} onClick={() => setIsCopilotOpen(true)} type="button">
-              <InsertFormattingIcon size={26} />
+              <SparklesIcon size={26} />
               <span>Copilot</span>
             </button>
             <span className="ribbon-label">Meeting Tools</span>
@@ -556,26 +601,26 @@ export function RibbonBar(props: RibbonBarProps) {
               <span>Green Ink</span>
             </button>
             <button disabled={!canEditPage} onClick={() => setDrawColor('#ffe266')} type="button">
-              <BrushIcon size={26} />
+              <HighlighterIcon size={26} />
               <span>Highlighter</span>
             </button>
             <button disabled={!canEditPage} onClick={clearInkStrokes} type="button">
-              <CutIcon size={26} />
+              <EraserIcon size={26} />
               <span>Clear Ink</span>
             </button>
             <span className="ribbon-label">Pens</span>
           </div>
           <div className="ribbon-cluster styles">
             <button disabled={!canEditPage} onClick={startDictation} type="button">
-              <SaveIcon size={26} />
+              <MicIcon size={26} />
               <span>{isDictating ? 'Stop Dictate' : 'Dictate'}</span>
             </button>
             <button disabled={!canEditPage} onClick={startSpeechTranscription} type="button">
-              <ShowIcon size={26} />
+              <CaptionsIcon size={26} />
               <span>{isTranscribing ? 'Stop Transcribe' : 'Transcribe'}</span>
             </button>
             <button disabled={!canEditPage} onClick={openAudioPane} type="button">
-              <SaveIcon size={26} />
+              <AudioLinesIcon size={26} />
               <span>{isRecordingAudio ? 'Audio Controls' : 'Audio Note'}</span>
             </button>
             <span className="ribbon-label">Capture</span>
@@ -593,15 +638,15 @@ export function RibbonBar(props: RibbonBarProps) {
               <span>Undo</span>
             </button>
             <button onClick={() => runEditorCommand('redo')} type="button">
-              <ChevronDownIcon size={26} />
+              <Redo2Icon size={26} />
               <span>Redo</span>
             </button>
             <button disabled={!canGoBack} onClick={goBack} type="button">
-              <UndoIcon size={26} />
+              <ArrowLeftIcon size={26} />
               <span>Back</span>
             </button>
             <button disabled={!canGoForward} onClick={goForward} type="button">
-              <ChevronDownIcon size={26} />
+              <ArrowRightIcon size={26} />
               <span>Forward</span>
             </button>
             <span className="ribbon-label">Navigation</span>
@@ -612,18 +657,18 @@ export function RibbonBar(props: RibbonBarProps) {
               <span>Save Version</span>
             </button>
             <button disabled={!page} onClick={restoreSavedPageVersion} type="button">
-              <ShowIcon size={26} />
+              <RotateCcwIcon size={26} />
               <span>Restore Version</span>
             </button>
             <button onClick={() => setIsHistoryPaneOpen((current) => !current)} type="button">
-              <ListLinesIcon size={26} />
+              <HistoryIcon size={26} />
               <span>{isHistoryPaneOpen ? 'Hide History' : 'History Pane'}</span>
             </button>
             <span className="ribbon-label">Versions</span>
           </div>
           <div className="ribbon-cluster styles">
             <button onClick={() => setQuery('')} type="button">
-              <SearchIcon size={26} />
+              <SearchXIcon size={26} />
               <span>Clear Search</span>
             </button>
             <button onClick={() => void saveNow()} type="button">
@@ -645,26 +690,26 @@ export function RibbonBar(props: RibbonBarProps) {
               <span>Tag</span>
             </button>
             <button disabled={!canEditPage} onClick={toggleCurrentTask} type="button">
-              <BulletsIcon size={26} />
+              <CheckSquareIcon size={26} />
               <span>{page?.task ? 'Remove To Do' : 'To Do'}</span>
             </button>
             <button disabled={!canEditPage || !hasTask} onClick={setCurrentTaskDueDate} type="button">
-              <ProjectIcon size={26} />
+              <CalendarCheckIcon size={26} />
               <span>Set Due Date</span>
             </button>
             <button disabled={!canEditPage || !hasTask} onClick={toggleCurrentTaskComplete} type="button">
-              <ShowIcon size={26} />
+              <CircleCheckIcon size={26} />
               <span>{page?.task?.status === 'done' ? 'Mark Incomplete' : 'Mark Complete'}</span>
             </button>
             <span className="ribbon-label">Tasks</span>
           </div>
           <div className="ribbon-cluster styles">
             <button onClick={() => setIsReviewPaneOpen((current) => !current)} type="button">
-              <SearchIcon size={26} />
+              <ReplaceIcon size={26} />
               <span>{isReviewPaneOpen ? 'Hide Find' : 'Find & Replace'}</span>
             </button>
             <button onClick={() => setIsTaskPaneOpen((current) => !current)} type="button">
-              <FormatMotivationIcon size={26} />
+              <ClipboardListIcon size={26} />
               <span>{isTaskPaneOpen ? 'Hide Task List' : 'Task List'}</span>
             </button>
             <button disabled={!page} onClick={() => setQuery(page?.title ?? '')} type="button">
@@ -672,7 +717,7 @@ export function RibbonBar(props: RibbonBarProps) {
               <span>Find This Page</span>
             </button>
             <button disabled={!page} onClick={emailCurrentPage} type="button">
-              <ProjectIcon size={26} />
+              <MailIcon size={26} />
               <span>Email Page</span>
             </button>
             <span className="ribbon-label">Review</span>
@@ -694,56 +739,56 @@ export function RibbonBar(props: RibbonBarProps) {
               <span>Zoom Out</span>
             </button>
             <button onClick={() => setEditorZoom(1)} type="button">
-              <ShowIcon size={26} />
+              <ScanSearchIcon size={26} />
               <span>{Math.round(editorZoom * 100)}%</span>
             </button>
             <span className="ribbon-label">Zoom</span>
           </div>
           <div className="ribbon-cluster styles">
             <button onClick={() => setPageWidthMode((current) => (current === 'normal' ? 'wide' : 'normal'))} type="button">
-              <TableIcon size={26} />
+              <WidenPageIcon size={26} />
               <span>{pageWidthMode === 'normal' ? 'Wide Page' : 'Normal Page'}</span>
             </button>
             <button onClick={() => setShowRuleLines((current) => !current)} type="button">
-              <BulletsIcon size={26} />
+              <AlignJustifyIcon size={26} />
               <span>{showRuleLines ? 'Hide Rule Lines' : 'Rule Lines'}</span>
             </button>
             <button onClick={() => setIsNotebookPaneVisible((current) => !current)} type="button">
-              <NotebookStackIcon size={26} />
+              <PanelLeftIcon size={26} />
               <span>{isNotebookPaneVisible ? 'Hide Notebooks' : 'Show Notebooks'}</span>
             </button>
             <button onClick={() => setIsPagesPaneVisible((current) => !current)} type="button">
-              <ListLinesIcon size={26} />
+              <PanelRightIcon size={26} />
               <span>{isPagesPaneVisible ? 'Hide Pages' : 'Show Pages'}</span>
             </button>
             <span className="ribbon-label">Layout</span>
           </div>
           <div className="ribbon-cluster styles">
             <button onClick={() => setPageSortMode('manual')} type="button">
-              <SortIcon size={26} />
+              <GripVerticalIcon size={26} />
               <span>{pageSortMode === 'manual' ? 'Manual Sort' : 'Set Manual'}</span>
             </button>
             <button onClick={() => setPageSortMode('updated-desc')} type="button">
-              <SortIcon size={26} />
+              <SortNewestIcon size={26} />
               <span>{pageSortMode === 'updated-desc' ? 'Newest First' : 'Sort Newest'}</span>
             </button>
             <button onClick={() => setPageSortMode('title-asc')} type="button">
-              <SortIcon size={26} />
+              <SortAZIcon size={26} />
               <span>{pageSortMode === 'title-asc' ? 'A-Z Pages' : 'Sort A-Z'}</span>
             </button>
             <span className="ribbon-label">Sort</span>
           </div>
           <div className="ribbon-cluster styles">
             <button onClick={focusPage} type="button">
-              <ShowIcon size={26} />
+              <CrosshairIcon size={26} />
               <span>Focus Page</span>
             </button>
             <button onClick={() => void saveNow()} type="button">
-              <SaveIcon size={26} />
+              <RefreshCcwIcon size={26} />
               <span>Refresh Save</span>
             </button>
             <button onClick={() => setQuery('')} type="button">
-              <SearchIcon size={26} />
+              <SearchXIcon size={26} />
               <span>Clear Search</span>
             </button>
             <span className="ribbon-label">Workspace</span>
@@ -844,7 +889,7 @@ export function RibbonBar(props: RibbonBarProps) {
               <UnderlineIcon size={16} />
             </button>
             <button onClick={() => runEditorCommand('strikeThrough')} type="button">
-              <UnderlineIcon size={16} />
+              <StrikethroughIcon size={16} />
             </button>
             <button onClick={() => runEditorCommand('superscript')} type="button">
               <TextSizeUpIcon size={16} />
@@ -853,10 +898,10 @@ export function RibbonBar(props: RibbonBarProps) {
               <TextSizeDownIcon size={16} />
             </button>
             <button onClick={() => runEditorCommand('hiliteColor', '#fff59d')} type="button">
-              <PenIcon size={16} />
+              <HighlighterIcon size={16} />
             </button>
             <button onClick={() => runEditorCommand('foreColor', '#d83b01')} type="button">
-              <BrushIcon size={16} />
+              <PenIcon size={16} />
             </button>
           </div>
           <span className="ribbon-label">Font</span>
@@ -874,10 +919,10 @@ export function RibbonBar(props: RibbonBarProps) {
               <AlignLeftIcon size={16} />
             </button>
             <button onClick={() => runEditorCommand('insertOrderedList')} type="button">
-              <SortIcon size={16} />
+              <ListOrderedIcon size={16} />
             </button>
             <button onClick={() => runEditorCommand('selectAll')} type="button">
-              <ShowIcon size={16} />
+              <SelectAllIcon size={16} />
             </button>
             <button onClick={insertTable} type="button">
               <TableIcon size={16} />
@@ -888,19 +933,19 @@ export function RibbonBar(props: RibbonBarProps) {
               <AlignLeftIcon size={16} />
             </button>
             <button onClick={() => runEditorCommand('insertParagraph')} type="button">
-              <ListLinesIcon size={16} />
+              <PilcrowIcon size={16} />
             </button>
             <button onClick={() => runEditorCommand('justifyCenter')} type="button">
-              <AlignLeftIcon size={16} />
+              <AlignCenterIcon size={16} />
             </button>
             <button onClick={() => runEditorCommand('justifyRight')} type="button">
-              <AlignLeftIcon size={16} />
+              <AlignRightIcon size={16} />
             </button>
             <button onClick={() => runEditorCommand('indent')} type="button">
               <IndentIcon size={16} />
             </button>
             <button onClick={() => runEditorCommand('removeFormat')} type="button">
-              <ShowIcon size={16} />
+              <EraserIcon size={16} />
             </button>
             <button onClick={openImagePicker} type="button">
               <ImageIcon size={16} />
@@ -927,15 +972,15 @@ export function RibbonBar(props: RibbonBarProps) {
 
         <div className="ribbon-cluster home-tags">
           <button className="home-tag-card" onClick={toggleCurrentTask} type="button">
-            <span className="home-tag-dot">v</span>
-            <span>{page?.task ? 'To Do (Ctrl+1)' : 'To Do (Ctrl+1)'}</span>
+            <span className="home-tag-dot">{'✓'}</span>
+            <span>To Do (Ctrl+1)</span>
           </button>
           <button
             className="home-tag-card"
             onClick={() => insertTemplate('<p><span style="color:#d68200;">Important</span></p>')}
             type="button"
           >
-            <span className="home-tag-star">*</span>
+            <span className="home-tag-star">{'★'}</span>
             <span>Important (Ctrl+2)</span>
           </button>
           <span className="ribbon-label">Tags</span>
@@ -943,11 +988,11 @@ export function RibbonBar(props: RibbonBarProps) {
 
         <div className="ribbon-cluster home-quick-actions">
           <button className="home-vertical-action" onClick={addPage} type="button">
-            <EditIcon size={22} />
+            <FilePlusIcon size={22} />
             <span>New Page</span>
           </button>
           <button className="home-vertical-action" onClick={addSubpage} type="button">
-            <ListLinesIcon size={22} />
+            <FileStackIcon size={22} />
             <span>Subpage</span>
           </button>
           <button className="home-vertical-action" disabled={!canPromotePage} onClick={promoteCurrentPage} type="button">
@@ -959,7 +1004,7 @@ export function RibbonBar(props: RibbonBarProps) {
             <span>Demote</span>
           </button>
           <button className="home-vertical-action" disabled={!canDeletePage} onClick={deleteCurrentPage} type="button">
-            <CutIcon size={22} />
+            <DeleteIcon size={22} />
             <span>Delete Page</span>
           </button>
         </div>

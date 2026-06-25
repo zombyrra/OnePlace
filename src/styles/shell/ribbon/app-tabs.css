@@ -1,0 +1,45 @@
+.tab-row {
+  border-bottom: 1px solid rgba(196, 208, 222, 0.85);
+  gap: 4px;
+  padding: 0 14px;
+}
+
+.tab-button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  color: #536175;
+  font-size: 0.83rem;
+  font-weight: 600;
+  margin-top: 5px;
+  padding: 8px 12px 7px;
+  transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
+.tab-button:hover {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: #d9e1ea;
+  color: #222934;
+}
+
+.tab-button.active {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: #d4dce7;
+  color: var(--text-strong);
+  font-weight: 700;
+  margin-bottom: -1px;
+  position: relative;
+  z-index: 1;
+}
+
+.tab-button.active::before {
+  background: var(--accent);
+  content: '';
+  height: 2px;
+  left: -1px;
+  position: absolute;
+  right: -1px;
+  top: -1px;
+}
+

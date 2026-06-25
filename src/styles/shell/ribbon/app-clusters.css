@@ -1,0 +1,134 @@
+.ribbon {
+  background: rgba(249, 251, 253, 0.88);
+  border-bottom: 1px solid rgba(196, 208, 222, 0.82);
+  display: flex;
+  gap: 8px;
+  min-height: 88px;
+  overflow-x: auto;
+  padding: 8px 12px 6px;
+}
+
+.ribbon-cluster {
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(211, 221, 232, 0.92);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px 10px 18px;
+  position: relative;
+}
+
+.ribbon-cluster.clipboard {
+  grid-template-columns: 64px 1fr;
+  min-width: 186px;
+}
+
+.ribbon-cluster.font {
+  min-width: 320px;
+}
+
+.ribbon-cluster.paragraph {
+  min-width: 280px;
+}
+
+.ribbon-cluster.styles {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-width: 360px;
+}
+
+.ribbon-cluster:last-child {
+  border-right: 1px solid rgba(211, 221, 232, 0.92);
+}
+
+.ribbon-big {
+  align-items: center;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fd 100%);
+  border: 1px solid #d7e0eb;
+  border-radius: 12px;
+  display: grid;
+  gap: 3px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  min-height: 56px;
+  place-items: center;
+  padding: 6px 4px;
+  text-align: center;
+}
+
+.ribbon-big button {
+  align-items: center;
+  display: grid;
+  gap: 4px;
+  place-items: center;
+  width: 100%;
+}
+
+.ribbon-stack {
+  display: grid;
+  gap: 4px;
+}
+
+.ribbon-stack button,
+.ribbon-row-compact button,
+.picker,
+.ribbon-cluster.styles > button,
+.style-dropdown > button {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #d9e1ea;
+  border-radius: 10px;
+  display: inline-flex;
+  font-size: 0.8rem;
+  gap: 6px;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 8px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.ribbon-stack button:hover,
+.ribbon-row-compact button:hover,
+.ribbon-cluster.styles > button:hover,
+.style-dropdown > button:hover {
+  background: #f5f9ff;
+  border-color: #bdd0eb;
+}
+
+.ribbon-row-compact {
+  gap: 4px;
+}
+
+.picker {
+  justify-content: space-between;
+  min-width: 132px;
+}
+
+.picker.tiny {
+  min-width: 58px;
+}
+
+.ribbon-row-compact .strong {
+  font-weight: 700;
+}
+
+.ribbon-large-icon {
+  color: #ab7a2b;
+}
+
+.ribbon-cluster.styles > button,
+.style-dropdown > button {
+  flex-direction: column;
+  gap: 5px;
+  min-height: 60px;
+  padding: 7px 6px;
+  text-align: center;
+}
+
+.ribbon-cluster.styles > button span,
+.style-dropdown > button span {
+  display: block;
+  line-height: 1.2;
+}
+

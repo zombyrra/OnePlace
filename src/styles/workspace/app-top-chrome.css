@@ -1,0 +1,136 @@
+.titlebar,
+.tab-row {
+  backdrop-filter: blur(20px);
+  background: rgba(248, 250, 253, 0.82);
+}
+
+.titlebar {
+  min-height: 56px;
+  padding: 0 20px;
+}
+
+.window-title {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.titlebar-search {
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 10px 24px rgba(18, 31, 49, 0.08);
+  height: 40px;
+  max-width: 620px;
+  padding: 0 14px;
+}
+
+.search-scope-picker {
+  border-right-color: rgba(198, 209, 223, 0.9);
+  height: 26px;
+  max-width: 138px;
+}
+
+.tab-row {
+  gap: 6px;
+  padding: 0 18px;
+}
+
+.tab-button {
+  border: 0;
+  border-radius: 999px;
+  margin: 7px 0;
+  padding: 8px 14px;
+}
+
+.tab-button:hover {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: transparent;
+}
+
+.tab-button.active {
+  background: #ffffff;
+  border: 1px solid rgba(205, 216, 229, 0.9);
+  box-shadow: 0 10px 22px rgba(17, 31, 49, 0.08);
+  margin-bottom: 0;
+}
+
+.tab-button.active::before {
+  display: none;
+}
+
+.ribbon {
+  background: rgba(248, 250, 253, 0.72);
+  border-bottom: 1px solid rgba(198, 209, 223, 0.76);
+  gap: 10px;
+  min-height: 74px;
+  padding: 10px 18px 8px;
+}
+
+.ribbon-cluster {
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(210, 220, 233, 0.86);
+  border-radius: 18px;
+  box-shadow: 0 14px 28px rgba(17, 31, 49, 0.06);
+  gap: 8px;
+  padding: 10px 12px 22px;
+}
+
+.ribbon-cluster.clipboard {
+  grid-template-columns: 72px 1fr;
+  min-width: 210px;
+}
+
+.ribbon-cluster.font {
+  min-width: 350px;
+}
+
+.ribbon-cluster.paragraph {
+  min-width: 300px;
+}
+
+.ribbon-cluster.styles {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  min-width: 420px;
+}
+
+.ribbon-big {
+  background: linear-gradient(180deg, #ffffff 0%, #f3f7fe 100%);
+  border-radius: 16px;
+  min-height: 64px;
+}
+
+.ribbon-big button {
+  gap: 6px;
+}
+
+.ribbon-stack {
+  gap: 6px;
+}
+
+.ribbon-stack button,
+.ribbon-row-compact button,
+.picker,
+.ribbon-cluster.styles > button,
+.style-dropdown > button {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  min-height: 34px;
+}
+
+.ribbon-cluster.styles > button,
+.style-dropdown > button {
+  flex-direction: row;
+  gap: 8px;
+  justify-content: flex-start;
+  min-height: 44px;
+  padding: 0 12px;
+  text-align: left;
+}
+
+.ribbon-label {
+  bottom: 4px;
+  color: #74849b;
+  font-size: 0.58rem;
+}
+

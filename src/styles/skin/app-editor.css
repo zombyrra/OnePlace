@@ -1,0 +1,173 @@
+/* ---------- Writing canvas ---------- */
+
+.note-pane {
+  background: var(--paper);
+}
+
+.note-header {
+  background: var(--paper);
+  border-bottom: 1px solid var(--line-soft);
+  border-top: 4px solid var(--active-hue);
+  padding: 18px 32px 12px 24px;
+}
+
+.note-title {
+  border-bottom: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  max-width: 760px;
+}
+
+.note-date-row {
+  color: var(--ink-ghost);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  margin-top: 4px;
+}
+
+.note-toolbar-inline button {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  height: 26px;
+  padding: 0 10px;
+}
+
+.note-toolbar-inline button:hover {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+  color: var(--iris-strong);
+}
+
+.app-version-badge {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+  color: var(--iris-strong);
+}
+
+.note-canvas-shell {
+  background: var(--paper);
+}
+
+.note-editor-surface {
+  background-color: var(--paper);
+}
+
+.editor-canvas {
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+.editor-canvas:empty::before {
+  color: var(--ink-faint);
+}
+
+.editor-canvas h1,
+.editor-canvas h2,
+.editor-canvas h3 {
+  color: var(--ink);
+  font-family: var(--font-display);
+}
+
+.editor-canvas h1 {
+  font-size: 1.55rem;
+  font-weight: 600;
+}
+
+.editor-canvas h2 {
+  font-size: 1.22rem;
+}
+
+.editor-canvas h3 {
+  font-size: 1.02rem;
+}
+
+.editor-canvas a {
+  color: var(--iris);
+}
+
+.editor-canvas blockquote {
+  border-left: 2px solid var(--iris-edge);
+  color: var(--ink-soft);
+}
+
+.editor-canvas pre {
+  background: var(--surface-sunk);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+}
+
+.editor-canvas th {
+  background: var(--surface-sunk);
+  color: var(--ink);
+}
+
+.editor-canvas th,
+.editor-canvas td {
+  border-color: var(--line);
+}
+
+.editor-canvas .checklist input[type='checkbox'] {
+  accent-color: var(--iris);
+}
+
+/* Prose paragraph breathing room */
+.editor-canvas p,
+.editor-canvas ul,
+.editor-canvas ol,
+.editor-canvas blockquote,
+.editor-canvas pre,
+.editor-canvas figure {
+  margin: 0 0 1em;
+}
+
+/* Subtle list marker tint */
+.editor-canvas ul li::marker,
+.editor-canvas ol li::marker {
+  color: var(--ink-ghost);
+}
+
+/* Heading vertical rhythm — lift before, compress after */
+.editor-canvas h1,
+.editor-canvas h2,
+.editor-canvas h3 {
+  margin-top: 1.4em;
+  margin-bottom: 0.3em;
+}
+
+.editor-canvas h1:first-child,
+.editor-canvas h2:first-child,
+.editor-canvas h3:first-child {
+  margin-top: 0;
+}
+
+/* Rule-lines mode — palette-matched to Ink & Porcelain */
+.editor-canvas.rule-lines {
+  background-image:
+    linear-gradient(to right, transparent 86px, var(--iris-edge) 86px, var(--iris-edge) 87px, transparent 87px),
+    repeating-linear-gradient(to bottom, transparent 0 27px, var(--line-soft) 27px 28px);
+}
+
+/* Note title placeholder */
+.note-title::placeholder {
+  color: var(--ink-ghost);
+  font-weight: 300;
+}
+
+.status-strip {
+  background: var(--paper);
+  border-top: 1px solid var(--line-soft);
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+}
+

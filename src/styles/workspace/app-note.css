@@ -1,0 +1,110 @@
+.note-pane {
+  background:
+    radial-gradient(circle at top right, rgba(61, 125, 255, 0.14), transparent 24%),
+    linear-gradient(180deg, #fbfdff 0%, #eff4fb 100%);
+  border-radius: 28px;
+  box-shadow: 0 30px 64px rgba(17, 31, 49, 0.12);
+}
+
+.note-header {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(248, 251, 255, 0.62) 100%);
+  padding: 28px 38px 20px;
+}
+
+.note-header-main {
+  display: block;
+}
+
+.note-location {
+  color: #7c8da5;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  margin-bottom: 8px;
+}
+
+.note-title {
+  font-size: clamp(2.2rem, 3vw, 3.1rem);
+  letter-spacing: -0.05em;
+  max-width: 900px;
+}
+
+.note-date-row {
+  font-size: 0.82rem;
+  gap: 14px;
+}
+
+.note-command-bar {
+  align-items: center;
+  border-top: 1px solid rgba(214, 224, 236, 0.88);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: 18px;
+  padding-top: 16px;
+}
+
+.note-summary-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.note-summary-pill {
+  background: rgba(77, 98, 130, 0.08);
+  border: 1px solid rgba(186, 200, 217, 0.9);
+  border-radius: 999px;
+  color: #53657e;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 7px 11px;
+}
+
+.note-quick-actions {
+  gap: 10px;
+  justify-content: flex-start;
+  max-width: none;
+}
+
+.note-quick-actions button {
+  background: rgba(255, 255, 255, 0.84);
+  border-radius: 999px;
+  box-shadow: 0 10px 20px rgba(17, 31, 49, 0.06);
+  height: 36px;
+  padding: 0 12px;
+}
+
+.note-meta-strip {
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.note-tag-chip,
+.task-pill {
+  background: rgba(255, 255, 255, 0.84);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  padding: 8px 12px;
+}
+
+.note-canvas-shell {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 14%);
+  padding: 28px 38px 34px;
+}
+
+.editor-canvas {
+  border: 1px solid rgba(225, 233, 243, 0.96);
+  border-radius: 30px;
+  box-shadow: 0 34px 68px rgba(17, 31, 49, 0.12);
+  max-width: 980px;
+  min-height: calc(100% - 8px);
+  padding: 38px 42px 56px;
+}
+
+.status-strip {
+  backdrop-filter: blur(14px);
+  background: rgba(250, 252, 255, 0.72);
+  color: #6f8097;
+  padding: 12px 18px 14px;
+}
+

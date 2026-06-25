@@ -1,0 +1,88 @@
+.tag-pane-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px 14px 14px;
+}
+
+.tag-pane-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.tag-pane-actions > button,
+.tag-pane-custom button,
+.tag-pane-catalog button {
+  background: #fff;
+  border: 1px solid #ddd6dc;
+  border-radius: 8px;
+  color: #554d56;
+  cursor: pointer;
+  font: inherit;
+}
+
+.tag-pane-actions > button,
+.tag-pane-custom button {
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+.tag-pane-actions > button:disabled,
+.tag-pane-custom button:disabled,
+.note-tag-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.tag-pane-custom {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.tag-pane-custom input {
+  background: #fff;
+  border: 1px solid #ddd6dc;
+  border-radius: 8px;
+  color: #554d56;
+  font: inherit;
+  min-width: 0;
+  padding: 7px 10px;
+}
+
+.tag-pane-catalog {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tag-pane-catalog button {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  min-height: 38px;
+  padding: 0 10px;
+  text-align: left;
+}
+
+.tag-pane-catalog button.active {
+  background: #f2ebf6;
+  border-color: #d5c6df;
+  color: #5f4d74;
+}
+
+.tag-pane-catalog button strong {
+  color: #7c717d;
+  font-size: 0.72rem;
+}
+
+.tag-pane-results {
+  display: grid;
+  gap: 10px;
+}
+
+.tag-pane-results-title {
+  color: #6f6770;
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+

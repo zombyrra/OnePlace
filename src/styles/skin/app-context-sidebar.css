@@ -1,0 +1,45 @@
+/* ---------- Context menus — Ink & Porcelain palette ---------- */
+
+.context-menu {
+  background: var(--surface-raised);
+  border-color: var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-pop);
+}
+
+.context-menu-item {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+.context-menu-item:hover {
+  background: var(--iris-tint);
+  color: var(--ink);
+}
+
+.context-menu-item.danger {
+  color: var(--hue-rose);
+}
+
+.context-menu-item.danger:hover {
+  background: rgba(194, 90, 110, 0.06);
+  color: var(--hue-rose);
+}
+
+/* ---------- Sidebar refinements ---------- */
+
+/* Section group header → quiet mono category label */
+.notebook-section-group-label {
+  color: var(--ink-ghost);
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+}
+
+/* Smooth hover on nav items and page cards */
+.page-card,
+.notebook-item,
+.notebook-section-link,
+.section-item {
+  transition: background var(--dur-hover) var(--ease-out), box-shadow var(--dur-hover) var(--ease-out);
+}
+

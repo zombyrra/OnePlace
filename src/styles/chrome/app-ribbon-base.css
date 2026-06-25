@@ -1,0 +1,89 @@
+.ribbon {
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 58px;
+  padding: 4px 8px 3px;
+}
+
+.ribbon-cluster {
+  border-radius: 10px;
+  gap: 4px;
+  padding: 5px 7px 13px;
+}
+
+.ribbon-cluster.clipboard {
+  grid-template-columns: 52px 1fr;
+  min-width: 150px;
+}
+
+.ribbon-cluster.font {
+  min-width: 270px;
+}
+
+.ribbon-cluster.paragraph {
+  min-width: 230px;
+}
+
+.ribbon-cluster.styles {
+  flex: 1 1 auto;
+  grid-auto-rows: minmax(36px, auto);
+  min-width: 300px;
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+}
+
+.ribbon-big {
+  border-radius: 8px;
+  font-size: 0.72rem;
+  min-height: 42px;
+  padding: 4px 3px;
+}
+
+.ribbon-big svg {
+  height: 18px;
+  width: 18px;
+}
+
+.ribbon-stack {
+  gap: 3px;
+}
+
+.ribbon-stack button,
+.ribbon-row-compact button,
+.picker,
+.ribbon-cluster.styles > button,
+.style-dropdown > button {
+  border-radius: 8px;
+  font-size: 0.72rem;
+  gap: 4px;
+  min-height: 24px;
+  padding: 0 7px;
+}
+
+.ribbon-cluster.styles > button,
+.style-dropdown > button {
+  flex-direction: row;
+  gap: 6px;
+  justify-content: flex-start;
+  min-height: 36px;
+  padding: 0 10px;
+  text-align: left;
+}
+
+.ribbon-cluster.styles > button span,
+.style-dropdown > button span {
+  line-height: 1.05;
+}
+
+.picker {
+  min-width: 108px;
+}
+
+.picker.tiny {
+  min-width: 46px;
+}
+
+.ribbon-label {
+  display: none;
+}
+

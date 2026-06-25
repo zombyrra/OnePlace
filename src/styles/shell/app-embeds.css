@@ -1,0 +1,128 @@
+.embedded-image {
+  -webkit-user-drag: none;
+  background: #fff;
+  border: 1px solid #dce2eb;
+  cursor: grab;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(100%, 680px);
+  padding: 10px;
+}
+
+.embedded-image.dragging {
+  cursor: grabbing;
+  opacity: 0.7;
+  pointer-events: none;
+  user-select: none;
+  z-index: 4;
+}
+
+.embedded-image img {
+  -webkit-user-drag: none;
+  display: block;
+  height: auto;
+  max-width: 100%;
+  pointer-events: none;
+}
+
+.embedded-image figcaption {
+  color: #6a7280;
+  font-size: 0.78rem;
+}
+
+.audio-note {
+  background: #f8fafc;
+  border: 1px solid #d8dde6;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 320px;
+  padding: 10px 12px;
+}
+
+.audio-note audio {
+  width: min(100%, 360px);
+}
+
+.attachment-card {
+  align-items: flex-start;
+  background: #f7f8fb;
+  border: 1px solid #d8dde6;
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+  padding: 10px 12px;
+}
+
+.attachment-card:hover {
+  background: #eef3fb;
+  border-color: #c5d2e2;
+}
+
+.attachment-title {
+  color: #1f2430;
+  font-size: 0.88rem;
+}
+
+.attachment-meta {
+  color: #6e7786;
+  font-size: 0.75rem;
+}
+
+.printout-card {
+  background: #fbfcfe;
+  border: 1px solid #d8dde6;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(100%, 760px);
+  padding: 12px;
+}
+
+.printout-card:hover {
+  border-color: #c5d2e2;
+}
+
+.printout-preview-shell {
+  background: #fff;
+  border: 1px solid #e3e7ee;
+  min-height: 360px;
+  overflow: hidden;
+}
+
+.printout-preview {
+  border: 0;
+  display: block;
+  height: 520px;
+  width: 100%;
+}
+
+.printout-caption {
+  color: #4f5b6c;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.internal-page-link {
+  background: #eef3fb;
+  border: 1px solid #d0dced;
+  color: #1f5fa8;
+  display: inline-block;
+  padding: 2px 6px;
+  text-decoration: none;
+}
+
+.template-block {
+  background: #fafbfc;
+  border: 1px solid #e3e7ee;
+  padding: 16px 18px 2px;
+}
+
+.editor-canvas pre,
+.editor-canvas code {
+  font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+}

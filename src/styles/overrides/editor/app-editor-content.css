@@ -1,0 +1,33 @@
+.editor-canvas h1,
+.editor-canvas h2,
+.editor-canvas h3 {
+  font-weight: 700;
+}
+
+.editor-canvas h1 {
+  font-size: 1.05rem;
+}
+
+.editor-canvas p,
+.editor-canvas ul,
+.editor-canvas ol,
+.editor-canvas table,
+.editor-canvas blockquote,
+.editor-canvas pre,
+.editor-canvas figure,
+.editor-canvas .attachment-card,
+.editor-canvas .printout-card,
+.editor-canvas .audio-note,
+.editor-canvas .markmap-card,
+.editor-canvas .template-block {
+  margin: 0 0 11px;
+}
+
+.status-strip {
+  background: #fff;
+  border-top: 0;
+  color: #8a848a;
+  font-size: 0.68rem;
+  padding: 6px 16px 10px 22px;
+}
+

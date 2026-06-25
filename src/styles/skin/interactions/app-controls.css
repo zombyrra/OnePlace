@@ -1,0 +1,180 @@
+/* =====================================================================
+   Button system — polish
+   Transitions, press states, icon treatment, hierarchy improvements.
+   All overrides here win the cascade (loaded last).
+   ===================================================================== */
+
+/* — Universal transitions ————————————————————————————————————————————
+   Every interactive control gets a smooth, consistent motion curve.    */
+.tab-button,
+.quick-action,
+.ribbon-stack button,
+.ribbon-row-compact button,
+.picker,
+.ribbon-cluster.styles > button,
+.style-dropdown > button,
+.ribbon-big button,
+.home-vertical-action,
+.home-tag-card,
+.picker-menu button,
+.style-dropdown-menu button,
+.page-inline-action,
+.pages-action-pill,
+.pages-actions button,
+.note-toolbar-inline button {
+  transition:
+    background var(--dur-hover) var(--ease-out),
+    border-color var(--dur-hover) var(--ease-out),
+    box-shadow var(--dur-hover) var(--ease-out),
+    color var(--dur-hover) var(--ease-out),
+    opacity var(--dur-hover) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+/* — Tactile press feedback ———————————————————————————————————————————
+   A gentle scale-down on click makes every button feel physical.       */
+.ribbon-stack button:active:not(:disabled),
+.ribbon-row-compact button:active:not(:disabled),
+.ribbon-cluster.styles > button:active:not(:disabled),
+.picker:active:not(:disabled),
+.ribbon-big button:active:not(:disabled),
+.home-vertical-action:active:not(:disabled),
+.home-tag-card:active:not(:disabled),
+.quick-action:active:not(:disabled),
+.tab-button:active:not(:disabled) {
+  transform: scale(0.95);
+  transition-duration: 40ms;
+}
+
+/* — Icon colour treatment ————————————————————————————————————————————
+   Icons sit quieter than their labels at rest, then pulse to iris on
+   hover — giving a clear visual signal about which button you're on.  */
+.ribbon-cluster.styles > button svg,
+.ribbon-stack button svg,
+.ribbon-row-compact button svg,
+.home-vertical-action svg {
+  color: var(--ink-faint);
+  flex-shrink: 0;
+  transition: color var(--dur-hover) var(--ease-out);
+}
+
+.ribbon-cluster.styles > button:hover:not(:disabled) svg,
+.ribbon-stack button:hover:not(:disabled) svg,
+.ribbon-row-compact button:hover:not(:disabled) svg,
+.home-vertical-action:hover:not(:disabled) svg {
+  color: var(--iris);
+}
+
+/* Keep disabled icons from getting the hover boost */
+.ribbon-cluster.styles > button:disabled svg,
+.ribbon-stack button:disabled svg,
+.ribbon-row-compact button:disabled svg {
+  color: var(--ink-ghost);
+}
+
+/* — Ribbon-big (Paste) — elevated primary anchor ————————————————————
+   The paste button earns a container lift to signal it's the anchor   */
+.ribbon-big {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-sm);
+  transition: box-shadow var(--dur-hover) var(--ease-out);
+}
+
+.ribbon-big:hover {
+  box-shadow: var(--sh-sheet);
+}
+
+.ribbon-big button:hover:not(:disabled) {
+  background: var(--iris-tint);
+  color: var(--iris-strong);
+}
+
+.ribbon-big button:hover:not(:disabled) .ribbon-large-icon {
+  color: var(--iris);
+}
+
+/* — Home compact buttons — defined hover border ——————————————————————
+   Transparent by default; a border on hover anchors the focus target. */
+.ribbon-home .ribbon-stack button,
+.ribbon-home .ribbon-row-compact button {
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+}
+
+.ribbon-home .ribbon-stack button:hover,
+.ribbon-home .ribbon-row-compact button:hover {
+  border-color: var(--iris-edge);
+}
+
+/* — Font / size pickers — glow ring on hover ————————————————————————  */
+.home-basic-text .picker {
+  border-radius: var(--r-sm);
+  box-shadow: var(--sh-sm);
+}
+
+.home-basic-text .picker:hover {
+  border-color: var(--iris-edge);
+  box-shadow: var(--sh-sm), 0 0 0 2px var(--iris-tint);
+}
+
+/* — Active formatting toggles (bold / italic / underline etc.) ————————
+   JS can add .active to signal a toggled-on format state.              */
+.ribbon-stack button.active,
+.ribbon-row-compact button.active {
+  background: var(--iris-tint-strong);
+  border-color: var(--iris-edge);
+  box-shadow: inset 0 1px 2px rgba(75, 63, 167, 0.10);
+  color: var(--iris-strong);
+}
+
+.ribbon-stack button.active svg,
+.ribbon-row-compact button.active svg {
+  color: var(--iris);
+}
+
+/* — Disabled state — no-go cursor, muted but clear ——————————————————— */
+.ribbon-stack button:disabled,
+.ribbon-row-compact button:disabled,
+.ribbon-cluster.styles > button:disabled,
+.ribbon-big button:disabled {
+  cursor: not-allowed;
+}
+
+/* — Home vertical actions (New Page / Promote / Delete etc.) ——————————
+   Slightly rounded on hover so they feel less abrupt to click.         */
+.home-vertical-action {
+  border-radius: 0;
+  transition:
+    background var(--dur-hover) var(--ease-out),
+    color var(--dur-hover) var(--ease-out),
+    border-color var(--dur-hover) var(--ease-out);
+}
+
+/* — Note quick-action buttons — iris theming ————————————————————————— */
+.note-quick-actions button:hover:not(:disabled) {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+  color: var(--iris-strong);
+}
+
+/* — Page action pills — iris theming ————————————————————————————————— */
+.pages-action-pill:hover:not(:disabled) {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+  color: var(--iris-strong);
+}
+
+.pages-actions-primary .pages-action-pill.primary:hover:not(:disabled) {
+  background: var(--iris-strong);
+  border-color: var(--iris-strong);
+  color: #ffffff;
+}
+
+.pages-actions button:hover:not(:disabled) {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+  color: var(--iris-strong);
+}
+

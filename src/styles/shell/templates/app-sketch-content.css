@@ -1,0 +1,124 @@
+.sketch-row {
+  align-items: flex-end;
+  display: flex;
+  gap: 56px;
+  margin-top: 42px;
+}
+
+.user-flow-sketch {
+  height: 270px;
+  position: relative;
+  width: 520px;
+}
+
+.sketch-box,
+.sketch-line,
+.sketch-circle,
+.thumbnail-ui {
+  position: absolute;
+}
+
+.sketch-box {
+  border: 4px solid #222;
+  border-radius: 6px;
+}
+
+.box-a {
+  height: 74px;
+  left: 58px;
+  top: 112px;
+  width: 52px;
+}
+
+.box-b {
+  height: 86px;
+  left: 190px;
+  top: 88px;
+  width: 62px;
+}
+
+.box-c {
+  height: 56px;
+  left: 342px;
+  top: 100px;
+  transform: rotate(4deg);
+  width: 132px;
+}
+
+.sketch-line {
+  background: #222;
+  height: 4px;
+}
+
+.line-a {
+  left: 118px;
+  top: 146px;
+  width: 88px;
+}
+
+.line-b {
+  left: 252px;
+  top: 130px;
+  width: 110px;
+}
+
+.line-c {
+  height: 70px;
+  left: 172px;
+  top: 146px;
+  transform: rotate(18deg);
+  width: 4px;
+}
+
+.sketch-circle {
+  align-items: center;
+  background: #fff;
+  border: 3px solid #222;
+  border-radius: 999px;
+  color: #5cae57;
+  display: grid;
+  font-size: 1.4rem;
+  height: 34px;
+  left: 222px;
+  place-items: center;
+  top: 74px;
+  width: 34px;
+}
+
+.sketch-circle::before {
+  content: '✓';
+}
+
+.sketch-star {
+  color: #d8a52f;
+  font-size: 2rem;
+  position: absolute;
+}
+
+.star-a {
+  left: 472px;
+  top: 82px;
+}
+
+.star-b {
+  left: 294px;
+  top: 218px;
+}
+
+.sketch-label {
+  bottom: 10px;
+  font-family: "Segoe Print", "Comic Sans MS", cursive;
+  font-size: 2rem;
+  font-weight: 600;
+  left: 150px;
+  position: absolute;
+}
+
+.sketch-label::after {
+  border-bottom: 4px solid #222;
+  content: '';
+  display: block;
+  margin-top: 4px;
+  width: 150px;
+}
+

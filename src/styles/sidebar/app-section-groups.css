@@ -1,0 +1,69 @@
+.section-group {
+  display: block;
+  padding: 0;
+}
+
+.section-group-header {
+  align-items: center;
+  display: flex;
+  gap: 2px;
+}
+
+.section-group-sections {
+  display: block;
+}
+
+.section-group-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: #7f5ba7;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 18px;
+  height: 18px;
+  justify-content: center;
+  padding: 0;
+  width: 18px;
+}
+
+.section-group-actions {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.section-group-toggle svg {
+  transition: transform 140ms ease;
+}
+
+.section-group-toggle.collapsed svg {
+  transform: rotate(-90deg);
+}
+
+.section-group-add-button,
+.section-group-rename-button {
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: #7f5ba7;
+  cursor: pointer;
+  display: inline-flex;
+  height: 18px;
+  justify-content: center;
+  padding: 0;
+  width: 18px;
+}
+
+.section-group-add-button {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.section-group-add-button:hover,
+.section-group-rename-button:hover {
+  background: #ece8ec;
+}
+

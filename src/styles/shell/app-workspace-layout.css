@@ -1,0 +1,130 @@
+.workspace {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.42)),
+    linear-gradient(180deg, #edf2f7 0%, #e6edf5 100%);
+  display: grid;
+  flex: 1;
+  grid-template-columns: 272px 312px 1fr;
+  gap: 12px;
+  min-height: 0;
+  padding: 12px;
+}
+
+.notebooks-pane,
+.pages-pane {
+  backdrop-filter: blur(18px);
+  background: rgba(248, 251, 254, 0.78);
+  border: 1px solid rgba(208, 219, 231, 0.95);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.notebooks-pane {
+  background: rgba(242, 247, 252, 0.84);
+  padding: 12px 0 0;
+}
+
+.pages-pane {
+  background: rgba(249, 251, 254, 0.86);
+}
+
+.pane-heading {
+  gap: 8px;
+  padding: 0 12px 10px;
+}
+
+.pane-heading-copy,
+.pages-heading-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.heading-icon {
+  color: #5d5d5d;
+  display: inline-flex;
+}
+
+.pane-kicker {
+  color: #8a909b;
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.pane-heading strong {
+  color: var(--text-strong);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.pane-count {
+  color: #7b8390;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.pane-subheading {
+  align-items: center;
+  color: #838b96;
+  display: flex;
+  font-size: 0.67rem;
+  font-weight: 700;
+  justify-content: space-between;
+  letter-spacing: 0.08em;
+  padding: 4px 12px 6px;
+}
+
+.notebook-list,
+.section-list,
+.page-cards {
+  overflow: auto;
+}
+
+.notebook-list {
+  display: grid;
+  gap: 2px;
+  padding: 0 8px 8px;
+}
+
+.notebook-row {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+}
+
+.tree-inline-editor-shell {
+  padding: 4px 8px 8px;
+}
+
+.tree-inline-editor-shell.nested {
+  padding: 4px 0 0 24px;
+}
+
+.tree-inline-editor {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #c9d8ea;
+  border-radius: 10px;
+  color: #2d3948;
+  font: inherit;
+  font-size: 0.78rem;
+  min-height: 30px;
+  outline: none;
+  padding: 6px 10px;
+  width: 100%;
+}
+
+.tree-inline-editor:focus {
+  border-color: #8eb3db;
+  box-shadow: 0 0 0 3px rgba(108, 154, 214, 0.16);
+}
+
+.tree-inline-editor-compact {
+  min-height: 24px;
+  padding: 3px 8px;
+}

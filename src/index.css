@@ -2,9 +2,9 @@ body {
   margin: 0;
   min-width: 1240px;
   min-height: 100vh;
-  font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
-  background: linear-gradient(180deg, #edf2f7 0%, #e7edf5 100%);
-  color: #26292f;
+  font-family: var(--font-ui, "Segoe UI", system-ui, sans-serif);
+  background: var(--desk, #e7e5df);
+  color: var(--ink, #1c1b22);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

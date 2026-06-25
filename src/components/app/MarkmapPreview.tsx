@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { getMarkmapTitle } from '../../features/app/markmapFeature'
-import { renderMarkmapSvg, type RenderedMarkmap } from '../../features/app/markmapRenderer'
+import type { RenderedMarkmap } from '../../features/app/markmapRenderer'
 
 type MarkmapPreviewProps = {
   markdown: string
@@ -13,21 +13,36 @@ export function MarkmapPreview({ markdown }: MarkmapPreviewProps) {
 
   useEffect(() => {
     const svg = svgRef.current
+    let isDisposed = false
     markmapRef.current?.destroy()
     markmapRef.current = null
 
     if (!svg || !trimmedMarkdown) return undefined
 
-    try {
-      const markmap = renderMarkmapSvg(svg, trimmedMarkdown)
-      markmapRef.current = markmap
-    } catch {
-      while (svg.firstChild) {
-        svg.removeChild(svg.firstChild)
+    const renderPreview = async () => {
+      try {
+        const { renderMarkmapSvg } = await import('../../features/app/markmapRenderer')
+        if (isDisposed || svgRef.current !== svg) return
+
+        const markmap = renderMarkmapSvg(svg, trimmedMarkdown)
+        if (isDisposed) {
+          markmap.destroy()
+          return
+        }
+
+        markmapRef.current = markmap
+      } catch {
+        if (isDisposed) return
+        while (svg.firstChild) {
+          svg.removeChild(svg.firstChild)
+        }
       }
     }
 
+    void renderPreview()
+
     return () => {
+      isDisposed = true
       markmapRef.current?.destroy()
       markmapRef.current = null
     }

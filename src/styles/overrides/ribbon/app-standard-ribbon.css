@@ -1,0 +1,61 @@
+.ribbon:not(.ribbon-home) {
+  align-items: flex-start;
+  background: #f3f0f1;
+  border-bottom: 1px solid #d7d1d5;
+  flex-wrap: nowrap;
+  gap: 8px;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 6px 6px 7px;
+}
+
+.ribbon:not(.ribbon-home) .ribbon-cluster {
+  align-content: start;
+  background: #fbfafb;
+  border: 1px solid #ddd8dd;
+  border-radius: 8px;
+  box-shadow: none;
+  flex: 0 0 auto;
+  gap: 5px;
+  padding: 5px 8px;
+  width: auto;
+}
+
+.ribbon:not(.ribbon-home) .ribbon-cluster.styles {
+  grid-auto-rows: 30px;
+  grid-template-columns: repeat(3, minmax(104px, 114px));
+  min-width: 0;
+}
+
+.ribbon:not(.ribbon-home) .ribbon-cluster.insert-content {
+  grid-template-columns: repeat(5, minmax(104px, 114px));
+}
+
+.ribbon:not(.ribbon-home) .ribbon-cluster.insert-media,
+.ribbon:not(.ribbon-home) .ribbon-cluster.insert-meeting-tools {
+  grid-template-columns: repeat(4, minmax(104px, 114px));
+}
+
+.ribbon:not(.ribbon-home) .ribbon-cluster.styles > button,
+.ribbon:not(.ribbon-home) .style-dropdown > button {
+  border-radius: 6px;
+  gap: 7px;
+  min-height: 30px;
+  overflow: hidden;
+  padding: 0 9px;
+}
+
+.ribbon:not(.ribbon-home) .ribbon-cluster.styles > button svg {
+  flex: 0 0 auto;
+  height: 20px;
+  width: 20px;
+}
+
+.ribbon:not(.ribbon-home) .ribbon-cluster.styles > button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+

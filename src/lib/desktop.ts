@@ -5,6 +5,13 @@ import { check } from '@tauri-apps/plugin-updater'
 
 const DATA_KEY = 'oneplace-data'
 
+type DesktopDataAccessDeps = {
+  invoke: <T>(command: string, args?: Record<string, unknown>) => Promise<T>
+  isTauriRuntime: () => boolean
+  localStorage: Pick<Storage, 'getItem' | 'setItem'>
+  now?: () => Date
+}
+
 export type DesktopUpdateInfo = {
   body?: string
   currentVersion: string
@@ -21,29 +28,46 @@ const isTauriRuntime = () =>
   (Object.prototype.hasOwnProperty.call(window, '__TAURI_INTERNALS__') ||
     Object.prototype.hasOwnProperty.call(window, '__TAURI__'))
 
-export const loadDesktopData = async (): Promise<string | null> => {
-  if (isTauriRuntime()) {
-    try {
+export const createDesktopDataAccess = ({
+  invoke,
+  isTauriRuntime,
+  localStorage,
+  now = () => new Date(),
+}: DesktopDataAccessDeps) => ({
+  loadDesktopData: async (): Promise<string | null> => {
+    if (isTauriRuntime()) {
       return await invoke<string | null>('load_data')
-    } catch {
-      return localStorage.getItem(DATA_KEY)
     }
-  }
 
-  return localStorage.getItem(DATA_KEY)
-}
+    return localStorage.getItem(DATA_KEY)
+  },
 
-export const saveDesktopData = async (rawData: string): Promise<DesktopSaveResult> => {
-  if (isTauriRuntime()) {
-    return await invoke<DesktopSaveResult>('save_data', { rawData })
-  }
+  saveDesktopData: async (rawData: string): Promise<DesktopSaveResult> => {
+    if (isTauriRuntime()) {
+      return await invoke<DesktopSaveResult>('save_data', { rawData })
+    }
 
-  localStorage.setItem(DATA_KEY, rawData)
-  return {
-    path: 'localStorage',
-    savedAt: new Date().toISOString(),
-  }
-}
+    localStorage.setItem(DATA_KEY, rawData)
+    return {
+      path: 'localStorage',
+      savedAt: now().toISOString(),
+    }
+  },
+})
+
+const desktopDataAccess = createDesktopDataAccess({
+  invoke,
+  isTauriRuntime,
+  localStorage: {
+    getItem: (key) => localStorage.getItem(key),
+    setItem: (key, value) => localStorage.setItem(key, value),
+  },
+})
+
+export const loadDesktopData = async (): Promise<string | null> => desktopDataAccess.loadDesktopData()
+
+export const saveDesktopData = async (rawData: string): Promise<DesktopSaveResult> =>
+  desktopDataAccess.saveDesktopData(rawData)
 
 export const getDesktopAppInfo = async (): Promise<DesktopAppInfo | null> => {
   if (isTauriRuntime()) {

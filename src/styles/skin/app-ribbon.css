@@ -1,0 +1,171 @@
+/* ---------- Ribbon ---------- */
+
+.ribbon:not(.ribbon-home),
+.ribbon-home,
+.ribbon.ribbon-file,
+.ribbon.ribbon-insert {
+  background: var(--chrome);
+  border-bottom: 1px solid var(--line);
+}
+
+.ribbon:not(.ribbon-home) .ribbon-cluster {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+}
+
+.ribbon-home .ribbon-cluster {
+  border-right-color: var(--line);
+}
+
+.ribbon-big {
+  background: var(--surface-raised);
+  border-color: var(--line-soft);
+  color: var(--ink-soft);
+}
+
+.ribbon-stack button,
+.ribbon-row-compact button,
+.picker,
+.ribbon-cluster.styles > button,
+.style-dropdown > button,
+.ribbon:not(.ribbon-home) .ribbon-cluster.styles > button,
+.ribbon:not(.ribbon-home) .style-dropdown > button {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  color: var(--ink-soft);
+}
+
+.ribbon-stack button:hover,
+.ribbon-row-compact button:hover,
+.ribbon-cluster.styles > button:hover,
+.style-dropdown > button:hover,
+.picker:hover {
+  background: var(--iris-tint);
+  border-color: var(--iris-edge);
+  color: var(--ink);
+}
+
+.ribbon-large-icon {
+  color: var(--hue-amber);
+}
+
+/* Restore the hidden cluster labels as quiet mono captions — they encode
+   the real tool grouping (Pages, Content, Media, Pens…). Only clusters
+   that actually carry a label reserve space for it. */
+.ribbon-label {
+  display: block;
+  bottom: 2px;
+  color: var(--ink-ghost);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ribbon-cluster:has(> .ribbon-label) {
+  padding-bottom: 16px;
+}
+
+.ribbon-home {
+  min-height: 86px;
+}
+
+.ribbon-home .ribbon-cluster:has(> .ribbon-label) {
+  min-height: 80px;
+}
+
+/* Tool buttons: clear, calm states */
+.ribbon-cluster.styles > button:disabled,
+.ribbon:not(.ribbon-home) .ribbon-cluster.styles > button:disabled,
+.ribbon-stack button:disabled,
+.ribbon-row-compact button:disabled {
+  color: var(--ink-ghost);
+  opacity: 0.5;
+}
+
+.ribbon-cluster.styles > button:disabled:hover,
+.ribbon:not(.ribbon-home) .ribbon-cluster.styles > button:disabled:hover {
+  background: var(--surface-raised);
+  border-color: var(--line-soft);
+  color: var(--ink-ghost);
+}
+
+/* Destructive tools read in rose on hover */
+.ribbon-cluster.styles > button:hover:is([class*='delete'], [title*='Delete']),
+.home-vertical-action:hover:last-child {
+  color: var(--hue-rose);
+}
+
+/* Tab row: a little more room to breathe */
+.tab-row {
+  gap: 1px;
+}
+
+.tab-button {
+  letter-spacing: 0.01em;
+  padding: 4px 13px 3px;
+}
+
+.home-style-card,
+.home-basic-text .picker {
+  background: var(--surface-raised);
+  border-color: var(--line);
+}
+
+.home-style-card strong {
+  color: var(--ink);
+}
+
+.home-style-card.heading-1 strong,
+.home-style-card.heading-2 strong {
+  color: var(--iris);
+}
+
+.home-style-card.callout strong {
+  color: var(--ink-faint);
+}
+
+.home-style-card.code-block strong {
+  color: var(--ink);
+  font-family: var(--font-mono);
+}
+
+.home-tag-dot {
+  color: var(--iris);
+}
+
+.home-tag-star {
+  color: var(--hue-amber);
+}
+
+.ribbon-home .ribbon-stack button:hover,
+.ribbon-home .ribbon-row-compact button:hover,
+.ribbon-home .picker:hover,
+.home-tag-card:hover,
+.home-vertical-action:hover {
+  background: var(--iris-tint);
+  border-color: transparent;
+}
+
+.home-vertical-action {
+  border-left-color: var(--line);
+}
+
+/* Floating dropdown menus */
+.picker-menu,
+.picker-menu-floating,
+.style-dropdown-menu,
+.search-results {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-pop);
+}
+
+.picker-menu button:hover,
+.style-dropdown-menu button:hover {
+  background: var(--iris-tint);
+}
+

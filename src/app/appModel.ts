@@ -2,6 +2,7 @@ export * from './appTypes'
 export * from './appConstants'
 export * from './appFormatting'
 export * from './appPages'
+import createDOMPurify from 'dompurify'
 import type {
   AppAsset,
   AppMeta,
@@ -43,6 +44,96 @@ export const escapeHtml = (value: string) =>
     .replace(/'/g, '&#39;')
 
 export const escapeAttribute = (value: string) => escapeHtml(value)
+
+const allowedContentTags = [
+  'a',
+  'audio',
+  'b',
+  'blockquote',
+  'br',
+  'code',
+  'div',
+  'em',
+  'figcaption',
+  'figure',
+  'font',
+  'h1',
+  'h2',
+  'h3',
+  'hr',
+  'i',
+  'iframe',
+  'img',
+  'input',
+  'label',
+  'li',
+  'ol',
+  'p',
+  'pre',
+  'section',
+  'span',
+  'strong',
+  'sub',
+  'sup',
+  'table',
+  'tbody',
+  'td',
+  'th',
+  'thead',
+  'tr',
+  'u',
+  'ul',
+] as const
+
+const allowedContentAttrs = [
+  'checked',
+  'class',
+  'color',
+  'contenteditable',
+  'controls',
+  'data-asset-id',
+  'data-download-url',
+  'data-file-name',
+  'data-markmap-markdown',
+  'data-page-id',
+  'data-reference-key',
+  'data-reference-style',
+  'face',
+  'href',
+  'rel',
+  'size',
+  'src',
+  'target',
+  'title',
+  'type',
+] as const
+
+const purifierConfig = {
+  ALLOW_DATA_ATTR: false,
+  ALLOWED_ATTR: [...allowedContentAttrs],
+  ALLOWED_TAGS: [...allowedContentTags],
+}
+
+const getPurifier = () => {
+  if (typeof window === 'undefined' || !window.document) return null
+  return createDOMPurify(window)
+}
+
+const isSafeHttpUrl = (value: string) => /^https?:/i.test(value)
+const isSafeDataUrl = (value: string) => /^data:[a-z0-9.+-]+\/[a-z0-9.+-]+(?:;base64)?,/i.test(value)
+export const isSafeImageDataUrl = (value: string) =>
+  /^data:image\/(?!svg\+xml)[a-z0-9.+-]+(?:;base64)?,/i.test(value)
+export const isSafeAudioDataUrl = (value: string) => /^data:audio\/[a-z0-9.+-]+(?:;base64)?,/i.test(value)
+export const isSafePdfDataUrl = (value: string) => /^data:application\/pdf(?:;base64)?,/i.test(value)
+export const isSafeDownloadDataUrl = (value: string) =>
+  isSafeDataUrl(value) && !/^data:(?:text\/html|image\/svg\+xml)/i.test(value)
+
+const isSafeAssetDataUrl = (asset: AppAsset) => {
+  if (asset.kind === 'image') return isSafeImageDataUrl(asset.dataUrl)
+  if (asset.kind === 'audio') return isSafeAudioDataUrl(asset.dataUrl)
+  if (asset.kind === 'printout') return isSafePdfDataUrl(asset.dataUrl)
+  return isSafeDownloadDataUrl(asset.dataUrl)
+}
 
 export const linkifyPlainText = (value: string) => {
   const expression = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi
@@ -94,46 +185,10 @@ export const getFloatingPanelStyle = (element: HTMLDivElement | null) => {
 
 export const sanitizePastedHtml = (value: string) => {
   const parser = new DOMParser()
-  const doc = parser.parseFromString(value, 'text/html')
-  const allowedTags = new Set([
-    'a',
-    'audio',
-    'b',
-    'blockquote',
-    'br',
-    'code',
-    'div',
-    'em',
-    'figcaption',
-    'figure',
-    'font',
-    'h1',
-    'h2',
-    'h3',
-    'hr',
-    'i',
-    'iframe',
-    'img',
-    'input',
-    'label',
-    'li',
-    'ol',
-    'p',
-    'pre',
-    'section',
-    'span',
-    'strong',
-    'sub',
-    'sup',
-    'table',
-    'tbody',
-    'td',
-    'th',
-    'thead',
-    'tr',
-    'u',
-    'ul',
-  ])
+  const purifier = getPurifier()
+  const sanitizedValue = purifier ? purifier.sanitize(value, purifierConfig) : value
+  const doc = parser.parseFromString(sanitizedValue, 'text/html')
+  const allowedTags = new Set<string>(allowedContentTags)
 
   const unwrapNode = (node: Element) => {
     const parent = node.parentNode
@@ -176,14 +231,14 @@ export const sanitizePastedHtml = (value: string) => {
       }
 
       if (tag === 'img' && attrName === 'src') {
-        if (!/^data:image\/|^https?:/.test(attrValue)) {
+        if (!isSafeImageDataUrl(attrValue) && !isSafeHttpUrl(attrValue)) {
           node.removeAttribute(attribute.name)
         }
         continue
       }
 
       if (tag === 'audio' && attrName === 'src') {
-        if (!/^data:audio\/|^https?:/.test(attrValue)) {
+        if (!isSafeAudioDataUrl(attrValue) && !isSafeHttpUrl(attrValue)) {
           node.removeAttribute(attribute.name)
         }
         continue
@@ -194,7 +249,7 @@ export const sanitizePastedHtml = (value: string) => {
       }
 
       if (tag === 'iframe' && attrName === 'src') {
-        if (!/^data:application\/pdf(?:;base64)?,/i.test(attrValue)) {
+        if (!isSafePdfDataUrl(attrValue)) {
           node.removeAttribute(attribute.name)
         }
         continue
@@ -262,11 +317,17 @@ export const sanitizePastedHtml = (value: string) => {
         attrName === 'data-asset-id' ||
         attrName === 'data-page-id' ||
         attrName === 'data-file-name' ||
-        attrName === 'data-download-url' ||
         attrName === 'data-markmap-markdown' ||
         attrName === 'data-reference-key' ||
         attrName === 'data-reference-style'
       ) {
+        continue
+      }
+
+      if (attrName === 'data-download-url') {
+        if (!isSafeDownloadDataUrl(attrValue)) {
+          node.removeAttribute(attribute.name)
+        }
         continue
       }
 
@@ -332,7 +393,7 @@ export const normalizeTerminalText = (value: string) =>
 
 export const hydratePageContent = (value: string, assets: Record<string, AppAsset>) => {
   const parser = new DOMParser()
-  const doc = parser.parseFromString(value, 'text/html')
+  const doc = parser.parseFromString(sanitizePastedHtml(value), 'text/html')
 
   for (const image of doc.querySelectorAll<HTMLElement>('[data-asset-id]')) {
     const assetId = image.dataset.assetId
@@ -341,18 +402,24 @@ export const hydratePageContent = (value: string, assets: Record<string, AppAsse
     if (!asset) continue
 
     if (image instanceof HTMLImageElement) {
-      image.src = asset.dataUrl
+      if (asset.kind === 'image' && isSafeImageDataUrl(asset.dataUrl)) {
+        image.src = asset.dataUrl
+      }
       continue
     }
 
     if (image instanceof HTMLAudioElement) {
-      image.src = asset.dataUrl
+      if (asset.kind === 'audio' && isSafeAudioDataUrl(asset.dataUrl)) {
+        image.src = asset.dataUrl
+      }
       continue
     }
 
     if (image.classList.contains('attachment-card') || image.classList.contains('printout-card')) {
-      image.dataset.downloadUrl = asset.dataUrl
-      image.dataset.fileName = asset.name
+      if (isSafeDownloadDataUrl(asset.dataUrl)) {
+        image.dataset.downloadUrl = asset.dataUrl
+        image.dataset.fileName = asset.name
+      }
     }
   }
 
@@ -361,7 +428,9 @@ export const hydratePageContent = (value: string, assets: Record<string, AppAsse
     if (!assetId) continue
     const asset = assets[assetId]
     if (!asset) continue
-    frame.src = asset.dataUrl
+    if (asset.kind === 'printout' && isSafePdfDataUrl(asset.dataUrl)) {
+      frame.src = asset.dataUrl
+    }
   }
 
   return doc.body.innerHTML
@@ -422,27 +491,157 @@ export const recordPageVersion = (
   }
 }
 
-export const hashSecret = async (value: string) => {
+const secretHashAlgorithm = 'pbkdf2-sha256'
+const secretHashIterations = 210_000
+const secretHashSaltBytes = 16
+const secretHashBytes = 32
+
+const encodeBytesAsBase64 = (bytes: Uint8Array) => {
+  let binary = ''
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
+  }
+  return btoa(binary)
+}
+
+const decodeBase64Bytes = (value: string) => {
+  const binary = atob(value)
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0))
+}
+
+const hashSecretSha256Hex = async (value: string) => {
   const encoded = new TextEncoder().encode(value)
   const digest = await crypto.subtle.digest('SHA-256', encoded)
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
+const deriveSecretHash = async (value: string, salt: Uint8Array, iterations: number) => {
+  const saltBuffer = new ArrayBuffer(salt.byteLength)
+  const normalizedSalt = new Uint8Array(saltBuffer)
+  normalizedSalt.set(salt)
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(value),
+    'PBKDF2',
+    false,
+    ['deriveBits'],
+  )
+  const bits = await crypto.subtle.deriveBits(
+    {
+      hash: 'SHA-256',
+      iterations,
+      name: 'PBKDF2',
+      salt: normalizedSalt,
+    },
+    key,
+    secretHashBytes * 8,
+  )
+  return new Uint8Array(bits)
+}
+
+const timingSafeEqualBytes = (left: Uint8Array, right: Uint8Array) => {
+  if (left.length !== right.length) return false
+  let diff = 0
+  for (let index = 0; index < left.length; index += 1) {
+    diff |= left[index] ^ right[index]
+  }
+  return diff === 0
+}
+
+export const hashSecret = async (value: string) => {
+  const salt = crypto.getRandomValues(new Uint8Array(secretHashSaltBytes))
+  const hash = await deriveSecretHash(value, salt, secretHashIterations)
+  return [
+    secretHashAlgorithm,
+    String(secretHashIterations),
+    encodeBytesAsBase64(salt),
+    encodeBytesAsBase64(hash),
+  ].join(':')
+}
+
+export const verifySecret = async (value: string, storedHash: string) => {
+  const [algorithm, iterationsValue, saltValue, hashValue, extra] = storedHash.split(':')
+  if (algorithm === secretHashAlgorithm && !extra) {
+    const iterations = Number(iterationsValue)
+    if (!Number.isSafeInteger(iterations) || iterations <= 0 || !saltValue || !hashValue) {
+      return false
+    }
+
+    try {
+      const salt = decodeBase64Bytes(saltValue)
+      const expectedHash = decodeBase64Bytes(hashValue)
+      const actualHash = await deriveSecretHash(value, salt, iterations)
+      return timingSafeEqualBytes(actualHash, expectedHash)
+    } catch {
+      return false
+    }
+  }
+
+  return (await hashSecretSha256Hex(value)) === storedHash
+}
+
 export const accentPalette = ['#3784d6', '#3c9fa7', '#d1629b', '#d77f9c', '#4c75b8', '#b15fab']
+export const defaultNotebookColor = '#8b63c9'
+export const defaultSectionColor = '#4c75b8'
+
+export const createStarterPage = (
+  title = 'Untitled Page',
+  accent = defaultSectionColor,
+  content = `<p>${escapeHtml(title)} notes.</p>`,
+): Page => createPage(title, '', accent, content)
+
+export const createStarterSection = (
+  name = 'New Section',
+  color = defaultSectionColor,
+  pageTitles: string[] = ['Untitled Page'],
+): Section => ({
+  color,
+  id: createId(),
+  name,
+  pages: (pageTitles.length > 0 ? pageTitles : ['Untitled Page']).map((title) => createStarterPage(title, color)),
+  passwordHash: null,
+  passwordHint: '',
+})
+
+export const createStarterSectionGroup = (
+  name = 'Sections',
+  sections: Section[] = [createStarterSection()],
+): SectionGroup => createSectionGroup(name, sections)
+
+export const createStarterNotebook = (
+  name = 'Notebook',
+  sectionGroups: SectionGroup[] = [createStarterSectionGroup()],
+  color = defaultNotebookColor,
+  icon = 'book',
+): Notebook => ({
+  color,
+  icon,
+  id: createId(),
+  name,
+  sectionGroups,
+})
+
+export const createSingleNotebookState = (current: AppState, name = 'Notebook'): AppState => {
+  const notebook = createStarterNotebook(name)
+  const sectionGroup = notebook.sectionGroups[0]
+  const section = sectionGroup.sections[0]
+  const page = section.pages[0]
+
+  return {
+    ...current,
+    meta: {
+      ...current.meta,
+      recentPageIds: [page.id, ...current.meta.recentPageIds.filter((id) => id !== page.id)].slice(0, 8),
+    },
+    notebooks: [notebook],
+    selectedNotebookId: notebook.id,
+    selectedPageId: page.id,
+    selectedSectionGroupId: sectionGroup.id,
+    selectedSectionId: section.id,
+  }
+}
 
 export const createStarterState = (): AppState => {
-  const createStarterPage = (title: string, accent: string) =>
-    createPage(title, '', accent, `<p>${title} notes.</p>`)
-
-  const createStarterSection = (name: string, color: string, pageTitles?: string[]): Section => ({
-    color,
-    id: createId(),
-    name,
-    pages: (pageTitles?.length ? pageTitles : ['Untitled Page']).map((title) => createStarterPage(title, color)),
-    passwordHash: null,
-    passwordHint: '',
-  })
-
   const workNotebook: Notebook = {
     color: '#7e42b3',
     icon: 'book',
@@ -579,7 +778,7 @@ export const normalizeAppState = (input: unknown): AppState => {
               return null
             }
 
-            const content = typeof page.content === 'string' ? page.content : '<p></p>'
+            const content = typeof page.content === 'string' ? sanitizePastedHtml(page.content) : '<p></p>'
             const createdAt = typeof page.createdAt === 'string' ? page.createdAt : new Date().toISOString()
             const updatedAt = typeof page.updatedAt === 'string' ? page.updatedAt : createdAt
 
@@ -767,8 +966,10 @@ export const normalizeAppState = (input: unknown): AppState => {
                   !!entry[1] &&
                   typeof entry[1] === 'object' &&
                   typeof (entry[1] as AppAsset).id === 'string' &&
+                  ['audio', 'file', 'image', 'printout'].includes((entry[1] as AppAsset).kind) &&
                   typeof (entry[1] as AppAsset).dataUrl === 'string' &&
-                  typeof (entry[1] as AppAsset).name === 'string',
+                  typeof (entry[1] as AppAsset).name === 'string' &&
+                  isSafeAssetDataUrl(entry[1] as AppAsset),
               ),
             )
           : {},
@@ -795,6 +996,10 @@ export const normalizeAppState = (input: unknown): AppState => {
                           typeof version.content === 'string' &&
                           typeof version.savedAt === 'string',
                       )
+                      .map((version) => ({
+                        ...version,
+                        content: sanitizePastedHtml(version.content),
+                      }))
                       .slice(0, 20)
                   : [],
               ]),

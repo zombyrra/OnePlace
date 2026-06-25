@@ -1,0 +1,27 @@
+/* Desktop redesign overrides */
+
+.desktop-scene {
+  --chrome-top: #f8fbff;
+  --chrome-bottom: #edf3f9;
+  --surface-0: #eef4fb;
+  --surface-1: #ffffff;
+  --surface-2: #f9fbfe;
+  --surface-3: #edf2f8;
+  --surface-4: #dae5f1;
+  --border-soft: #d6e0ec;
+  --border-strong: #c4d1df;
+  --text-strong: #162030;
+  --text: #3c495e;
+  --text-muted: #6f8097;
+  --accent: #2d6af0;
+  --accent-soft: rgba(45, 106, 240, 0.1);
+  --accent-strong: #1b55d3;
+  --shadow-sm: 0 4px 12px rgba(17, 31, 49, 0.05);
+  --shadow-md: 0 18px 34px rgba(17, 31, 49, 0.08);
+  --shadow-lg: 0 32px 80px rgba(17, 31, 49, 0.14);
+  background:
+    radial-gradient(circle at top right, rgba(84, 155, 255, 0.18), transparent 30%),
+    radial-gradient(circle at left center, rgba(146, 191, 255, 0.12), transparent 26%),
+    linear-gradient(180deg, #f3f8fd 0%, #e8eff7 100%);
+}
+

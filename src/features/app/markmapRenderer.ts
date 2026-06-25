@@ -1,4 +1,4 @@
-import { Transformer } from 'markmap-lib'
+import { Transformer } from 'markmap-lib/no-plugins'
 import { Markmap } from 'markmap-view'
 import type { IMarkmapOptions } from 'markmap-view'
 

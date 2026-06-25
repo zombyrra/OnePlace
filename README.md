@@ -62,6 +62,17 @@ npm run build:web
 npm run preview
 ```
 
+### Run checks
+
+```bash
+npm test
+npm run lint
+```
+
+### Data saving and local protection
+
+See [docs/data-saving-security.md](./docs/data-saving-security.md) for the desktop save layout, recovery behavior, section password limits, and local data protection expectations.
+
 ## Build
 
 ### Build the desktop app

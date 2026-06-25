@@ -1,0 +1,187 @@
+.page-row {
+  align-items: stretch;
+  display: flex;
+  gap: 4px;
+}
+
+.page-disclosure,
+.page-disclosure-placeholder {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 16px;
+  justify-content: center;
+  width: 16px;
+}
+
+.page-disclosure {
+  align-self: center;
+  background: transparent;
+  border: 0;
+  border-radius: 2px;
+  color: #697384;
+  cursor: pointer;
+  height: 20px;
+  padding: 0;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.page-disclosure:hover {
+  background: rgba(113, 129, 153, 0.1);
+  color: #425062;
+}
+
+.page-disclosure svg {
+  transition: transform 140ms ease;
+}
+
+.page-disclosure.collapsed svg {
+  transform: rotate(-90deg);
+}
+
+.page-card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid #e1e8f0;
+  border-radius: 16px;
+  display: flex;
+  gap: 8px;
+  min-height: 64px;
+  padding: 10px 10px 10px 0;
+  text-align: left;
+  transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.page-card.has-selected-child:not(.active) {
+  background: linear-gradient(180deg, #f5f9ff 0%, #edf4ff 100%);
+  border-color: #d3e0f2;
+}
+
+.page-card:hover {
+  background: #ffffff;
+  border-color: #cfe0f2;
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.drag-active .page-card:hover,
+.drag-active .section-item:hover,
+.drag-active .section-group-button:hover {
+  background: #eef5fd;
+  border-color: #8eb3db;
+  box-shadow: 0 0 0 2px rgba(108, 154, 214, 0.2);
+}
+
+.drag-active .page-card.active:hover {
+  background: #fff;
+  border-color: #cbd4e1;
+}
+
+.drag-active .section-item.active:hover {
+  background: #fff;
+}
+
+.drag-active .section-group-button.active:hover {
+  background: #eef3f8;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.page-card.active {
+  background: linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+  border-color: #c8d9ee;
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    0 14px 28px rgba(47, 111, 237, 0.1);
+  color: var(--text-strong);
+}
+
+.subpage-card {
+  min-height: 50px;
+  width: auto;
+}
+
+.subpage-card .page-accent {
+  height: 34px;
+}
+
+.page-accent {
+  border-radius: 999px;
+  display: inline-block;
+  flex: 0 0 auto;
+  height: 42px;
+  margin-left: 6px;
+  opacity: 1;
+  width: 3px;
+}
+
+.page-card-body {
+  align-items: flex-start;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.page-inline-actions {
+  display: grid;
+  gap: 4px;
+  margin-left: auto;
+  opacity: 0.92;
+}
+
+.page-inline-action {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d8e2ee;
+  border-radius: 10px;
+  color: #6b7688;
+  cursor: pointer;
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.page-inline-action:hover {
+  background: #f4f8fd;
+  color: #324053;
+}
+
+.page-inline-action.danger:hover {
+  background: #fff3f1;
+  border-color: #f1c2ba;
+  color: #b42318;
+}
+
+.page-inline-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.page-card strong {
+  font-size: 0.83rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.section-protected-badge {
+  background: #eef3fb;
+  border: 1px solid #d2dced;
+  color: #506480;
+  font-size: 0.66rem;
+  margin-left: auto;
+  padding: 1px 5px;
+}
+
+.page-date,
+.page-snippet {
+  color: #4e5a6d;
+  font-size: 0.74rem;
+  line-height: 1.22;
+}
+
+.page-card.active .page-date,
+.page-card.active .page-snippet {
+  color: #4e5a6d;
+}
+

@@ -1,0 +1,64 @@
+
+.notebook-item {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  flex: 1;
+  font-size: 0.84rem;
+  font-weight: 600;
+  gap: 8px;
+  min-height: 31px;
+  padding: 6px 8px;
+  text-align: left;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.notebook-item:hover {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: #d7e1ed;
+}
+
+.notebook-item.active {
+  background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+  border-color: #c9d7eb;
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    0 8px 18px rgba(47, 111, 237, 0.08);
+}
+
+.notebook-glyph {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  width: 18px;
+}
+
+.notebook-glyph-svg {
+  display: block;
+}
+
+.notebook-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(4px);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.notebook-action-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 2px;
+  color: #697384;
+  cursor: pointer;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.notebook-action-button:hover {
+  background: rgba(113, 129, 153, 0.1);
+}
+

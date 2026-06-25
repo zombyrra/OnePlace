@@ -1,0 +1,44 @@
+.desktop-scene {
+  --chrome-top: #f7f9fc;
+  --chrome-bottom: #eef3f8;
+  --surface-0: #eef3f8;
+  --surface-1: #ffffff;
+  --surface-2: #f9fbfd;
+  --surface-3: #e8eef6;
+  --surface-4: #d8e1ec;
+  --border-soft: #d8e1eb;
+  --border-strong: #c4d0de;
+  --text-strong: #18212f;
+  --text: #3d495c;
+  --text-muted: #708095;
+  --accent: #2f6fed;
+  --accent-soft: rgba(47, 111, 237, 0.1);
+  --accent-strong: #0d4fd3;
+  --shadow-sm: 0 1px 2px rgba(18, 31, 49, 0.05);
+  --shadow-md: 0 10px 24px rgba(18, 31, 49, 0.08);
+  --shadow-lg: 0 24px 60px rgba(18, 31, 49, 0.12);
+  cursor: default;
+  min-height: 100vh;
+  padding: 0;
+  background:
+    radial-gradient(circle at top right, rgba(87, 157, 255, 0.14), transparent 26%),
+    linear-gradient(180deg, #f3f7fb 0%, #e9eef5 100%);
+}
+
+.desktop-scene.drag-active,
+.desktop-scene.drag-active * {
+  cursor: grabbing !important;
+}
+
+.onenote-window {
+  background: linear-gradient(180deg, var(--chrome-top) 0%, var(--chrome-bottom) 100%);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  width: 100vw;
+}
+

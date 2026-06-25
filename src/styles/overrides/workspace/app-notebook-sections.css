@@ -1,0 +1,93 @@
+.notebook-section-group-label {
+  align-items: center;
+  border-radius: 6px;
+  color: #7c7280;
+  cursor: default;
+  display: grid;
+  font-size: 0.74rem;
+  font-weight: 700;
+  gap: 3px;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  letter-spacing: 0.04em;
+  padding: 2px 6px 4px 2px;
+  text-transform: uppercase;
+}
+
+.section-group-toggle {
+  color: #8f49b2;
+}
+
+.section-group-button {
+  display: block;
+  flex: 1 1 auto;
+  font-size: 0.82rem;
+  line-height: 1.18;
+  min-width: 0;
+  overflow: visible;
+  padding: 1px 2px;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.notebooks-pane .section-group-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  flex: 0 0 auto;
+  min-width: 34px;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: none !important;
+}
+
+.section-group-add-button,
+.section-group-rename-button {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: #8f49b2;
+  display: inline-flex;
+  height: 16px;
+  justify-content: center;
+  min-height: 16px;
+  padding: 0;
+  width: 16px;
+}
+
+.section-group-add-button {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(143, 73, 178, 0.16);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.notebook-section-group-dropzone {
+  border-radius: 6px;
+  min-height: 12px;
+}
+
+.notebook-section-group.drop-inside .notebook-section-group-label,
+.notebook-section-group.drop-inside .notebook-section-group-dropzone {
+  background: rgba(143, 104, 201, 0.12);
+}
+
+.notebook-section-link,
+.notebook-new-section,
+.notebook-new-group {
+  min-height: 30px;
+  padding: 6px 10px;
+}
+
+.empty-section-group-action {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px dashed rgba(127, 91, 167, 0.28);
+  border-radius: 8px;
+  color: #7f5ba7;
+  font-size: 0.84rem;
+  margin: 2px 0 6px 18px;
+  min-height: 30px;
+  padding: 4px 10px;
+}
+

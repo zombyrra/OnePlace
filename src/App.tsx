@@ -233,8 +233,6 @@ function App() {
   const {
     canDeleteNotebook,
     canDeletePage,
-    canDeleteSection,
-    canDeleteSectionGroup,
     canDemotePage,
     canPromotePage,
     goBack,
@@ -258,7 +256,6 @@ function App() {
     page,
     recentNotebookEntries,
     section,
-    sectionGroup,
     setActiveTab,
     setAppState,
     setNavigationIndex,
@@ -648,10 +645,6 @@ function App() {
     renameSectionGroupTo,
   } = useNotebookPageActions({
     appState,
-    canDeleteNotebook,
-    canDeletePage,
-    canDeleteSection,
-    canDeleteSectionGroup,
     canDemotePage,
     canPromotePage,
     notebook,

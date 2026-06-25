@@ -1,0 +1,78 @@
+
+.meeting-note h1 {
+  color: #171d27;
+  font-size: 2.95rem;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  margin: 0 0 16px;
+}
+
+.meeting-meta {
+  border-bottom: 1px solid #e4e9ef;
+  color: #7f8998;
+  display: flex;
+  gap: 34px;
+  margin-bottom: 36px;
+  padding-bottom: 10px;
+}
+
+.meeting-block {
+  margin-bottom: 24px;
+}
+
+.meeting-block h3 {
+  font-size: 1.05rem;
+  margin: 0 0 12px;
+}
+
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.checklist li {
+  margin-bottom: 8px;
+}
+
+.checklist label {
+  align-items: center;
+  display: inline-flex;
+  font-size: 1rem;
+  gap: 12px;
+}
+
+.checklist input {
+  accent-color: #747474;
+  height: 18px;
+  width: 18px;
+}
+
+.takeaways {
+  margin: 8px 0 0 36px;
+  padding: 0;
+}
+
+.takeaways li {
+  margin-bottom: 4px;
+}
+
+.action-table {
+  border-collapse: collapse;
+  margin: 34px 0 34px;
+  width: 100%;
+}
+
+.action-table th,
+.action-table td {
+  border: 1px solid #cfd6df;
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.action-table th {
+  background: #f7f9fc;
+  font-size: 0.96rem;
+}
+

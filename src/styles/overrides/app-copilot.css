@@ -1,0 +1,116 @@
+
+.copilot-orb {
+  background: radial-gradient(circle at 35% 35%, #fff699 0%, #f8eb5f 38%, #f2d841 100%);
+  border-radius: 999px;
+  box-shadow: 0 10px 26px rgba(237, 212, 76, 0.44);
+  height: 44px;
+  margin-bottom: 56px;
+  width: 44px;
+}
+
+.copilot-pane-body h3 {
+  align-self: flex-start;
+  color: #272427;
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin: 0 0 28px;
+}
+
+.copilot-compose {
+  background: #fff;
+  border: 1px solid #e4dfe3;
+  border-radius: 12px;
+  display: grid;
+  gap: 10px;
+  padding: 12px 12px 10px;
+  width: 100%;
+}
+
+.copilot-compose > span {
+  color: #9a9199;
+  font-size: 0.75rem;
+}
+
+.copilot-compose textarea {
+  border: 0;
+  color: #2d2a2f;
+  font: inherit;
+  min-height: 72px;
+  outline: none;
+  resize: vertical;
+}
+
+.copilot-compose-actions {
+  color: #8c818d;
+  gap: 12px;
+}
+
+.copilot-compose-actions button,
+.copilot-show-more {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.copilot-prompts {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  width: 100%;
+}
+
+.copilot-prompt-card {
+  background: #fff;
+  border: 1px solid #e8e2e7;
+  border-radius: 10px;
+  color: #675e67;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.73rem;
+  line-height: 1.35;
+  min-height: 42px;
+  padding: 12px 13px;
+  text-align: left;
+}
+
+.copilot-prompt-card:hover {
+  background: #f7f3f7;
+}
+
+.copilot-show-more {
+  align-self: flex-end;
+  color: #7f757e;
+  font-size: 0.71rem;
+  margin-top: 14px;
+}
+
+.copilot-results {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  width: 100%;
+}
+
+.copilot-result-card {
+  background: #fff;
+  border: 1px solid #e8e2e7;
+  border-radius: 10px;
+  display: grid;
+  gap: 6px;
+  padding: 12px 13px;
+}
+
+.copilot-result-card strong {
+  color: #2b282c;
+  font-size: 0.74rem;
+}
+
+.copilot-result-card p {
+  color: #6f6770;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  margin: 0;
+}
+

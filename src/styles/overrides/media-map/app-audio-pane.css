@@ -1,0 +1,58 @@
+.audio-pane-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px 14px 14px;
+}
+
+.audio-pane-status {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e8e2e7;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+.audio-pane-status strong {
+  color: #272427;
+}
+
+.audio-pane-status span {
+  color: #6f6770;
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.audio-pane-select,
+.review-pane-field select {
+  background: #fff;
+  border: 1px solid #ddd6dc;
+  border-radius: 8px;
+  color: #554d56;
+  font: inherit;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.audio-pane-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.audio-pane-actions button {
+  background: #fff;
+  border: 1px solid #ddd6dc;
+  border-radius: 8px;
+  color: #554d56;
+  cursor: pointer;
+  font: inherit;
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+.audio-pane-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+

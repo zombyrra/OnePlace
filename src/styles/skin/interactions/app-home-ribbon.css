@@ -1,0 +1,55 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Home ribbon — polish
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Home compact (icon-only) buttons: consistent 28 px tall with radius */
+.ribbon-home .ribbon-stack button,
+.ribbon-home .ribbon-row-compact button {
+  border-radius: var(--r-sm);
+  min-height: 28px;
+  padding: 0 5px;
+}
+
+/* Compact row gap */
+.ribbon-home .ribbon-row-compact {
+  gap: 3px;
+}
+
+/* Pickers in font cluster: match compact button height */
+.home-basic-text .picker {
+  min-height: 28px;
+}
+
+/* Quick-action cluster: swap dated border-left dividers for a gap */
+.home-quick-actions {
+  gap: 3px;
+  min-width: 0;
+}
+
+.home-vertical-action {
+  border-left: none;
+  border-radius: var(--r-sm);
+  min-width: 62px;
+}
+
+.home-vertical-action:first-child {
+  border-left: none;
+}
+
+/* Restore subtle separator between quick-action buttons using outline */
+.home-vertical-action + .home-vertical-action::before {
+  background: var(--line);
+  content: '';
+  display: block;
+  height: 32px;
+  left: 0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+}
+
+/* Make the cluster position-relative so ::before is anchored correctly */
+.home-quick-actions .home-vertical-action {
+  position: relative;
+}

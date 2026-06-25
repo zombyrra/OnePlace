@@ -1,0 +1,48 @@
+.workspace {
+  background: #efedf0;
+  grid-template-columns: 198px 230px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.workspace.notebooks-hidden {
+  grid-template-columns: 0 230px minmax(0, 1fr);
+}
+
+.workspace.pages-hidden {
+  grid-template-columns: 198px 0 minmax(0, 1fr);
+}
+
+.workspace.notebooks-hidden.pages-hidden {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.notebooks-pane,
+.pages-pane,
+.note-pane {
+  min-height: 0;
+  min-width: 0;
+}
+
+.notebooks-pane[hidden],
+.pages-pane[hidden] {
+  display: none;
+}
+
+.notebooks-pane {
+  background: #f2eff2;
+  border-right: 1px solid #ddd8dd;
+}
+
+.pages-pane {
+  background: #f6f4f6;
+  border-right: 1px solid #ddd8dd;
+}
+
+.pages-header {
+  min-height: 40px;
+}
+
+.pages-actions-primary .pages-action-pill.primary {
+  color: #8f49b2;
+}
+

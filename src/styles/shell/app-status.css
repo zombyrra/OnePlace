@@ -1,0 +1,9 @@
+.status-strip {
+  border-top: 1px solid rgba(220, 229, 239, 0.88);
+  color: #6d7889;
+  font-size: 0.75rem;
+  justify-content: space-between;
+  padding: 10px 16px;
+}
+
+

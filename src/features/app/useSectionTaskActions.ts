@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react'
-import { buildSnippet, defaultTask, findPageById, flattenPages, hashSecret, recordPageVersion, updateNestedPages } from '../../app/appModel'
+import { buildSnippet, defaultTask, findPageById, flattenPages, hashSecret, recordPageVersion, updateNestedPages, verifySecret } from '../../app/appModel'
 import type { AppState, Page, PageUpdate, PageVersion, Section } from '../../app/appModel'
 
 type Args = {
@@ -67,8 +67,8 @@ export const useSectionTaskActions = ({
       : `Enter password for ${targetSection.name}`
     const password = window.prompt(promptLabel, '') ?? ''
     if (!password) return
-    const hash = await hashSecret(password)
-    if (hash !== targetSection.passwordHash) {
+    const matches = await verifySecret(password, targetSection.passwordHash)
+    if (!matches) {
       window.alert('Incorrect password.')
       return
     }
@@ -103,8 +103,8 @@ export const useSectionTaskActions = ({
     if (!targetSection?.passwordHash) return
     const password = window.prompt('Enter the current password to remove protection', '') ?? ''
     if (!password) return
-    const hash = await hashSecret(password)
-    if (hash !== targetSection.passwordHash) {
+    const matches = await verifySecret(password, targetSection.passwordHash)
+    if (!matches) {
       window.alert('Incorrect password.')
       return
     }

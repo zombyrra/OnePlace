@@ -2,6 +2,10 @@ import type { Dispatch, SetStateAction } from 'react'
 import {
   buildSnippet,
   createId,
+  createSingleNotebookState,
+  createStarterPage,
+  createStarterSection,
+  createStarterSectionGroup,
   demotePageOneLevel,
   ensureSelection,
   flattenPages,
@@ -13,10 +17,6 @@ import type { AppState, Notebook, Page, Section, SectionGroup } from '../../app/
 
 type Args = {
   appState: AppState
-  canDeleteNotebook: boolean
-  canDeletePage: boolean
-  canDeleteSection: boolean
-  canDeleteSectionGroup: boolean
   canDemotePage: boolean
   canPromotePage: boolean
   notebook: Notebook | undefined
@@ -28,10 +28,6 @@ type Args = {
 
 export const useNotebookPageActions = ({
   appState,
-  canDeleteNotebook,
-  canDeletePage,
-  canDeleteSection,
-  canDeleteSectionGroup,
   canDemotePage,
   canPromotePage,
   notebook,
@@ -363,31 +359,25 @@ export const useNotebookPageActions = ({
   }
 
   const deleteNotebook = (notebookId: string) => {
-    if (!canDeleteNotebook) {
-      window.alert('Keep at least one notebook until notebook bootstrap parity is finished.')
-      return
-    }
-
     const currentNotebook = appState.notebooks.find((item) => item.id === notebookId)
     if (!currentNotebook) return
     if (!window.confirm(`Delete notebook "${currentNotebook.name}" and all of its sections and pages?`)) {
       return
     }
 
-    setAppState((current) =>
-      ensureSelection({
+    setAppState((current) => {
+      const notebooks = current.notebooks.filter((item) => item.id !== notebookId)
+      if (notebooks.length === 0) return createSingleNotebookState(current, 'Notebook 1')
+
+      return ensureSelection({
         ...current,
-        notebooks: current.notebooks.filter((item) => item.id !== notebookId),
-      }),
-    )
+        notebooks,
+      })
+    })
   }
 
   const deleteSectionGroup = (groupId: string) => {
     if (!notebook) return
-    if (!canDeleteSectionGroup) {
-      window.alert('Keep at least one section group in this notebook for now.')
-      return
-    }
 
     const group = notebook.sectionGroups.find((item) => item.id === groupId)
     if (!group) return
@@ -402,7 +392,10 @@ export const useNotebookPageActions = ({
           item.id === current.selectedNotebookId
             ? {
                 ...item,
-                sectionGroups: item.sectionGroups.filter((entry) => entry.id !== groupId),
+                sectionGroups:
+                  item.sectionGroups.length === 1
+                    ? [createStarterSectionGroup('Sections')]
+                    : item.sectionGroups.filter((entry) => entry.id !== groupId),
               }
             : item,
         ),
@@ -412,10 +405,6 @@ export const useNotebookPageActions = ({
 
   const deleteSection = (groupId: string, sectionId: string) => {
     if (!sectionGroup) return
-    if (!canDeleteSection) {
-      window.alert('Keep at least one section in this section group for now.')
-      return
-    }
 
     const group = notebook?.sectionGroups.find((item) => item.id === groupId)
     const currentSection = group?.sections.find((item) => item.id === sectionId)
@@ -435,7 +424,10 @@ export const useNotebookPageActions = ({
                   entry.id === groupId
                     ? {
                         ...entry,
-                        sections: entry.sections.filter((part) => part.id !== sectionId),
+                        sections:
+                          entry.sections.length === 1
+                            ? [createStarterSection('New Section', currentSection.color)]
+                            : entry.sections.filter((part) => part.id !== sectionId),
                       }
                     : entry,
                 ),
@@ -723,10 +715,6 @@ export const useNotebookPageActions = ({
 
   const deleteCurrentPage = () => {
     if (!section || !page) return
-    if (!canDeletePage) {
-      window.alert('Keep at least one page in this section for now.')
-      return
-    }
     if (!window.confirm(`Delete page "${page.title}"?`)) return
 
     setAppState((current) => {
@@ -756,11 +744,15 @@ export const useNotebookPageActions = ({
               if (!result.page) return entry
 
               removed = true
-              const flattenedAfterDelete = flattenPages(result.pages, 0, true)
+              const nextPages =
+                result.pages.length > 0
+                  ? result.pages
+                  : [createStarterPage('Untitled Page', entry.color, '<p>Start writing here.</p>')]
+              const flattenedAfterDelete = flattenPages(nextPages, 0, true)
               const fallbackPage =
                 flattenedAfterDelete[Math.min(deletedIndex, flattenedAfterDelete.length - 1)]?.page
               nextSelectedPageId = fallbackPage?.id ?? current.selectedPageId
-              return { ...entry, pages: result.pages }
+              return { ...entry, pages: nextPages }
             }),
           })),
         })),

@@ -1,7 +1,6 @@
 import { useMemo, type Dispatch, type SetStateAction } from 'react'
 import { openNotebookDirectory, pickNotebookDirectory } from '../../lib/desktop'
 import {
-  countPages,
   findPageLocation,
   flattenPages,
   mergeNotebookIntoState,
@@ -17,7 +16,6 @@ import type {
   RibbonTab,
   SearchResult,
   Section,
-  SectionGroup,
   TagResult,
   TaskResult,
 } from '../../app/appModel'
@@ -33,7 +31,6 @@ type UseNavigationActionsArgs = {
   page: Page | undefined
   recentNotebookEntries: Array<{ name: string; path: string }>
   section: Section | undefined
-  sectionGroup: SectionGroup | undefined
   setActiveTab: (tab: RibbonTab) => void
   setAppState: Dispatch<SetStateAction<AppState>>
   setNavigationIndex: Dispatch<SetStateAction<number>>
@@ -50,7 +47,6 @@ export const useNavigationActions = ({
   page,
   recentNotebookEntries,
   section,
-  sectionGroup,
   setActiveTab,
   setAppState,
   setNavigationIndex,
@@ -62,10 +58,8 @@ export const useNavigationActions = ({
     [page, section],
   )
 
-  const canDeleteNotebook = appState.notebooks.length > 1
-  const canDeleteSectionGroup = Boolean(notebook && notebook.sectionGroups.length > 1)
-  const canDeleteSection = Boolean(sectionGroup && sectionGroup.sections.length > 1)
-  const canDeletePage = Boolean(section && countPages(section.pages) > 1)
+  const canDeleteNotebook = Boolean(notebook)
+  const canDeletePage = Boolean(page)
   const canPromotePage = Boolean(selectedPageLocation?.parentId)
   const canDemotePage = Boolean(selectedPageLocation && selectedPageLocation.index > 0)
 
@@ -228,8 +222,6 @@ export const useNavigationActions = ({
   return {
     canDeleteNotebook,
     canDeletePage,
-    canDeleteSection,
-    canDeleteSectionGroup,
     canDemotePage,
     canPromotePage,
     goBack,

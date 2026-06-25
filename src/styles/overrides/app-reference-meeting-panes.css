@@ -1,0 +1,175 @@
+.references-pane-body {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+  padding: 16px 14px 14px;
+}
+
+.references-pane-status {
+  background: #fff;
+  border: 1px solid #dbe7e7;
+  border-radius: 10px;
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+}
+
+.references-pane-status strong {
+  color: #272427;
+  font-size: 0.86rem;
+}
+
+.references-pane-status span,
+.reference-card p,
+.reference-card-meta,
+.reference-entry-meta {
+  color: #6f6770;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.references-pane-actions,
+.reference-card-actions,
+.reference-card-head,
+.reference-card-meta,
+.reference-entry-meta {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.references-pane-actions button,
+.reference-card-actions button,
+.references-file-button {
+  background: #fff;
+  border: 1px solid #d7dedf;
+  border-radius: 999px;
+  color: #44535b;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  min-height: 28px;
+  padding: 0 10px;
+}
+
+.references-file-button {
+  align-items: center;
+  display: inline-flex;
+}
+
+.references-file-button input {
+  display: none;
+}
+
+.references-pane-actions button:disabled,
+.reference-card-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.references-list {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.reference-card {
+  background: #fff;
+  border: 1px solid #e4e6e8;
+  border-radius: 10px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.reference-card-head strong {
+  color: #272427;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.reference-card-head span {
+  color: #65787e;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.reference-card p {
+  margin: 0;
+}
+
+.reference-citation {
+  background: #eef7f7;
+  border: 1px solid #cfdddd;
+  border-radius: 6px;
+  color: #233f46;
+  padding: 1px 5px;
+}
+
+.reference-entry,
+.reference-bibliography {
+  background: #fbfdfd;
+  border: 1px solid #d9e3e3;
+  border-left: 4px solid #4f8a91;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+}
+
+.reference-entry-body {
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.reference-entry-meta a {
+  color: #1f5f68;
+}
+
+.meeting-pane-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px 14px 14px;
+}
+
+.meeting-pane-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.meeting-pane-textarea {
+  background: #fff;
+  border: 1px solid #ddd6dc;
+  border-radius: 8px;
+  color: #554d56;
+  font: inherit;
+  min-height: 112px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.meeting-pane-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.meeting-pane-actions button {
+  background: #fff;
+  border: 1px solid #ddd6dc;
+  border-radius: 8px;
+  color: #554d56;
+  cursor: pointer;
+  font: inherit;
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+.meeting-pane-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+

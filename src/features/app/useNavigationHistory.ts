@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
+import { useCallback, useEffect, useReducer, useRef, type Dispatch, type SetStateAction } from 'react'
 import type { AppState, NavigationEntry } from '../../app/appModel'
 
 type UseNavigationHistoryArgs = {
@@ -7,15 +7,59 @@ type UseNavigationHistoryArgs = {
   setAppState: Dispatch<SetStateAction<AppState>>
 }
 
+type NavigationHistoryState = {
+  entries: NavigationEntry[]
+  index: number
+}
+
+type NavigationHistoryAction =
+  | { type: 'record'; entry: NavigationEntry }
+  | { type: 'setIndex'; value: SetStateAction<number> }
+
+const sameNavigationEntry = (left: NavigationEntry | undefined, right: NavigationEntry) =>
+  Boolean(
+    left &&
+      left.notebookId === right.notebookId &&
+      left.groupId === right.groupId &&
+      left.sectionId === right.sectionId &&
+      left.pageId === right.pageId,
+  )
+
+const navigationHistoryReducer = (
+  state: NavigationHistoryState,
+  action: NavigationHistoryAction,
+): NavigationHistoryState => {
+  if (action.type === 'setIndex') {
+    const nextIndex = typeof action.value === 'function' ? action.value(state.index) : action.value
+    return nextIndex === state.index ? state : { ...state, index: nextIndex }
+  }
+
+  if (sameNavigationEntry(state.entries[state.index], action.entry)) return state
+
+  const trimmedEntries = state.entries.slice(0, state.index + 1)
+  const entries = [...trimmedEntries, action.entry].slice(-40)
+  return {
+    entries,
+    index: entries.length - 1,
+  }
+}
+
 export const useNavigationHistory = ({
   appState,
   isLoaded,
   setAppState,
 }: UseNavigationHistoryArgs) => {
-  const [navigationHistory, setNavigationHistory] = useState<NavigationEntry[]>([])
-  const [navigationIndex, setNavigationIndex] = useState(-1)
+  const [navigationState, dispatchNavigationHistory] = useReducer(navigationHistoryReducer, {
+    entries: [],
+    index: -1,
+  })
   const isApplyingNavigationRef = useRef(false)
   const trackedRecentPageRef = useRef('')
+  const navigationHistory = navigationState.entries
+  const navigationIndex = navigationState.index
+  const setNavigationIndex = useCallback<Dispatch<SetStateAction<number>>>((value) => {
+    dispatchNavigationHistory({ type: 'setIndex', value })
+  }, [])
 
   useEffect(() => {
     if (!isLoaded || !appState.selectedPageId || trackedRecentPageRef.current === appState.selectedPageId) return
@@ -51,32 +95,13 @@ export const useNavigationHistory = ({
       return
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setNavigationHistory((current) => {
-      const active = current[navigationIndex]
-      if (
-        active &&
-        active.notebookId === nextEntry.notebookId &&
-        active.groupId === nextEntry.groupId &&
-        active.sectionId === nextEntry.sectionId &&
-        active.pageId === nextEntry.pageId
-      ) {
-        return current
-      }
-
-      const trimmed = current.slice(0, navigationIndex + 1)
-      const nextHistory = [...trimmed, nextEntry].slice(-40)
-      const nextIndex = nextHistory.length - 1
-      window.setTimeout(() => setNavigationIndex(nextIndex), 0)
-      return nextHistory
-    })
+    dispatchNavigationHistory({ type: 'record', entry: nextEntry })
   }, [
     appState.selectedNotebookId,
     appState.selectedPageId,
     appState.selectedSectionGroupId,
     appState.selectedSectionId,
     isLoaded,
-    navigationIndex,
   ])
 
   const navigateToEntry = (entry: NavigationEntry, suppressHistory = false) => {

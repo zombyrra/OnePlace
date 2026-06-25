@@ -5,10 +5,9 @@ use chrono::Utc;
 use printpdf::{BuiltinFont, Mm, PdfDocument};
 use serde::Serialize;
 use serde_json::{Map, Value};
-use std::collections::HashSet;
 use std::fs;
 use std::io::{BufWriter, ErrorKind};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::process;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::AppHandle;
@@ -71,12 +70,12 @@ fn data_root_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(root)
 }
 
-fn workspace_manifest_path(app: &AppHandle) -> Result<PathBuf, String> {
-    Ok(data_root_dir(app)?.join("workspace.json"))
+fn workspace_manifest_path_for_root(data_root: &Path) -> PathBuf {
+    data_root.join("workspace.json")
 }
 
-fn notebooks_root_dir(app: &AppHandle) -> Result<PathBuf, String> {
-    let root = data_root_dir(app)?.join("notebooks");
+fn notebooks_root_dir_for_root(data_root: &Path) -> Result<PathBuf, String> {
+    let root = data_root.join("notebooks");
     fs::create_dir_all(&root).map_err(|err| err.to_string())?;
     Ok(root)
 }
@@ -112,6 +111,14 @@ fn get_str<'a>(value: &'a Value, key: &str) -> Result<&'a str, String> {
         .ok_or_else(|| format!("Missing string field: {key}"))
 }
 
+fn get_id<'a>(value: &'a Value, key: &str) -> Result<&'a str, String> {
+    let id = get_str(value, key)?;
+    if id.is_empty() {
+        return Err(format!("Missing string field: {key}"));
+    }
+    Ok(id)
+}
+
 fn create_parent_dir(path: &Path) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         if !parent.as_os_str().is_empty() {
@@ -139,6 +146,51 @@ fn hidden_sibling_path(path: &Path, marker: &str) -> Result<PathBuf, String> {
         .and_then(|value| value.to_str())
         .unwrap_or("oneplace");
     Ok(parent.join(format!(".{name}.{marker}.{}", unique_suffix())))
+}
+
+fn encode_path_component(value: &str, label: &str) -> Result<String, String> {
+    if value.is_empty() {
+        return Err(format!("{label} cannot be empty."));
+    }
+
+    let mut encoded = String::new();
+    for byte in value.bytes() {
+        let ch = byte as char;
+        if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+            encoded.push(ch);
+        } else {
+            encoded.push_str(&format!("~{byte:02X}"));
+        }
+    }
+
+    Ok(encoded)
+}
+
+fn safe_join_relative(base: &Path, relative: &str) -> Result<PathBuf, String> {
+    let relative_path = Path::new(relative);
+    if relative_path.is_absolute() {
+        return Err("Stored path must be relative.".to_string());
+    }
+
+    for component in relative_path.components() {
+        if !matches!(component, Component::Normal(_)) {
+            return Err("Stored path cannot contain parent or current directory segments.".to_string());
+        }
+    }
+
+    Ok(base.join(relative_path))
+}
+
+fn safe_join_existing(base: &Path, relative: &str) -> Result<PathBuf, String> {
+    let target = safe_join_relative(base, relative)?;
+    let canonical_base = base.canonicalize().map_err(|err| err.to_string())?;
+    let canonical_target = target.canonicalize().map_err(|err| err.to_string())?;
+
+    if !canonical_target.starts_with(&canonical_base) {
+        return Err("Stored path resolves outside the expected folder.".to_string());
+    }
+
+    Ok(canonical_target)
 }
 
 fn replace_file_with_temp(temp_path: &Path, target_path: &Path) -> Result<(), String> {
@@ -252,7 +304,7 @@ fn load_notebook_from_dir(notebook_dir: &Path) -> Result<Value, String> {
                 .get("pagesFile")
                 .and_then(Value::as_str)
                 .ok_or_else(|| "Section metadata is missing pagesFile.".to_string())?;
-            let section_path = notebook_dir.join(pages_file);
+            let section_path = safe_join_existing(notebook_dir, pages_file)?;
             *section = read_json_file(&section_path)?;
         }
     }
@@ -260,12 +312,16 @@ fn load_notebook_from_dir(notebook_dir: &Path) -> Result<Value, String> {
     Ok(notebook)
 }
 
-fn section_file_name(group_id: &str, section_id: &str) -> String {
-    format!("{group_id}__{section_id}.json")
+fn section_file_name(group_id: &str, section_id: &str) -> Result<String, String> {
+    Ok(format!(
+        "{}__{}.json",
+        encode_path_component(group_id, "Section group ID")?,
+        encode_path_component(section_id, "Section ID")?
+    ))
 }
 
 fn write_notebook_contents_to_dir(notebook: &Value, notebook_dir: &Path) -> Result<(), String> {
-    let notebook_id = get_str(notebook, "id")?;
+    let notebook_id = get_id(notebook, "id")?;
 
     let sections_dir = notebook_dir.join("sections");
     fs::create_dir_all(&sections_dir).map_err(|err| err.to_string())?;
@@ -278,7 +334,7 @@ fn write_notebook_contents_to_dir(notebook: &Value, notebook_dir: &Path) -> Resu
         .ok_or_else(|| format!("Notebook {notebook_id} is missing section groups."))?;
 
     for group in section_groups {
-        let group_id = get_str(group, "id")?.to_string();
+        let group_id = get_id(group, "id")?.to_string();
         let group_sections = as_object_mut(group)?
             .get_mut("sections")
             .and_then(Value::as_array_mut)
@@ -286,8 +342,12 @@ fn write_notebook_contents_to_dir(notebook: &Value, notebook_dir: &Path) -> Resu
 
         for section in group_sections.iter_mut() {
             let full_section = section.clone();
-            let section_id = get_str(&full_section, "id")?.to_string();
-            let filename = section_file_name(&group_id, &section_id);
+            let section_id = get_id(&full_section, "id")?.to_string();
+            full_section
+                .get("pages")
+                .and_then(Value::as_array)
+                .ok_or_else(|| format!("Section {section_id} is missing pages."))?;
+            let filename = section_file_name(&group_id, &section_id)?;
             let section_path = sections_dir.join(&filename);
             write_pretty_json(&section_path, &full_section)?;
 
@@ -324,7 +384,7 @@ fn write_notebook_to_dir(notebook: &Value, notebook_dir: &Path) -> Result<(), St
     }
 }
 
-fn save_workspace(raw_data: &str, app: &AppHandle) -> Result<PathBuf, String> {
+fn write_workspace_contents_to_root(raw_data: &str, data_root: &Path) -> Result<PathBuf, String> {
     let mut app_state: Value = serde_json::from_str(raw_data).map_err(|err| err.to_string())?;
     let notebooks = app_state
         .get("notebooks")
@@ -332,24 +392,23 @@ fn save_workspace(raw_data: &str, app: &AppHandle) -> Result<PathBuf, String> {
         .cloned()
         .ok_or_else(|| "App state is missing notebooks.".to_string())?;
 
-    let manifest_path = workspace_manifest_path(app)?;
-    let notebooks_root = notebooks_root_dir(app)?;
+    let manifest_path = workspace_manifest_path_for_root(data_root);
+    let notebooks_root = notebooks_root_dir_for_root(data_root)?;
     let mut notebook_refs = Vec::with_capacity(notebooks.len());
-    let mut active_dirs = HashSet::with_capacity(notebooks.len());
 
     for notebook in notebooks {
-        let notebook_id = get_str(&notebook, "id")?;
+        let notebook_id = get_id(&notebook, "id")?;
         let notebook_name = get_str(&notebook, "name")?;
+        let safe_notebook_id = encode_path_component(notebook_id, "Notebook ID")?;
         let slug = slugify(notebook_name);
         let folder_name = if slug.is_empty() {
-            format!("notebook-{notebook_id}")
+            format!("notebook-{safe_notebook_id}")
         } else {
-            format!("{slug}-{notebook_id}")
+            format!("{slug}-{safe_notebook_id}")
         };
         let notebook_dir = notebooks_root.join(&folder_name);
         write_notebook_to_dir(&notebook, &notebook_dir)?;
 
-        active_dirs.insert(folder_name);
         notebook_refs.push(Value::Object(Map::from_iter([
             ("id".to_string(), Value::String(notebook_id.to_string())),
             (
@@ -365,17 +424,6 @@ fn save_workspace(raw_data: &str, app: &AppHandle) -> Result<PathBuf, String> {
         ])));
     }
 
-    for entry in fs::read_dir(&notebooks_root).map_err(|err| err.to_string())? {
-        let entry = entry.map_err(|err| err.to_string())?;
-        if !entry.file_type().map_err(|err| err.to_string())?.is_dir() {
-            continue;
-        }
-        let name = entry.file_name().to_string_lossy().to_string();
-        if !active_dirs.contains(&name) {
-            fs::remove_dir_all(entry.path()).map_err(|err| err.to_string())?;
-        }
-    }
-
     let manifest_object = as_object_mut(&mut app_state)?;
     manifest_object.insert("notebooks".to_string(), Value::Array(notebook_refs));
     write_pretty_json(&manifest_path, &app_state)?;
@@ -383,8 +431,35 @@ fn save_workspace(raw_data: &str, app: &AppHandle) -> Result<PathBuf, String> {
     Ok(manifest_path)
 }
 
-fn load_workspace(app: &AppHandle) -> Result<Option<String>, String> {
-    let manifest_path = workspace_manifest_path(app)?;
+fn save_workspace_to_root(raw_data: &str, data_root: &Path) -> Result<PathBuf, String> {
+    create_parent_dir(data_root)?;
+    let temp_root = hidden_sibling_path(data_root, "tmp")?;
+
+    if temp_root.exists() {
+        fs::remove_dir_all(&temp_root).map_err(|err| err.to_string())?;
+    }
+
+    fs::create_dir_all(&temp_root).map_err(|err| err.to_string())?;
+
+    match write_workspace_contents_to_root(raw_data, &temp_root) {
+        Ok(_) => {
+            replace_dir_with_temp(&temp_root, data_root)?;
+            Ok(workspace_manifest_path_for_root(data_root))
+        }
+        Err(err) => {
+            let _ = fs::remove_dir_all(&temp_root);
+            Err(err)
+        }
+    }
+}
+
+fn save_workspace(raw_data: &str, app: &AppHandle) -> Result<PathBuf, String> {
+    let data_root = data_root_dir(app)?;
+    save_workspace_to_root(raw_data, &data_root)
+}
+
+fn load_workspace_from_root(data_root: &Path, legacy_path: Option<&Path>) -> Result<Option<String>, String> {
+    let manifest_path = workspace_manifest_path_for_root(data_root);
     match fs::read_to_string(&manifest_path) {
         Ok(raw_manifest) => {
             let mut manifest: Value =
@@ -394,12 +469,11 @@ fn load_workspace(app: &AppHandle) -> Result<Option<String>, String> {
                 .and_then(Value::as_array)
                 .cloned()
                 .ok_or_else(|| "Workspace manifest is missing notebook references.".to_string())?;
-            let data_root = data_root_dir(app)?;
             let mut notebooks = Vec::with_capacity(notebook_refs.len());
 
             for notebook_ref in notebook_refs {
                 let notebook_path = get_str(&notebook_ref, "path")?;
-                let absolute_notebook_path = data_root.join(notebook_path);
+                let absolute_notebook_path = safe_join_existing(data_root, notebook_path)?;
                 let notebook_dir = absolute_notebook_path
                     .parent()
                     .ok_or_else(|| "Notebook path is invalid.".to_string())?;
@@ -411,15 +485,24 @@ fn load_workspace(app: &AppHandle) -> Result<Option<String>, String> {
             Ok(Some(raw))
         }
         Err(err) if err.kind() == ErrorKind::NotFound => {
-            let legacy_path = legacy_data_file_path(app)?;
-            match fs::read_to_string(&legacy_path) {
-                Ok(raw) => Ok(Some(raw)),
-                Err(err) if err.kind() == ErrorKind::NotFound => Ok(None),
-                Err(err) => Err(err.to_string()),
+            if let Some(legacy_path) = legacy_path {
+                match fs::read_to_string(legacy_path) {
+                    Ok(raw) => Ok(Some(raw)),
+                    Err(err) if err.kind() == ErrorKind::NotFound => Ok(None),
+                    Err(err) => Err(err.to_string()),
+                }
+            } else {
+                Ok(None)
             }
         }
         Err(err) => Err(err.to_string()),
     }
+}
+
+fn load_workspace(app: &AppHandle) -> Result<Option<String>, String> {
+    let data_root = data_root_dir(app)?;
+    let legacy_path = legacy_data_file_path(app)?;
+    load_workspace_from_root(&data_root, Some(&legacy_path))
 }
 
 #[tauri::command]
@@ -700,4 +783,168 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn unique_test_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("oneplace-{name}-{}", unique_suffix()));
+        fs::create_dir_all(&dir).expect("create temp test dir");
+        dir
+    }
+
+    fn sample_workspace() -> Value {
+        json!({
+            "meta": {},
+            "notebooks": [{
+                "color": "#3784d6",
+                "icon": "book",
+                "id": "notebook-1",
+                "name": "Notebook",
+                "sectionGroups": [{
+                    "id": "group-1",
+                    "name": "Sections",
+                    "sections": [{
+                        "color": "#3784d6",
+                        "id": "section-1",
+                        "name": "Section",
+                        "pages": [{
+                            "accent": "#3784d6",
+                            "children": [],
+                            "content": "<p>safe</p>",
+                            "createdAt": "2026-06-23T00:00:00.000Z",
+                            "id": "page-1",
+                            "inkStrokes": [],
+                            "isCollapsed": false,
+                            "snippet": "safe",
+                            "tags": [],
+                            "task": null,
+                            "title": "Page",
+                            "updatedAt": "2026-06-23T00:00:00.000Z"
+                        }],
+                        "passwordHash": null,
+                        "passwordHint": ""
+                    }]
+                }],
+                "selectedNotebookId": "notebook-1",
+                "selectedSectionGroupId": "group-1",
+                "selectedSectionId": "section-1",
+                "selectedPageId": "page-1"
+            }]
+        })
+    }
+
+    #[test]
+    fn section_file_name_encodes_path_separator_ids() {
+        let forward = section_file_name("../outside", "section-1").expect("encoded section file");
+        let backward = section_file_name("group-1", "..\\outside").expect("encoded section file");
+
+        assert!(!forward.contains('/'));
+        assert!(!forward.contains('\\'));
+        assert!(!backward.contains('/'));
+        assert!(!backward.contains('\\'));
+        assert!(forward.ends_with(".json"));
+        assert!(backward.ends_with(".json"));
+    }
+
+    #[test]
+    fn load_notebook_rejects_pages_file_outside_notebook_dir() {
+        let root = unique_test_dir("load-traversal");
+        let notebook_dir = root.join("notebook");
+        fs::create_dir_all(&notebook_dir).expect("create notebook dir");
+        write_pretty_json(
+            &notebook_dir.join("notebook.json"),
+            &json!({
+                "id": "notebook-1",
+                "name": "Notebook",
+                "sectionGroups": [{
+                    "id": "group-1",
+                    "name": "Sections",
+                    "sections": [{
+                        "id": "section-1",
+                        "name": "Section",
+                        "pagesFile": "../outside.json"
+                    }]
+                }]
+            }),
+        )
+        .expect("write notebook metadata");
+        write_pretty_json(
+            &root.join("outside.json"),
+            &json!({"id": "section-1", "name": "Escaped", "pages": []}),
+        )
+        .expect("write outside section");
+
+        let result = load_notebook_from_dir(&notebook_dir);
+
+        assert!(result.is_err());
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn write_notebook_encodes_ids_that_would_escape_sections_dir() {
+        let root = unique_test_dir("write-traversal");
+        let notebook = json!({
+            "id": "notebook-1",
+            "name": "Notebook",
+            "sectionGroups": [{
+                "id": "../escaped",
+                "name": "Sections",
+                "sections": [{
+                    "id": "section-1",
+                    "name": "Section",
+                    "pages": []
+                }]
+            }]
+        });
+
+        let notebook_dir = root.join("notebook");
+        let result = write_notebook_contents_to_dir(&notebook, &notebook_dir);
+
+        assert!(result.is_ok());
+        assert!(!root.join("notebook").join("escaped__section-1.json").exists());
+        assert_eq!(
+            fs::read_dir(notebook_dir.join("sections"))
+                .expect("sections dir")
+                .filter_map(Result::ok)
+                .count(),
+            1,
+        );
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn failed_workspace_save_keeps_previous_workspace_loadable() {
+        let root = unique_test_dir("workspace-rollback");
+        let first = sample_workspace();
+        let bad = json!({
+            "meta": {},
+            "notebooks": [{
+                "id": "bad-notebook",
+                "name": "Broken",
+                "sectionGroups": [{
+                    "id": "bad-group",
+                    "name": "Sections",
+                    "sections": [{
+                        "id": "bad-section",
+                        "name": "Missing Pages"
+                    }]
+                }]
+            }]
+        });
+
+        save_workspace_to_root(&serde_json::to_string(&first).unwrap(), &root).expect("initial save");
+        let failed = save_workspace_to_root(&serde_json::to_string(&bad).unwrap(), &root);
+
+        assert!(failed.is_err());
+        let loaded = load_workspace_from_root(&root, None)
+            .expect("load after failed save")
+            .expect("workspace should remain");
+        assert!(loaded.contains("notebook-1"));
+        assert!(!loaded.contains("bad-notebook"));
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
 }

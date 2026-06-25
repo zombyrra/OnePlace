@@ -1,0 +1,85 @@
+.note-canvas-shell {
+  background: #fff;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 0 24px;
+}
+
+.note-editor-surface {
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1000' height='1120' viewBox='0 0 1000 1120'%3E%3Cline x1='0' y1='1119.5' x2='1000' y2='1119.5' stroke='%23d6d2d7' stroke-width='1' stroke-dasharray='10 8'/%3E%3C/svg%3E");
+  background-position: top left;
+  background-repeat: no-repeat;
+  background-size: 100% 1120px;
+  margin: 0;
+  max-width: none;
+  min-height: 1120px;
+  padding: 0 0 28px;
+  position: relative;
+  width: 100%;
+}
+
+.ink-page-layer {
+  height: 100%;
+  left: 22px;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: min(calc(100% - 22px), 880px);
+  z-index: 2;
+}
+
+.ink-page-layer.wide {
+  width: min(calc(100% - 22px), 980px);
+}
+
+.ink-page-layer.is-active {
+  cursor: crosshair;
+  pointer-events: auto;
+}
+
+.note-editor-surface.draw-active .editor-canvas {
+  caret-color: transparent;
+}
+
+.editor-canvas {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: #1f1f1f;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 0.91rem;
+  line-height: 1.7;
+  margin: 0;
+  margin-left: 22px;
+  max-width: 920px;
+  min-height: 1120px;
+  outline: none;
+  padding: 24px 36px 72px 0;
+  width: min(100%, 880px);
+  position: relative;
+  z-index: 1;
+}
+
+.editor-canvas:empty::before {
+  color: #8a848a;
+  content: 'Start writing...';
+  pointer-events: none;
+}
+
+.editor-canvas.wide {
+  max-width: 980px;
+  width: min(100%, 980px);
+}
+
+.editor-canvas.rule-lines {
+  background-image:
+    linear-gradient(to right, transparent 86px, #d9bfd1 86px, #d9bfd1 87px, transparent 87px),
+    repeating-linear-gradient(to bottom, transparent 0 27px, #dbe7fb 27px 28px);
+  background-position: top left;
+  background-repeat: repeat;
+  background-size: 100% 100%, 100% 28px;
+}
+

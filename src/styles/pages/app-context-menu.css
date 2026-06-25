@@ -1,0 +1,38 @@
+.context-menu {
+  background: #fff;
+  border: 1px solid #cfd6df;
+  box-shadow: 0 10px 24px rgba(28, 39, 58, 0.18);
+  display: grid;
+  min-width: 172px;
+  overflow: hidden;
+  position: fixed;
+  z-index: 30;
+}
+
+.context-menu-item {
+  background: #fff;
+  border: 0;
+  color: #2f3a4a;
+  cursor: pointer;
+  font: inherit;
+  padding: 9px 12px;
+  text-align: left;
+}
+
+.context-menu-item:hover {
+  background: #edf3fb;
+}
+
+.context-menu-item.danger {
+  color: #a0333d;
+}
+
+.context-menu-item:disabled {
+  color: #a0a9b7;
+  cursor: not-allowed;
+}
+
+.context-menu-item:disabled:hover {
+  background: #fff;
+}
+
