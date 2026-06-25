@@ -650,49 +650,7 @@ export const createSingleNotebookState = (current: AppState, name = 'Notebook'):
 }
 
 export const createStarterState = (): AppState => {
-  const workNotebook: Notebook = {
-    color: '#7e42b3',
-    icon: 'book',
-    id: createId(),
-    name: 'Work Notebook',
-    sectionGroups: [
-      createSectionGroup('Sections', [
-        createStarterSection('Administration', '#4c75b8'),
-        createStarterSection('Meetings', '#3c9fa7'),
-        createStarterSection('Product Ideas', '#d1629b'),
-        createStarterSection('Onboarding', '#d77f9c'),
-        createStarterSection('Email List', '#4c75b8'),
-        createStarterSection('Customers', '#b15fab'),
-        createStarterSection('Schedules', '#3784d6'),
-        createStarterSection('Resources', '#4c75b8'),
-        createStarterSection('Inventory', '#3c9fa7', [
-          'Spokes',
-          'Cogs',
-          'Saddle Inventory',
-          'Tires',
-          'Pedals',
-          'Rims',
-          'Wheels',
-          'Down Tubes',
-        ]),
-        createStarterSection('The Team', '#8b74bb'),
-      ]),
-    ],
-  }
-
-  const travelNotebook: Notebook = {
-    color: '#b33f66',
-    icon: 'folder',
-    id: createId(),
-    name: 'Travel Journal',
-    sectionGroups: [
-      createSectionGroup('Sections', [
-        createStarterSection('Wishlist', '#b33f66'),
-        createStarterSection('Italy', '#d8763c'),
-        createStarterSection('Iceland', '#6387c7'),
-      ]),
-    ],
-  }
+  const workNotebook = createStarterNotebook('Work Notebook', [createStarterSectionGroup()], '#7e42b3')
 
   const defaultGroup = workNotebook.sectionGroups[0]
   const defaultSection = defaultGroup.sections[0]
@@ -702,7 +660,7 @@ export const createStarterState = (): AppState => {
       ...defaultAppMeta(),
       recentPageIds: [defaultPage.id],
     },
-    notebooks: [workNotebook, travelNotebook],
+    notebooks: [workNotebook],
     selectedNotebookId: workNotebook.id,
     selectedSectionGroupId: defaultGroup.id,
     selectedSectionId: defaultSection.id,

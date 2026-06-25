@@ -53,6 +53,21 @@ test('createSingleNotebookState replaces an empty hierarchy with selected notebo
   assert.deepEqual(state.meta.recentPageIds[0], page?.id)
 })
 
+test('createStarterState opens with a lean work notebook scaffold', () => {
+  const state = createStarterState()
+  const { notebook, page, section, sectionGroup } = getSelection(state)
+
+  assert.equal(state.notebooks.length, 1)
+  assert.equal(notebook?.name, 'Work Notebook')
+  assert.equal(notebook?.sectionGroups.length, 1)
+  assert.equal(sectionGroup?.name, 'Sections')
+  assert.equal(sectionGroup?.sections.length, 1)
+  assert.equal(section?.name, 'New Section')
+  assert.equal(countPages(section?.pages ?? []), 1)
+  assert.equal(page?.title, 'Untitled Page')
+  assert.deepEqual(state.meta.recentPageIds, page ? [page.id] : [])
+})
+
 test('ensureSelection accepts replacement scaffolds without falling back to sample notebooks', () => {
   const current = createStarterState()
   const replacementState = createSingleNotebookState(current, 'Notebook 1')
