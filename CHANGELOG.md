@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.1.13 - 2026-06-25
 
 - Added encrypted desktop workspace storage, encrypted rolling backup/restore snapshots, and Cloud Save to a user-chosen synced folder.
+- Added full-folder import that preserves folder paths as OnePlace sections and copies mixed file assets into the workspace.
+- Added Crossref reference lookup, Markmap note visualizations, and updated app persistence and ribbon behavior.
 
 ## 0.1.12 - 2026-03-18
 
