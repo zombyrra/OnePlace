@@ -1,4 +1,7 @@
 interface DesktopSaveResult {
+  cloudError?: string;
+  cloudPath?: string;
+  cloudSavedAt?: string;
   path: string;
   savedAt: string;
 }
@@ -7,6 +10,25 @@ interface DesktopAppInfo {
   dataPath: string;
   name: string;
   version: string;
+}
+
+interface DesktopBackupSnapshot {
+  createdAt: string;
+  id: string;
+  path: string;
+}
+
+interface DesktopCloudSyncStatus {
+  enabled: boolean;
+  lastError?: string | null;
+  lastSyncedAt?: string | null;
+  path?: string | null;
+}
+
+interface DesktopRestoredWorkspace {
+  path: string;
+  rawData: string;
+  restoredAt: string;
 }
 
 interface ImportedOneNoteFile {
@@ -21,6 +43,26 @@ interface ImportedOneNoteFile {
 
 interface ImportedOneNoteDirectory {
   files: ImportedOneNoteFile[];
+  name: string;
+  path: string;
+}
+
+interface ImportedFolderFile {
+  absolutePath: string;
+  dataUrl: string;
+  extension: string;
+  kind: 'audio' | 'file' | 'image' | 'printout';
+  mimeType: string;
+  modifiedAt: string;
+  name: string;
+  relativeDir: string;
+  relativePath: string;
+  size: number;
+}
+
+interface ImportedFolderTreeDirectory {
+  directories: string[];
+  files: ImportedFolderFile[];
   name: string;
   path: string;
 }

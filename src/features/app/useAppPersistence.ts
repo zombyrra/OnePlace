@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
 import {
   checkForDesktopUpdate,
+  clearCloudSync,
+  configureCloudSync,
   downloadAndInstallDesktopUpdate,
+  getCloudSyncStatus,
   getDesktopAppInfo,
+  listWorkspaceBackups,
   loadDesktopData,
   openNotebookDirectory,
+  pickCloudSaveDirectory,
+  restoreCloudWorkspace,
+  restoreWorkspaceBackup,
   saveDesktopData,
+  syncCloudWorkspace,
 } from '../../lib/desktop'
 import {
   LAST_OPENED_NOTEBOOK_KEY,
@@ -23,6 +31,8 @@ type UseAppPersistenceArgs = {
   isLoaded: boolean
   setAppInfo: (value: DesktopAppInfo | null) => void
   setAppState: Dispatch<SetStateAction<AppState>>
+  setBackupSnapshots: (value: DesktopBackupSnapshot[]) => void
+  setCloudSyncStatus: (value: DesktopCloudSyncStatus) => void
   setIsCheckingForUpdates: (value: boolean) => void
   setIsDirty: (value: boolean) => void
   setIsLoaded: (value: boolean) => void
@@ -81,6 +91,8 @@ export const useAppPersistence = ({
   isLoaded,
   setAppInfo,
   setAppState,
+  setBackupSnapshots,
+  setCloudSyncStatus,
   setIsCheckingForUpdates,
   setIsDirty,
   setIsLoaded,
@@ -125,9 +137,24 @@ export const useAppPersistence = ({
         const result = await saveDesktopData(payload)
         if (saveAttempt !== saveAttemptRef.current) return
         lastSavedPayloadRef.current = payload
+        if (result.cloudPath || result.cloudSavedAt || result.cloudError) {
+          setCloudSyncStatus({
+            enabled: Boolean(result.cloudPath),
+            lastError: result.cloudError ?? null,
+            lastSyncedAt: result.cloudSavedAt ?? null,
+            path: result.cloudPath ?? null,
+          })
+        }
+        void listWorkspaceBackups().then(setBackupSnapshots).catch(() => undefined)
         if (!silent) {
           setIsDirty(false)
-          setSaveLabel(`Saved ${formatDate(result.savedAt)}`)
+          if (result.cloudError) {
+            setSaveLabel(`Saved locally; cloud failed: ${result.cloudError}`)
+          } else if (result.cloudSavedAt) {
+            setSaveLabel(`Saved ${formatDate(result.savedAt)} + cloud ${formatDate(result.cloudSavedAt)}`)
+          } else {
+            setSaveLabel(`Saved ${formatDate(result.savedAt)}`)
+          }
         }
       } catch (error) {
         if (saveAttempt === saveAttemptRef.current && !silent) {
@@ -137,15 +164,48 @@ export const useAppPersistence = ({
         if (throwOnError) throw error
       }
     },
-    [isLoaded, lastSavedPayloadRef, saveTimerRef, setIsDirty, setSaveLabel],
+    [isLoaded, lastSavedPayloadRef, saveTimerRef, setBackupSnapshots, setCloudSyncStatus, setIsDirty, setSaveLabel],
   )
+
+  const applyRestoredWorkspace = useCallback(
+    (rawData: string, label: string) => {
+      const nextState = normalizeAppState(JSON.parse(rawData))
+      const payload = JSON.stringify(nextState)
+      setAppState(nextState)
+      lastSavedPayloadRef.current = payload
+      appStateRef.current = nextState
+      trackedRecentPageRef.current = nextState.selectedPageId
+      setIsDirty(false)
+      setIsLoaded(true)
+      setSaveLabel(label)
+    },
+    [lastSavedPayloadRef, setAppState, setIsDirty, setIsLoaded, setSaveLabel, trackedRecentPageRef],
+  )
+
+  const refreshWorkspaceBackups = useCallback(async () => {
+    try {
+      const backups = await listWorkspaceBackups()
+      setBackupSnapshots(backups)
+      return backups
+    } catch (error) {
+      setSaveLabel(`Backup list failed: ${getErrorMessage(error)}`)
+      return []
+    }
+  }, [setBackupSnapshots, setSaveLabel])
 
   useEffect(() => {
     const load = async () => {
       try {
         setRecentNotebookEntries(loadRecentNotebookEntries())
-        const [rawData, info] = await Promise.all([loadDesktopData(), getDesktopAppInfo()])
+        const [rawData, info, backups, cloudStatus] = await Promise.all([
+          loadDesktopData(),
+          getDesktopAppInfo(),
+          listWorkspaceBackups(),
+          getCloudSyncStatus(),
+        ])
         if (info) setAppInfo(info)
+        setBackupSnapshots(backups)
+        setCloudSyncStatus(cloudStatus)
         let nextState = rawData ? normalizeAppState(JSON.parse(rawData)) : createStarterState()
         const lastOpenedPath = loadLastOpenedNotebookPath()
         if (lastOpenedPath) {
@@ -174,6 +234,8 @@ export const useAppPersistence = ({
     lastSavedPayloadRef,
     setAppInfo,
     setAppState,
+    setBackupSnapshots,
+    setCloudSyncStatus,
     setIsDirty,
     setIsLoaded,
     setRecentNotebookEntries,
@@ -289,5 +351,76 @@ export const useAppPersistence = ({
     }
   }
 
-  return { runUpdateCheck }
+  const chooseCloudSyncFolder = async () => {
+    try {
+      const path = await pickCloudSaveDirectory()
+      if (!path) return
+      setSaveLabel('Configuring cloud save...')
+      const status = await configureCloudSync(path)
+      setCloudSyncStatus(status)
+      setSaveLabel(status.lastError ? `Cloud save failed: ${status.lastError}` : 'Cloud save connected')
+    } catch (error) {
+      setSaveLabel(`Cloud save failed: ${getErrorMessage(error)}`)
+    }
+  }
+
+  const syncCloudNow = async () => {
+    try {
+      await flushPendingSave({ throwOnError: true })
+      setSaveLabel('Syncing cloud save...')
+      const status = await syncCloudWorkspace()
+      setCloudSyncStatus(status)
+      setSaveLabel(status.lastError ? `Cloud save failed: ${status.lastError}` : 'Cloud save synced')
+    } catch (error) {
+      setSaveLabel(`Cloud save failed: ${getErrorMessage(error)}`)
+    }
+  }
+
+  const disableCloudSync = async () => {
+    try {
+      const status = await clearCloudSync()
+      setCloudSyncStatus(status)
+      setSaveLabel('Cloud save disconnected')
+    } catch (error) {
+      setSaveLabel(`Cloud save failed: ${getErrorMessage(error)}`)
+    }
+  }
+
+  const restoreCloudSave = async () => {
+    if (!window.confirm('Restore the cloud-saved workspace? Your current workspace will be saved as a backup first.')) {
+      return
+    }
+
+    try {
+      const restored = await restoreCloudWorkspace()
+      applyRestoredWorkspace(restored.rawData, `Restored cloud save ${formatDate(restored.restoredAt)}`)
+      await refreshWorkspaceBackups()
+    } catch (error) {
+      setSaveLabel(`Cloud restore failed: ${getErrorMessage(error)}`)
+    }
+  }
+
+  const restoreBackupSnapshot = async (backupId: string) => {
+    if (!window.confirm('Restore this backup snapshot? Your current workspace will be saved as a backup first.')) {
+      return
+    }
+
+    try {
+      const restored = await restoreWorkspaceBackup(backupId)
+      applyRestoredWorkspace(restored.rawData, `Restored backup ${formatDate(restored.restoredAt)}`)
+      await refreshWorkspaceBackups()
+    } catch (error) {
+      setSaveLabel(`Backup restore failed: ${getErrorMessage(error)}`)
+    }
+  }
+
+  return {
+    chooseCloudSyncFolder,
+    disableCloudSync,
+    refreshWorkspaceBackups,
+    restoreBackupSnapshot,
+    restoreCloudSave,
+    runUpdateCheck,
+    syncCloudNow,
+  }
 }

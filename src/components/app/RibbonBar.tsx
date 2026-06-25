@@ -98,6 +98,8 @@ type RibbonBarProps = {
   recentNotebookEntries: RecentNotebookEntry[]
   loadNotebookFromPath: (path: string) => void
   openNotebook: () => void
+  importFolderTree: () => Promise<void> | void
+  isImportingFolderTree: boolean
   importOneNoteExport: () => Promise<void> | void
   isImportingOneNoteExport: boolean
   saveNotebookAs: () => Promise<void> | void
@@ -200,6 +202,8 @@ export function RibbonBar(props: RibbonBarProps) {
     recentNotebookEntries,
     loadNotebookFromPath,
     openNotebook,
+    importFolderTree,
+    isImportingFolderTree,
     importOneNoteExport,
     isImportingOneNoteExport,
     saveNotebookAs,
@@ -291,11 +295,19 @@ export function RibbonBar(props: RibbonBarProps) {
   if (activeTab === 'File') {
     return (
       <section className="op-ribbon">
-        <RibbonButton icon={<FolderIcon size={18} />} label="Open" onClick={openNotebook} title="Open notebook" variant="compact" />
+        <RibbonButton icon={<FolderIcon size={18} />} label="Open" onClick={openNotebook} title="Open OnePlace notebook" variant="compact" />
+        <RibbonButton
+          disabled={isImportingFolderTree}
+          icon={<FolderPlusIcon size={18} />}
+          label={isImportingFolderTree ? 'Importing...' : 'Folder'}
+          onClick={() => void importFolderTree()}
+          title="Import existing folder tree"
+          variant="compact"
+        />
         <RibbonButton
           disabled={isImportingOneNoteExport}
           icon={<FileDownIcon size={18} />}
-          label={isImportingOneNoteExport ? 'Importing…' : 'Import'}
+          label={isImportingOneNoteExport ? 'Importing...' : 'OneNote'}
           onClick={() => void importOneNoteExport()}
           title="Import OneNote export"
           variant="compact"

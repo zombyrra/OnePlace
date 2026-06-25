@@ -150,6 +150,12 @@ export const pickNotebookSaveDirectory = async (): Promise<string | null> =>
 export const pickOneNoteExportDirectory = async (): Promise<string | null> =>
   pickDirectory('Import OneNote Export Folder')
 
+export const pickFolderTreeDirectory = async (): Promise<string | null> =>
+  pickDirectory('Import Folder Into OnePlace')
+
+export const pickCloudSaveDirectory = async (): Promise<string | null> =>
+  pickDirectory('Choose Cloud Save Folder')
+
 export const pickExportFilePath = async (defaultPath: string): Promise<string | null> =>
   save({
     defaultPath,
@@ -164,6 +170,39 @@ export const pickExportFilePath = async (defaultPath: string): Promise<string | 
 export const openNotebookDirectory = async (path: string): Promise<string> =>
   invoke<string>('open_notebook_dir', { path })
 
+export const listWorkspaceBackups = async (): Promise<DesktopBackupSnapshot[]> => {
+  if (!isTauriRuntime()) return []
+  return invoke<DesktopBackupSnapshot[]>('list_workspace_backups')
+}
+
+export const restoreWorkspaceBackup = async (backupId: string): Promise<DesktopRestoredWorkspace> =>
+  invoke<DesktopRestoredWorkspace>('restore_workspace_backup', { backupId })
+
+export const getCloudSyncStatus = async (): Promise<DesktopCloudSyncStatus> => {
+  if (!isTauriRuntime()) {
+    return {
+      enabled: false,
+      lastError: null,
+      lastSyncedAt: null,
+      path: null,
+    }
+  }
+
+  return invoke<DesktopCloudSyncStatus>('get_cloud_sync_status')
+}
+
+export const configureCloudSync = async (path: string): Promise<DesktopCloudSyncStatus> =>
+  invoke<DesktopCloudSyncStatus>('configure_cloud_sync', { path })
+
+export const clearCloudSync = async (): Promise<DesktopCloudSyncStatus> =>
+  invoke<DesktopCloudSyncStatus>('clear_cloud_sync')
+
+export const syncCloudWorkspace = async (): Promise<DesktopCloudSyncStatus> =>
+  invoke<DesktopCloudSyncStatus>('sync_cloud_workspace')
+
+export const restoreCloudWorkspace = async (): Promise<DesktopRestoredWorkspace> =>
+  invoke<DesktopRestoredWorkspace>('restore_cloud_workspace')
+
 export const exportNotebookDirectory = async (
   path: string,
   notebook: string,
@@ -171,6 +210,9 @@ export const exportNotebookDirectory = async (
 
 export const importOneNoteExportDirectory = async (path: string): Promise<ImportedOneNoteDirectory> =>
   invoke<ImportedOneNoteDirectory>('import_onenote_export_dir', { path })
+
+export const importFolderTreeDirectory = async (path: string): Promise<ImportedFolderTreeDirectory> =>
+  invoke<ImportedFolderTreeDirectory>('import_folder_tree_dir', { path })
 
 export const readLocalAssetFile = async (path: string, rootPath: string): Promise<ImportedAssetData> =>
   invoke<ImportedAssetData>('read_local_asset_file', { path, rootPath })

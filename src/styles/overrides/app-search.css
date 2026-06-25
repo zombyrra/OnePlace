@@ -1,38 +1,33 @@
-
-.search-result {
-  gap: 6px;
-}
-
-.search-result p {
-  color: #554d56;
-  font-size: 0.74rem;
-  line-height: 1.45;
-  margin: 0;
-}
-
+/* Field-match badges — inline with title in search-result-header */
 .search-result-meta {
+  align-items: center;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  gap: 3px;
 }
 
 .search-result-meta em {
-  background: #f2ebf6;
-  border-radius: 999px;
-  color: #5f4d74;
-  font-size: 0.66rem;
+  background: var(--iris-tint);
+  border-radius: var(--r-sm);
+  color: var(--iris-strong);
+  font-size: 0.65rem;
   font-style: normal;
-  padding: 2px 7px;
+  font-weight: 500;
+  padding: 2px 5px;
 }
 
 .search-results-empty {
-  color: #6f6770;
-  font-size: 0.74rem;
-  padding: 14px 12px 16px;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  padding: 22px 14px;
+  text-align: center;
 }
 
+/* Violet highlight — matches the app accent instead of yellow */
 .search-highlight {
-  background: #fde992;
+  background: var(--iris-tint);
   border-radius: 2px;
-  padding: 0 1px;
+  color: var(--iris-strong);
+  padding: 0 2px;
 }

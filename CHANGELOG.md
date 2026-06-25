@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added encrypted desktop workspace storage, encrypted rolling backup/restore snapshots, and Cloud Save to a user-chosen synced folder.
+
 ## 0.1.12 - 2026-03-18
 
 - Refreshed migrated Windows Start Menu and desktop shortcuts after install so upgraded installs pick up the current OnePlace icon instead of preserving stale shortcut icon metadata.

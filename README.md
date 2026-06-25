@@ -71,7 +71,7 @@ npm run lint
 
 ### Data saving and local protection
 
-See [docs/data-saving-security.md](./docs/data-saving-security.md) for the desktop save layout, recovery behavior, section password limits, and local data protection expectations.
+See [docs/data-saving-security.md](./docs/data-saving-security.md) for the encrypted desktop save layout, rolling backup/restore behavior, Cloud Save workflow, section password limits, and local data protection expectations.
 
 ## Build
 

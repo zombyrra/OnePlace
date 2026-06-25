@@ -40,6 +40,7 @@ import { useMediaAndDrawing } from './features/app/useMediaAndDrawing'
 import { useNavigationActions } from './features/app/useNavigationActions'
 import { useNavigationHistory } from './features/app/useNavigationHistory'
 import { useNotebookPageActions } from './features/app/useNotebookPageActions'
+import { useFolderTreeImport } from './features/app/useFolderTreeImport'
 import { useOneNoteExportImport } from './features/app/useOneNoteExportImport'
 import { usePageAssistActions } from './features/app/usePageAssistActions'
 import { useReviewHistory } from './features/app/useReviewHistory'
@@ -73,6 +74,13 @@ import type {
 function App() {
   const [appState, setAppState] = useState<AppState>(createStarterState)
   const [appInfo, setAppInfo] = useState<DesktopAppInfo | null>(null)
+  const [backupSnapshots, setBackupSnapshots] = useState<DesktopBackupSnapshot[]>([])
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<DesktopCloudSyncStatus>({
+    enabled: false,
+    lastError: null,
+    lastSyncedAt: null,
+    path: null,
+  })
   const [activeTab, setActiveTab] = useState<RibbonTab>('Home')
   const [drawColor, setDrawColor] = useState('#1a73d9')
   const [isLoaded, setIsLoaded] = useState(false)
@@ -208,11 +216,21 @@ function App() {
     [appState.notebooks],
   )
 
-  const { runUpdateCheck } = useAppPersistence({
+  const {
+    chooseCloudSyncFolder,
+    disableCloudSync,
+    refreshWorkspaceBackups,
+    restoreBackupSnapshot,
+    restoreCloudSave,
+    runUpdateCheck,
+    syncCloudNow,
+  } = useAppPersistence({
     appState,
     isLoaded,
     setAppInfo,
     setAppState,
+    setBackupSnapshots,
+    setCloudSyncStatus,
     setIsCheckingForUpdates,
     setIsDirty,
     setIsLoaded,
@@ -224,6 +242,11 @@ function App() {
     trackedRecentPageRef,
   })
   const { importOneNoteExport, isImportingOneNoteExport } = useOneNoteExportImport({
+    setActiveTab: () => setActiveTab('Home'),
+    setAppState,
+    setSaveLabel,
+  })
+  const { importFolderTree, isImportingFolderTree } = useFolderTreeImport({
     setActiveTab: () => setActiveTab('Home'),
     setAppState,
     setSaveLabel,
@@ -1375,6 +1398,7 @@ function App() {
         fontSizeMenuRef,
         goBack,
         goForward,
+        importFolderTree,
         importOneNoteExport,
         insertChecklist,
         insertExternalLink,
@@ -1385,6 +1409,7 @@ function App() {
         isFontMenuOpen,
         isFontSizeMenuOpen,
         isHistoryPaneOpen,
+        isImportingFolderTree,
         isImportingOneNoteExport,
         isCurrentSectionLocked,
         isNotebookPaneVisible,
@@ -1444,8 +1469,16 @@ function App() {
       }}
       commandBarProps={{
         activeTab,
+        backupSnapshots,
+        cloudSyncStatus,
         setActiveTab,
+        onChooseCloudFolder: chooseCloudSyncFolder,
+        onDisableCloudSync: disableCloudSync,
         onSetSearchFilter: setSearchFilter,
+        onRefreshBackups: refreshWorkspaceBackups,
+        onRestoreBackup: restoreBackupSnapshot,
+        onRestoreCloud: restoreCloudSave,
+        onSyncCloudNow: syncCloudNow,
         onToggleSearchScope: toggleSearchScope,
         openSearchResult,
         query,
@@ -1459,6 +1492,9 @@ function App() {
         searchScopeLabels,
         setQuery,
         titlebarSearchRef,
+        saveStatusText,
+        onExportPage: exportCurrentPage,
+        onEmailPage: emailCurrentPage,
       }}
       navRailProps={{
         isNotebookPaneVisible,
@@ -1476,6 +1512,14 @@ function App() {
         onUndo: () => runEditorCommand('undo'),
         windowTitle,
         workspaceName: notebook?.name ?? 'Dunder Mifflin offsite',
+        showRuleLines,
+        onToggleRuleLines: () => setShowRuleLines((c) => !c),
+        editorZoom,
+        onSetEditorZoom: setEditorZoom,
+        onAdjustEditorZoom: adjustEditorZoom,
+        pageWidthMode,
+        onSetPageWidthMode: setPageWidthMode,
+        appVersion: displayVersion,
       }}
     />
   )

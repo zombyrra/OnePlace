@@ -4,8 +4,9 @@
     {
       "name": "oneplace-web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:web", "--", "--port", "5174"],
-      "port": 5174
+      "runtimeArgs": ["run", "dev:web"],
+      "port": 5174,
+      "autoPort": true
     }
   ]
 }
