@@ -8,7 +8,6 @@ const tauriConfigPath = path.join(repoRoot, 'src-tauri', 'tauri.conf.json')
 const tauriConfig = JSON.parse(readFileSync(tauriConfigPath, 'utf8'))
 const version = tauriConfig.version
 const tag = `v${version}`
-const repo = process.env.GITHUB_REPOSITORY || 'kernal201/OnePlace'
 const bundleRoot = path.join(repoRoot, 'src-tauri', 'target', 'release', 'bundle')
 const changelogPath = path.join(repoRoot, 'CHANGELOG.md')
 
@@ -18,6 +17,15 @@ const runGh = (args) =>
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim()
+
+const repoFromOrigin = () => {
+  const remoteUrl = runGh(['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner'])
+  if (remoteUrl) return remoteUrl
+
+  throw new Error('Unable to determine GitHub repository. Set GITHUB_REPOSITORY=owner/repo.')
+}
+
+const repo = process.env.GITHUB_REPOSITORY || repoFromOrigin()
 
 const releaseExists = () => {
   try {

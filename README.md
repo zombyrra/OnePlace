@@ -30,7 +30,7 @@ See the latest shipped changes in [CHANGELOG.md](./CHANGELOG.md).
 
 The latest public Windows builds are on GitHub Releases:
 
-- [OnePlace Releases](https://github.com/kernal201/OnePlace/releases)
+- [OnePlace Releases](https://github.com/zombyrra/OnePlace/releases)
 
 For most Windows users, the file to download is:
 
@@ -89,7 +89,7 @@ This produces:
 
 ### Build a signed updater release
 
-This repo includes a signed updater release flow, but it requires a configured Tauri private signing key.
+This repo includes a signed updater release flow, but it requires a configured Tauri private signing key. If the key is encrypted, set `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` before building.
 
 ```bash
 npm run build:release
@@ -106,7 +106,7 @@ If the signing key is not configured, normal desktop bundles can still be built 
   - `src-tauri/Cargo.toml`
 - Release notes are sourced from `CHANGELOG.md`
 - GitHub releases currently publish to:
-  - `https://github.com/kernal201/OnePlace`
+  - `https://github.com/zombyrra/OnePlace`
 
 ## Tech Stack
 
