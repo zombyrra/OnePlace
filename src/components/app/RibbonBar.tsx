@@ -1,6 +1,7 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type {
   Page,
+  Notebook,
   PageSortMode,
   PageWidthMode,
   RecentNotebookEntry,
@@ -102,6 +103,10 @@ type RibbonBarProps = {
   isImportingFolderTree: boolean
   importOneNoteExport: () => Promise<void> | void
   isImportingOneNoteExport: boolean
+  exportCurrentNotebookPackage: () => void
+  isExportingOnePlacePackage: boolean
+  isOpeningOnePlacePackage: boolean
+  openOnePlacePackage: () => void
   saveNotebookAs: () => Promise<void> | void
   exportCurrentPage: () => Promise<void> | void
   saveNow: () => Promise<void> | void
@@ -137,6 +142,7 @@ type RibbonBarProps = {
   addTagToCurrentPage: () => void
   toggleCurrentTask: () => void
   isCurrentSectionLocked: boolean
+  notebook: Notebook | undefined
   page: Page | undefined
   setCurrentTaskDueDate: () => void
   toggleCurrentTaskComplete: () => void
@@ -206,6 +212,10 @@ export function RibbonBar(props: RibbonBarProps) {
     isImportingFolderTree,
     importOneNoteExport,
     isImportingOneNoteExport,
+    exportCurrentNotebookPackage,
+    isExportingOnePlacePackage,
+    isOpeningOnePlacePackage,
+    openOnePlacePackage,
     saveNotebookAs,
     exportCurrentPage,
     saveNow,
@@ -237,6 +247,7 @@ export function RibbonBar(props: RibbonBarProps) {
     addTagToCurrentPage,
     toggleCurrentTask,
     isCurrentSectionLocked,
+    notebook,
     page,
     setCurrentTaskDueDate,
     toggleCurrentTaskComplete,
@@ -296,6 +307,22 @@ export function RibbonBar(props: RibbonBarProps) {
     return (
       <section className="op-ribbon">
         <RibbonButton icon={<FolderIcon size={18} />} label="Open" onClick={openNotebook} title="Open OnePlace notebook" variant="compact" />
+        <RibbonButton
+          disabled={isOpeningOnePlacePackage}
+          icon={<FileDownIcon size={18} />}
+          label={isOpeningOnePlacePackage ? 'Opening...' : 'Open Pkg'}
+          onClick={() => void openOnePlacePackage()}
+          title="Open OnePlace package"
+          variant="compact"
+        />
+        <RibbonButton
+          disabled={!notebook || isExportingOnePlacePackage}
+          icon={<FileUpIcon size={18} />}
+          label={isExportingOnePlacePackage ? 'Exporting...' : 'Export Pkg'}
+          onClick={() => void exportCurrentNotebookPackage()}
+          title="Export current notebook package"
+          variant="compact"
+        />
         <RibbonButton
           disabled={isImportingFolderTree}
           icon={<FolderPlusIcon size={18} />}

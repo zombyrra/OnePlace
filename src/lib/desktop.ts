@@ -167,6 +167,26 @@ export const pickExportFilePath = async (defaultPath: string): Promise<string | 
     title: 'Export Page',
   })
 
+export const pickOnePlacePackageFile = async (): Promise<string | null> => {
+  if (!isTauriRuntime()) return null
+
+  const selected = await open({
+    directory: false,
+    filters: [{ name: 'OnePlace Package', extensions: ['oneplace'] }],
+    multiple: false,
+    title: 'Open OnePlace Package',
+  })
+
+  return typeof selected === 'string' ? selected : null
+}
+
+export const pickOnePlacePackageSavePath = async (defaultPath: string): Promise<string | null> =>
+  save({
+    defaultPath,
+    filters: [{ name: 'OnePlace Package', extensions: ['oneplace'] }],
+    title: 'Export OnePlace Package',
+  })
+
 export const openNotebookDirectory = async (path: string): Promise<string> =>
   invoke<string>('open_notebook_dir', { path })
 
@@ -207,6 +227,15 @@ export const exportNotebookDirectory = async (
   path: string,
   notebook: string,
 ): Promise<DesktopSaveResult> => invoke<DesktopSaveResult>('export_notebook_dir', { notebook, path })
+
+export const exportOnePlacePackage = async (
+  filePath: string,
+  notebook: string,
+  assets: string,
+): Promise<DesktopSaveResult> => invoke<DesktopSaveResult>('export_oneplace_package', { assets, filePath, notebook })
+
+export const importOnePlacePackage = async (filePath: string): Promise<ImportedOnePlacePackage> =>
+  invoke<ImportedOnePlacePackage>('import_oneplace_package', { filePath })
 
 export const importOneNoteExportDirectory = async (path: string): Promise<ImportedOneNoteDirectory> =>
   invoke<ImportedOneNoteDirectory>('import_onenote_export_dir', { path })

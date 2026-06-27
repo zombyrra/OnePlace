@@ -9,13 +9,19 @@ use rand::rngs::OsRng;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
+use sha2::{Digest, Sha256};
+use std::collections::{HashMap, HashSet};
+use std::ffi::OsStr;
 use std::fs;
-use std::io::{BufWriter, ErrorKind};
+use std::fs::File;
+use std::io::{BufWriter, ErrorKind, Read, Seek, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::AppHandle;
 use tauri::Manager;
+use zip::write::SimpleFileOptions;
+use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -140,8 +146,93 @@ const ENCRYPTED_JSON_ALGORITHM: &str = "AES-256-GCM";
 const ENCRYPTED_JSON_FORMAT: &str = "oneplace.encrypted-json.v1";
 const LOCAL_STORAGE_KEY_FILE: &str = "workspace-key.dpapi";
 const NONCE_BYTES: usize = 12;
+const ONEPLACE_PACKAGE_FORMAT: &str = "oneplace.package.v1";
+const ONEPLACE_PACKAGE_MAX_ENTRY_BYTES: u64 = 512 * 1024 * 1024;
+const ONEPLACE_PACKAGE_MAX_ENTRIES: usize = 50_000;
+const ONEPLACE_PACKAGE_MAX_JSON_BYTES: u64 = 25 * 1024 * 1024;
+const ONEPLACE_PACKAGE_MAX_TOTAL_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 const ROLLING_BACKUP_LIMIT: usize = 10;
 const STORAGE_KEY_BYTES: usize = 32;
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PackageAssetInput {
+    created_at: String,
+    data_url: String,
+    id: String,
+    kind: String,
+    mime_type: String,
+    name: String,
+    size_label: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PackageNotebookRef {
+    id: String,
+    name: String,
+    path: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PackageAssetRef {
+    created_at: String,
+    id: String,
+    kind: String,
+    mime_type: String,
+    name: String,
+    path: String,
+    sha256: String,
+    size: u64,
+    size_label: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OnePlacePackageManifest {
+    app_version: String,
+    assets: Vec<PackageAssetRef>,
+    created_at: String,
+    format: String,
+    notebooks: Vec<PackageNotebookRef>,
+    package_id: String,
+    schema_version: u32,
+}
+
+#[derive(Clone, Copy)]
+struct ZipImportLimits {
+    max_entries: usize,
+    max_entry_bytes: u64,
+    max_json_bytes: u64,
+    max_total_bytes: u64,
+}
+
+const DEFAULT_PACKAGE_IMPORT_LIMITS: ZipImportLimits = ZipImportLimits {
+    max_entries: ONEPLACE_PACKAGE_MAX_ENTRIES,
+    max_entry_bytes: ONEPLACE_PACKAGE_MAX_ENTRY_BYTES,
+    max_json_bytes: ONEPLACE_PACKAGE_MAX_JSON_BYTES,
+    max_total_bytes: ONEPLACE_PACKAGE_MAX_TOTAL_BYTES,
+};
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ImportedOnePlacePackageAsset {
+    created_at: String,
+    data_url: String,
+    id: String,
+    kind: String,
+    mime_type: String,
+    name: String,
+    size_label: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ImportedOnePlacePackage {
+    assets: Vec<ImportedOnePlacePackageAsset>,
+    notebooks: Vec<Value>,
+}
 
 #[derive(Clone)]
 struct StorageCipher {
@@ -499,11 +590,213 @@ fn encode_path_component(value: &str, label: &str) -> Result<String, String> {
         if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
             encoded.push(ch);
         } else {
-            encoded.push_str(&format!("~{byte:02X}"));
+            encoded.push_str(&format!("%{byte:02X}"));
         }
     }
 
     Ok(encoded)
+}
+
+fn package_safe_component(value: &str, fallback: &str) -> String {
+    let encoded = encode_path_component(value, fallback).unwrap_or_else(|_| fallback.to_string());
+    let candidate = if encoded.is_empty() {
+        fallback.to_string()
+    } else {
+        encoded
+    };
+
+    if package_path_component_key(OsStr::new(&candidate)).is_ok() {
+        candidate
+    } else {
+        let digest = sha256_hex(value.as_bytes());
+        format!("{fallback}-{}", &digest[..16])
+    }
+}
+
+fn unique_package_component(
+    value: &str,
+    fallback: &str,
+    used_components: &mut HashSet<String>,
+) -> String {
+    let base = package_safe_component(value, fallback);
+    let extension = Path::new(&base)
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(|value| format!(".{value}"))
+        .unwrap_or_default();
+    let stem = if extension.is_empty() {
+        base.clone()
+    } else {
+        base.strip_suffix(&extension).unwrap_or(&base).to_string()
+    };
+    let mut candidate = base;
+    let mut index = 2;
+    while !used_components.insert(candidate.to_ascii_lowercase()) {
+        candidate = format!("{stem}-{index}{extension}");
+        index += 1;
+    }
+
+    candidate
+}
+
+fn unique_package_asset_file_name(
+    asset_id: &str,
+    extension: &str,
+    used_file_names: &mut HashSet<String>,
+) -> String {
+    let base = package_safe_component(asset_id, "asset");
+    let mut candidate = format!("{base}.{extension}");
+    if package_path_component_key(OsStr::new(&candidate)).is_err() {
+        let digest = sha256_hex(asset_id.as_bytes());
+        candidate = format!("asset-{}.{extension}", &digest[..16]);
+    }
+
+    let mut index = 2;
+    while !used_file_names.insert(candidate.to_ascii_lowercase()) {
+        candidate = format!("{base}-{index}.{extension}");
+        if package_path_component_key(OsStr::new(&candidate)).is_err() {
+            let digest = sha256_hex(asset_id.as_bytes());
+            candidate = format!("asset-{}-{index}.{extension}", &digest[..16]);
+        }
+        index += 1;
+    }
+
+    candidate
+}
+
+fn package_asset_extension(asset: &PackageAssetInput, export_mime_type: &str) -> String {
+    let from_name = Path::new(&asset.name)
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default()
+        .trim()
+        .to_ascii_lowercase();
+    if !from_name.is_empty() && from_name.chars().all(|ch| ch.is_ascii_alphanumeric()) {
+        return from_name;
+    }
+
+    match export_mime_type {
+        "application/pdf" => "pdf".to_string(),
+        "image/jpeg" => "jpg".to_string(),
+        "image/png" => "png".to_string(),
+        "text/plain" => "txt".to_string(),
+        _ => "bin".to_string(),
+    }
+}
+
+fn parse_base64_data_url(value: &str) -> Result<(&str, Vec<u8>), String> {
+    let (header, payload) = value
+        .split_once(',')
+        .ok_or_else(|| "Asset data URL is missing a payload.".to_string())?;
+    if !header.ends_with(";base64") {
+        return Err("Package assets must use base64 data URLs.".to_string());
+    }
+    let mime_type = header
+        .strip_prefix("data:")
+        .and_then(|header| header.strip_suffix(";base64"))
+        .ok_or_else(|| "Asset data URL has an invalid header.".to_string())?;
+    let bytes = BASE64_STANDARD
+        .decode(payload.as_bytes())
+        .map_err(|err| err.to_string())?;
+    Ok((mime_type, bytes))
+}
+
+fn export_package_asset_mime_type(
+    asset: &PackageAssetInput,
+    data_url_mime_type: &str,
+) -> Result<String, String> {
+    let data_url_mime_type = data_url_mime_type.trim().to_ascii_lowercase();
+    let declared_mime_type = asset.mime_type.trim().to_ascii_lowercase();
+    let safe_data_url_mime_type =
+        safe_imported_asset_mime_type(&asset.kind, &data_url_mime_type, &asset.id)?;
+    if safe_data_url_mime_type != data_url_mime_type {
+        return Err(format!("Asset {} data URL has an unsafe MIME type.", asset.id));
+    }
+
+    if data_url_mime_type == declared_mime_type {
+        return Ok(data_url_mime_type);
+    }
+
+    if matches!(asset.kind.as_str(), "file" | "download") {
+        let safe_declared_mime_type =
+            safe_imported_asset_mime_type(&asset.kind, &declared_mime_type, &asset.id)?;
+        if safe_declared_mime_type == "application/octet-stream"
+            && data_url_mime_type == "application/octet-stream"
+        {
+            return Ok(data_url_mime_type);
+        }
+    }
+
+    Err(format!(
+        "Asset {} MIME type does not match its data URL.",
+        asset.id
+    ))
+}
+
+fn is_syntactically_safe_mime_type(mime_type: &str) -> bool {
+    let mut parts = mime_type.split('/');
+    let Some(top_level) = parts.next() else {
+        return false;
+    };
+    let Some(subtype) = parts.next() else {
+        return false;
+    };
+    if parts.next().is_some() || top_level.is_empty() || subtype.is_empty() {
+        return false;
+    }
+
+    mime_type.chars().all(|ch| {
+        ch.is_ascii_alphanumeric()
+            || matches!(
+                ch,
+                '!' | '#' | '$' | '&' | '-' | '^' | '_' | '.' | '+' | '/'
+            )
+    })
+}
+
+fn safe_imported_asset_mime_type(kind: &str, mime_type: &str, id: &str) -> Result<String, String> {
+    let normalized = mime_type.trim().to_ascii_lowercase();
+    let is_safe_header = is_syntactically_safe_mime_type(&normalized);
+
+    match kind {
+        "printout" => {
+            if normalized == "application/pdf" {
+                Ok(normalized)
+            } else {
+                Err(format!(
+                    "Package printout asset {id} must be application/pdf."
+                ))
+            }
+        }
+        "image" => {
+            if is_safe_header && normalized.starts_with("image/") && normalized != "image/svg+xml" {
+                Ok(normalized)
+            } else {
+                Err(format!("Package image asset {id} has an unsafe MIME type."))
+            }
+        }
+        "audio" => {
+            if is_safe_header && normalized.starts_with("audio/") {
+                Ok(normalized)
+            } else {
+                Err(format!("Package audio asset {id} has an unsafe MIME type."))
+            }
+        }
+        "file" | "download" => {
+            if is_safe_header && normalized != "text/html" && normalized != "image/svg+xml" {
+                Ok(normalized)
+            } else {
+                Ok("application/octet-stream".to_string())
+            }
+        }
+        _ => Ok("application/octet-stream".to_string()),
+    }
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    format!("{:x}", hasher.finalize())
 }
 
 fn safe_join_relative(base: &Path, relative: &str) -> Result<PathBuf, String> {
@@ -521,6 +814,94 @@ fn safe_join_relative(base: &Path, relative: &str) -> Result<PathBuf, String> {
     }
 
     Ok(base.join(relative_path))
+}
+
+fn safe_package_relative_path(relative: &str) -> Result<PathBuf, String> {
+    safe_join_relative(Path::new(""), relative)
+}
+
+fn is_reserved_windows_device_name(name: &str) -> bool {
+    matches!(name, "CON" | "PRN" | "AUX" | "NUL")
+        || (name.len() == 4
+            && (name.starts_with("COM") || name.starts_with("LPT"))
+            && matches!(name.as_bytes()[3], b'1'..=b'9'))
+}
+
+fn has_valid_percent_escapes(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'%' {
+            if index + 2 >= bytes.len()
+                || !bytes[index + 1].is_ascii_hexdigit()
+                || !bytes[index + 2].is_ascii_hexdigit()
+            {
+                return false;
+            }
+            index += 3;
+        } else {
+            index += 1;
+        }
+    }
+
+    true
+}
+
+fn package_path_component_key(value: &OsStr) -> Result<String, String> {
+    let component = value
+        .to_str()
+        .ok_or_else(|| "Package stored paths must be valid UTF-8.".to_string())?;
+    if component.is_empty() {
+        return Err("Package stored paths cannot contain empty segments.".to_string());
+    }
+    if !component.is_ascii() {
+        return Err("Package stored paths must use ASCII-only internal names.".to_string());
+    }
+    if component.ends_with('.') || component.ends_with(' ') {
+        return Err("Package stored path segments cannot end with dots or spaces.".to_string());
+    }
+    if !component
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.' | '%'))
+    {
+        return Err("Package stored paths contain unsupported characters.".to_string());
+    }
+    if !has_valid_percent_escapes(component) {
+        return Err("Package stored paths contain invalid percent escapes.".to_string());
+    }
+
+    let device_name = component
+        .split('.')
+        .next()
+        .unwrap_or_default()
+        .to_ascii_uppercase();
+    if is_reserved_windows_device_name(&device_name) {
+        return Err("Package stored paths cannot use reserved Windows names.".to_string());
+    }
+
+    Ok(component.to_ascii_lowercase())
+}
+
+fn normalized_zip_entry_path(path: &Path) -> Result<String, String> {
+    let mut normalized_components = Vec::new();
+    for component in path.components() {
+        match component {
+            Component::Normal(value) => {
+                normalized_components.push(package_path_component_key(value)?);
+            }
+            _ => return Err("Package contains an unsafe zip entry path.".to_string()),
+        }
+    }
+
+    if normalized_components.is_empty() {
+        return Err("Package contains an empty zip entry path.".to_string());
+    }
+
+    Ok(normalized_components.join("/"))
+}
+
+fn normalized_package_path(relative: &str) -> Result<String, String> {
+    normalized_zip_entry_path(&safe_package_relative_path(relative)?)
 }
 
 fn safe_join_existing(base: &Path, relative: &str) -> Result<PathBuf, String> {
@@ -616,6 +997,464 @@ fn replace_dir_with_temp(temp_dir: &Path, target_dir: &Path) -> Result<(), Strin
     }
 }
 
+fn validate_oneplace_package_manifest(manifest: &OnePlacePackageManifest) -> Result<(), String> {
+    if manifest.format != ONEPLACE_PACKAGE_FORMAT {
+        return Err("This is not a OnePlace package.".to_string());
+    }
+    if manifest.schema_version != 1 {
+        return Err(format!(
+            "Unsupported OnePlace package schema version: {}.",
+            manifest.schema_version
+        ));
+    }
+    Ok(())
+}
+
+fn validate_zip_entries_with_limits<R: Read + Seek>(
+    archive: &mut ZipArchive<R>,
+    limits: ZipImportLimits,
+) -> Result<HashMap<String, usize>, String> {
+    if archive.len() > limits.max_entries {
+        return Err(format!(
+            "Package contains too many files ({} > {}).",
+            archive.len(),
+            limits.max_entries
+        ));
+    }
+
+    let mut entry_paths = HashMap::new();
+    let mut total_uncompressed_size = 0_u64;
+    for index in 0..archive.len() {
+        let file = archive.by_index(index).map_err(|err| err.to_string())?;
+        if file.size() > limits.max_entry_bytes {
+            return Err(format!(
+                "Package entry {} is too large.",
+                file.name()
+            ));
+        }
+        total_uncompressed_size = total_uncompressed_size
+            .checked_add(file.size())
+            .ok_or_else(|| "Package uncompressed size is too large.".to_string())?;
+        if total_uncompressed_size > limits.max_total_bytes {
+            return Err("Package uncompressed size is too large.".to_string());
+        }
+        if file.is_dir() {
+            continue;
+        }
+        let enclosed = file
+            .enclosed_name()
+            .ok_or_else(|| "Package contains an unsafe zip entry path.".to_string())?
+            .to_path_buf();
+        let normalized_entry_path = normalized_zip_entry_path(&enclosed)?;
+        if entry_paths.insert(normalized_entry_path, index).is_some() {
+            return Err("Package contains duplicate zip entry paths.".to_string());
+        }
+    }
+
+    Ok(entry_paths)
+}
+
+fn read_limited_to_vec<R: Read>(
+    input: &mut R,
+    max_entry_bytes: u64,
+    max_total_bytes: u64,
+    total_read: &mut u64,
+    label: &str,
+) -> Result<Vec<u8>, String> {
+    let mut bytes = Vec::new();
+    let mut buffer = [0_u8; 64 * 1024];
+    let mut entry_read = 0_u64;
+
+    loop {
+        let read_count = input.read(&mut buffer).map_err(|err| err.to_string())?;
+        if read_count == 0 {
+            break;
+        }
+        entry_read = entry_read
+            .checked_add(read_count as u64)
+            .ok_or_else(|| format!("Package {label} entry is too large."))?;
+        if entry_read > max_entry_bytes {
+            return Err(format!("Package {label} entry is too large."));
+        }
+        *total_read = (*total_read)
+            .checked_add(read_count as u64)
+            .ok_or_else(|| "Package pre-scan uncompressed size is too large.".to_string())?;
+        if *total_read > max_total_bytes {
+            return Err("Package pre-scan uncompressed size is too large.".to_string());
+        }
+        bytes.extend_from_slice(&buffer[..read_count]);
+    }
+
+    Ok(bytes)
+}
+
+fn read_zip_entry_bytes_with_limit<R: Read + Seek>(
+    archive: &mut ZipArchive<R>,
+    entry_paths: &HashMap<String, usize>,
+    relative_path: &str,
+    max_bytes: u64,
+    max_total_bytes: u64,
+    total_read: &mut u64,
+    label: &str,
+) -> Result<Vec<u8>, String> {
+    let normalized_path = normalized_package_path(relative_path)?;
+    let index = entry_paths.get(&normalized_path).ok_or_else(|| {
+        format!("Package is missing required {label} entry: {relative_path}.")
+    })?;
+    let mut file = archive.by_index(*index).map_err(|err| err.to_string())?;
+    if file.size() > max_bytes {
+        return Err(format!("Package {label} entry is too large: {relative_path}."));
+    }
+    read_limited_to_vec(
+        &mut file,
+        max_bytes,
+        max_total_bytes,
+        total_read,
+        &format!("{label} ({relative_path})"),
+    )
+}
+
+fn copy_zip_entry_with_limits<R: Read, W: Write>(
+    input: &mut R,
+    output: &mut W,
+    entry_path: &str,
+    max_entry_bytes: u64,
+    max_total_bytes: u64,
+    total_written: &mut u64,
+) -> Result<(), String> {
+    let mut buffer = [0_u8; 64 * 1024];
+    let mut entry_written = 0_u64;
+
+    loop {
+        let read_count = input.read(&mut buffer).map_err(|err| err.to_string())?;
+        if read_count == 0 {
+            break;
+        }
+        entry_written = entry_written
+            .checked_add(read_count as u64)
+            .ok_or_else(|| format!("Package entry {entry_path} is too large."))?;
+        if entry_written > max_entry_bytes {
+            return Err(format!("Package entry {entry_path} is too large."));
+        }
+        *total_written = total_written
+            .checked_add(read_count as u64)
+            .ok_or_else(|| "Package uncompressed size is too large.".to_string())?;
+        if *total_written > max_total_bytes {
+            return Err("Package uncompressed size is too large.".to_string());
+        }
+        output
+            .write_all(&buffer[..read_count])
+            .map_err(|err| err.to_string())?;
+    }
+
+    Ok(())
+}
+
+fn package_notebook_section_paths(
+    notebook: &Value,
+    notebook_path: &str,
+) -> Result<Vec<String>, String> {
+    let notebook_relative = safe_package_relative_path(notebook_path)?;
+    let notebook_dir = notebook_relative
+        .parent()
+        .ok_or_else(|| "Package notebook path has no parent folder.".to_string())?;
+    let groups = notebook
+        .get("sectionGroups")
+        .and_then(Value::as_array)
+        .ok_or_else(|| "Package notebook metadata is missing section groups.".to_string())?;
+    let mut section_paths = Vec::new();
+    for group in groups {
+        let sections = group
+            .get("sections")
+            .and_then(Value::as_array)
+            .ok_or_else(|| "Package notebook metadata is missing sections.".to_string())?;
+        for section in sections {
+            let pages_file = section
+                .get("pagesFile")
+                .and_then(Value::as_str)
+                .ok_or_else(|| "Package section metadata is missing pagesFile.".to_string())?;
+            if pages_file.trim().is_empty() {
+                return Err("Package section metadata has an empty pagesFile.".to_string());
+            }
+            let section_path = safe_join_relative(notebook_dir, pages_file)?;
+            section_paths.push(normalized_zip_entry_path(&section_path)?);
+        }
+    }
+
+    Ok(section_paths)
+}
+
+fn insert_unique_package_logical_id(
+    ids: &mut HashSet<String>,
+    id: &str,
+    label: &str,
+) -> Result<(), String> {
+    if !ids.insert(id.to_string()) {
+        return Err(format!("Package contains duplicate {label} ID: {id}."));
+    }
+
+    Ok(())
+}
+
+fn validate_package_page_ids(
+    pages: &[Value],
+    ids: &mut HashSet<String>,
+) -> Result<(), String> {
+    for page in pages {
+        let page_id = get_id(page, "id")?;
+        insert_unique_package_logical_id(ids, page_id, "page")?;
+        if let Some(children) = page.get("children").and_then(Value::as_array) {
+            validate_package_page_ids(children, ids)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_imported_package_unique_ids(
+    notebooks: &[Value],
+    assets: &[PackageAssetRef],
+) -> Result<(), String> {
+    let mut ids = HashSet::new();
+    for notebook in notebooks {
+        let notebook_id = get_id(notebook, "id")?;
+        insert_unique_package_logical_id(&mut ids, notebook_id, "notebook")?;
+        let groups = notebook
+            .get("sectionGroups")
+            .and_then(Value::as_array)
+            .ok_or_else(|| "Package notebook metadata is missing section groups.".to_string())?;
+        for group in groups {
+            let group_id = get_id(group, "id")?;
+            insert_unique_package_logical_id(&mut ids, group_id, "section group")?;
+            let sections = group
+                .get("sections")
+                .and_then(Value::as_array)
+                .ok_or_else(|| "Package notebook metadata is missing sections.".to_string())?;
+            for section in sections {
+                let section_id = get_id(section, "id")?;
+                insert_unique_package_logical_id(&mut ids, section_id, "section")?;
+                let pages = section
+                    .get("pages")
+                    .and_then(Value::as_array)
+                    .ok_or_else(|| "Package section metadata is missing pages.".to_string())?;
+                validate_package_page_ids(pages, &mut ids)?;
+            }
+        }
+    }
+
+    for asset in assets {
+        insert_unique_package_logical_id(&mut ids, &asset.id, "asset")?;
+    }
+
+    Ok(())
+}
+
+fn insert_allowed_package_path(
+    allowed_paths: &mut HashMap<String, u64>,
+    normalized_path: String,
+    max_bytes: u64,
+) -> Result<(), String> {
+    if allowed_paths.contains_key(&normalized_path) {
+        return Err(format!(
+            "Package manifest contains duplicate stored path: {normalized_path}."
+        ));
+    }
+
+    allowed_paths.insert(normalized_path, max_bytes);
+    Ok(())
+}
+
+fn read_package_manifest_from_zip_with_limits(
+    source_file: &Path,
+    limits: ZipImportLimits,
+) -> Result<(OnePlacePackageManifest, HashMap<String, u64>), String> {
+    let file = File::open(source_file).map_err(|err| err.to_string())?;
+    let mut archive = ZipArchive::new(file).map_err(|err| err.to_string())?;
+    let entry_paths = validate_zip_entries_with_limits(&mut archive, limits)?;
+    let mut total_prescan_read = 0_u64;
+    let manifest_bytes = read_zip_entry_bytes_with_limit(
+        &mut archive,
+        &entry_paths,
+        "manifest.json",
+        limits.max_json_bytes,
+        limits.max_total_bytes,
+        &mut total_prescan_read,
+        "manifest",
+    )?;
+    let manifest: OnePlacePackageManifest =
+        serde_json::from_slice(&manifest_bytes).map_err(|err| err.to_string())?;
+    validate_oneplace_package_manifest(&manifest)?;
+
+    let mut allowed_paths = HashMap::new();
+    insert_allowed_package_path(
+        &mut allowed_paths,
+        "manifest.json".to_string(),
+        limits.max_json_bytes,
+    )?;
+    for notebook_ref in &manifest.notebooks {
+        let notebook_path = normalized_package_path(&notebook_ref.path)?;
+        insert_allowed_package_path(&mut allowed_paths, notebook_path, limits.max_json_bytes)?;
+        let notebook_bytes = read_zip_entry_bytes_with_limit(
+            &mut archive,
+            &entry_paths,
+            &notebook_ref.path,
+            limits.max_json_bytes,
+            limits.max_total_bytes,
+            &mut total_prescan_read,
+            "notebook",
+        )?;
+        let notebook: Value = serde_json::from_slice(&notebook_bytes).map_err(|err| {
+            format!(
+                "Unable to read package notebook metadata ({}): {}",
+                notebook_ref.path, err
+            )
+        })?;
+        for section_path in package_notebook_section_paths(&notebook, &notebook_ref.path)? {
+            insert_allowed_package_path(&mut allowed_paths, section_path, limits.max_json_bytes)?;
+        }
+    }
+    for asset_ref in &manifest.assets {
+        insert_allowed_package_path(
+            &mut allowed_paths,
+            normalized_package_path(&asset_ref.path)?,
+            limits.max_entry_bytes,
+        )?;
+    }
+
+    Ok((manifest, allowed_paths))
+}
+
+fn read_package_manifest_from_zip(
+    source_file: &Path,
+) -> Result<(OnePlacePackageManifest, HashMap<String, u64>), String> {
+    read_package_manifest_from_zip_with_limits(source_file, DEFAULT_PACKAGE_IMPORT_LIMITS)
+}
+
+fn extract_zip_to_dir_with_limits(
+    source_file: &Path,
+    target_dir: &Path,
+    allowed_paths: &HashMap<String, u64>,
+    limits: ZipImportLimits,
+) -> Result<(), String> {
+    if target_dir.exists() {
+        fs::remove_dir_all(target_dir).map_err(|err| err.to_string())?;
+    }
+    fs::create_dir_all(target_dir).map_err(|err| err.to_string())?;
+    let file = File::open(source_file).map_err(|err| err.to_string())?;
+    let mut archive = ZipArchive::new(file).map_err(|err| err.to_string())?;
+    let entry_paths = validate_zip_entries_with_limits(&mut archive, limits)?;
+    let mut total_written = 0_u64;
+
+    for (allowed_path, max_entry_bytes) in allowed_paths {
+        let index = entry_paths.get(allowed_path).ok_or_else(|| {
+            format!("Package is missing required entry: {allowed_path}.")
+        })?;
+        let mut file = archive.by_index(*index).map_err(|err| err.to_string())?;
+        if file.size() > *max_entry_bytes {
+            return Err(format!("Package entry {} is too large.", file.name()));
+        }
+        let enclosed = file
+            .enclosed_name()
+            .ok_or_else(|| "Package contains an unsafe zip entry path.".to_string())?
+            .to_path_buf();
+        let output_path = target_dir.join(enclosed);
+        create_parent_dir(&output_path)?;
+        let mut output = File::create(&output_path).map_err(|err| err.to_string())?;
+        copy_zip_entry_with_limits(
+            &mut file,
+            &mut output,
+            allowed_path,
+            *max_entry_bytes,
+            limits.max_total_bytes,
+            &mut total_written,
+        )?;
+    }
+
+    Ok(())
+}
+
+fn extract_zip_to_dir(
+    source_file: &Path,
+    target_dir: &Path,
+    allowed_paths: &HashMap<String, u64>,
+) -> Result<(), String> {
+    extract_zip_to_dir_with_limits(
+        source_file,
+        target_dir,
+        allowed_paths,
+        DEFAULT_PACKAGE_IMPORT_LIMITS,
+    )
+}
+
+fn zip_directory_to_file(source_dir: &Path, target_file: &Path) -> Result<(), String> {
+    create_parent_dir(target_file)?;
+    let temp_file = hidden_sibling_path(target_file, "tmp")?;
+    if temp_file.exists() {
+        fs::remove_file(&temp_file).map_err(|err| err.to_string())?;
+    }
+
+    fn add_entries(
+        archive: &mut ZipWriter<File>,
+        options: SimpleFileOptions,
+        root: &Path,
+        current: &Path,
+    ) -> Result<(), String> {
+        let mut entries = Vec::new();
+        for entry in fs::read_dir(current).map_err(|err| err.to_string())? {
+            entries.push(entry.map_err(|err| err.to_string())?);
+        }
+        entries.sort_by(|left, right| left.file_name().cmp(&right.file_name()));
+
+        for entry in entries {
+            let path = entry.path();
+            if path.is_dir() {
+                add_entries(archive, options, root, &path)?;
+                continue;
+            }
+            if !path.is_file() {
+                continue;
+            }
+
+            let name = path
+                .strip_prefix(root)
+                .map_err(|err| err.to_string())?
+                .to_string_lossy()
+                .replace('\\', "/");
+            archive
+                .start_file(name, options)
+                .map_err(|err| err.to_string())?;
+            let mut input = File::open(&path).map_err(|err| err.to_string())?;
+            std::io::copy(&mut input, archive).map_err(|err| err.to_string())?;
+        }
+
+        Ok(())
+    }
+
+    let result = (|| {
+        let file = File::create(&temp_file).map_err(|err| err.to_string())?;
+        let mut archive = ZipWriter::new(file);
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        add_entries(&mut archive, options, source_dir, source_dir)?;
+        archive.finish().map_err(|err| err.to_string())?;
+        Ok(())
+    })();
+
+    if let Err(err) = result {
+        if temp_file.exists() {
+            let _ = fs::remove_file(&temp_file);
+        }
+        return Err(err);
+    }
+
+    match replace_file_with_temp(&temp_file, target_file) {
+        Ok(()) => Ok(()),
+        Err(err) => {
+            let _ = fs::remove_file(&temp_file);
+            Err(err)
+        }
+    }
+}
+
 fn write_pretty_json_with_cipher(
     path: &Path,
     value: &Value,
@@ -664,7 +1503,15 @@ fn load_notebook_from_dir_with_cipher(
     cipher: Option<&StorageCipher>,
 ) -> Result<Value, String> {
     let notebook_file = notebook_dir.join("notebook.json");
-    let mut notebook = read_json_file_with_cipher(&notebook_file, cipher)?;
+    if !notebook_file.try_exists().map_err(|err| err.to_string())? {
+        return Err(
+            "Selected folder is not a OnePlace notebook: missing notebook.json. Use Folder import for ordinary document folders."
+                .to_string(),
+        );
+    }
+
+    let mut notebook = read_json_file_with_cipher(&notebook_file, cipher)
+        .map_err(|err| format!("Unable to read notebook metadata (notebook.json): {err}"))?;
 
     let groups = as_object_mut(&mut notebook)?
         .get_mut("sectionGroups")
@@ -682,8 +1529,12 @@ fn load_notebook_from_dir_with_cipher(
                 .get("pagesFile")
                 .and_then(Value::as_str)
                 .ok_or_else(|| "Section metadata is missing pagesFile.".to_string())?;
-            let section_path = safe_join_existing(notebook_dir, pages_file)?;
-            *section = read_json_file_with_cipher(&section_path, cipher)?;
+            let section_path = safe_join_existing(notebook_dir, pages_file).map_err(|err| {
+                format!("Notebook section file is invalid or missing ({pages_file}): {err}")
+            })?;
+            *section = read_json_file_with_cipher(&section_path, cipher).map_err(|err| {
+                format!("Unable to read notebook section file ({pages_file}): {err}")
+            })?;
         }
     }
 
@@ -1383,6 +2234,189 @@ fn export_notebook_dir(path: String, notebook: String) -> Result<SaveResult, Str
     })
 }
 
+#[tauri::command]
+fn export_oneplace_package(
+    app: AppHandle,
+    file_path: String,
+    notebook: String,
+    assets: String,
+) -> Result<SaveResult, String> {
+    let notebook_value: Value = serde_json::from_str(&notebook).map_err(|err| err.to_string())?;
+    let asset_values: Vec<PackageAssetInput> =
+        serde_json::from_str(&assets).map_err(|err| err.to_string())?;
+    let app_version = app.package_info().version.to_string();
+    export_oneplace_package_to_path(
+        Path::new(&file_path),
+        &notebook_value,
+        &asset_values,
+        &app_version,
+    )
+}
+
+#[tauri::command]
+fn import_oneplace_package(file_path: String) -> Result<ImportedOnePlacePackage, String> {
+    import_oneplace_package_from_path(Path::new(&file_path))
+}
+
+fn export_oneplace_package_to_path(
+    target_path: &Path,
+    notebook: &Value,
+    assets: &[PackageAssetInput],
+    app_version: &str,
+) -> Result<SaveResult, String> {
+    let notebook_id = get_id(notebook, "id")?;
+    let notebook_name = get_str(notebook, "name")?;
+    let package_root = hidden_sibling_path(target_path, "package")?;
+    if package_root.exists() {
+        fs::remove_dir_all(&package_root).map_err(|err| err.to_string())?;
+    }
+    fs::create_dir_all(&package_root).map_err(|err| err.to_string())?;
+
+    let result = (|| {
+        let mut used_notebook_dirs = HashSet::new();
+        let safe_notebook_id =
+            unique_package_component(notebook_id, "notebook", &mut used_notebook_dirs);
+        let notebook_dir = package_root.join("notebooks").join(&safe_notebook_id);
+        write_notebook_to_dir(notebook, &notebook_dir)?;
+
+        let assets_dir = package_root.join("assets");
+        fs::create_dir_all(&assets_dir).map_err(|err| err.to_string())?;
+        let mut asset_refs = Vec::with_capacity(assets.len());
+        let mut used_asset_file_names = HashSet::new();
+        for asset in assets {
+            let (mime_type_from_data_url, bytes) = parse_base64_data_url(&asset.data_url)?;
+            let export_mime_type = export_package_asset_mime_type(asset, mime_type_from_data_url)?;
+            let extension = package_asset_extension(asset, &export_mime_type);
+            let file_name =
+                unique_package_asset_file_name(&asset.id, &extension, &mut used_asset_file_names);
+            let relative_path = format!("assets/{file_name}");
+            fs::write(assets_dir.join(&file_name), &bytes).map_err(|err| err.to_string())?;
+            asset_refs.push(PackageAssetRef {
+                created_at: asset.created_at.clone(),
+                id: asset.id.clone(),
+                kind: asset.kind.clone(),
+                mime_type: export_mime_type,
+                name: asset.name.clone(),
+                path: relative_path,
+                sha256: sha256_hex(&bytes),
+                size: bytes.len() as u64,
+                size_label: asset.size_label.clone(),
+            });
+        }
+
+        let manifest = OnePlacePackageManifest {
+            app_version: app_version.to_string(),
+            assets: asset_refs,
+            created_at: Utc::now().to_rfc3339(),
+            format: ONEPLACE_PACKAGE_FORMAT.to_string(),
+            notebooks: vec![PackageNotebookRef {
+                id: notebook_id.to_string(),
+                name: notebook_name.to_string(),
+                path: format!("notebooks/{safe_notebook_id}/notebook.json"),
+            }],
+            package_id: format!("package-{}", unique_suffix()),
+            schema_version: 1,
+        };
+        write_pretty_json(
+            &package_root.join("manifest.json"),
+            &serde_json::to_value(manifest).map_err(|err| err.to_string())?,
+        )?;
+        zip_directory_to_file(&package_root, target_path)?;
+
+        Ok(SaveResult {
+            cloud_error: None,
+            cloud_path: None,
+            cloud_saved_at: None,
+            path: target_path.display().to_string(),
+            saved_at: Utc::now().to_rfc3339(),
+        })
+    })();
+
+    let cleanup_result = fs::remove_dir_all(&package_root).map_err(|err| err.to_string());
+    match (result, cleanup_result) {
+        (Ok(save_result), Ok(())) => Ok(save_result),
+        (Ok(_), Err(err)) => Err(err),
+        (Err(err), _) => Err(err),
+    }
+}
+
+fn import_oneplace_package_from_path(
+    source_path: &Path,
+) -> Result<ImportedOnePlacePackage, String> {
+    if !source_path.exists() {
+        return Err("The selected OnePlace package does not exist.".to_string());
+    }
+    if !source_path.is_file() {
+        return Err("The selected OnePlace package path is not a file.".to_string());
+    }
+
+    let extract_root = hidden_sibling_path(source_path, "extract")?;
+    let result = (|| {
+        let (manifest, allowed_paths) = read_package_manifest_from_zip(source_path)?;
+        extract_zip_to_dir(source_path, &extract_root, &allowed_paths)?;
+
+        let mut notebooks = Vec::with_capacity(manifest.notebooks.len());
+        for notebook_ref in &manifest.notebooks {
+            let relative = safe_package_relative_path(&notebook_ref.path)?;
+            let notebook_file = extract_root.join(relative);
+            let notebook_dir = notebook_file
+                .parent()
+                .ok_or_else(|| "Package notebook path has no parent folder.".to_string())?;
+            notebooks.push(load_notebook_from_dir(notebook_dir)?);
+        }
+        validate_imported_package_unique_ids(&notebooks, &manifest.assets)?;
+
+        let mut assets = Vec::with_capacity(manifest.assets.len());
+        for asset_ref in &manifest.assets {
+            let relative = safe_package_relative_path(&asset_ref.path)?;
+            let asset_path = extract_root.join(relative);
+            let bytes = fs::read(&asset_path).map_err(|err| err.to_string())?;
+            if sha256_hex(&bytes) != asset_ref.sha256 {
+                return Err(format!(
+                    "Package asset {} failed hash validation.",
+                    asset_ref.id
+                ));
+            }
+            if bytes.len() as u64 != asset_ref.size {
+                return Err(format!(
+                    "Package asset {} size does not match its manifest.",
+                    asset_ref.id
+                ));
+            }
+            let safe_mime_type = safe_imported_asset_mime_type(
+                &asset_ref.kind,
+                &asset_ref.mime_type,
+                &asset_ref.id,
+            )?;
+            assets.push(ImportedOnePlacePackageAsset {
+                created_at: asset_ref.created_at.clone(),
+                data_url: format!(
+                    "data:{};base64,{}",
+                    safe_mime_type,
+                    BASE64_STANDARD.encode(bytes.as_slice())
+                ),
+                id: asset_ref.id.clone(),
+                kind: asset_ref.kind.clone(),
+                mime_type: safe_mime_type,
+                name: asset_ref.name.clone(),
+                size_label: asset_ref.size_label.clone(),
+            });
+        }
+
+        Ok(ImportedOnePlacePackage { assets, notebooks })
+    })();
+
+    match result {
+        Ok(imported) => fs::remove_dir_all(&extract_root)
+            .map(|()| imported)
+            .map_err(|err| err.to_string()),
+        Err(err) => {
+            let _ = fs::remove_dir_all(&extract_root);
+            Err(err)
+        }
+    }
+}
+
 fn export_pdf_file(
     file_path: &Path,
     title: &str,
@@ -1767,6 +2801,8 @@ fn main() {
             import_folder_tree_dir,
             read_local_asset_file,
             export_notebook_dir,
+            export_oneplace_package,
+            import_oneplace_package,
             export_page_file
         ])
         .run(tauri::generate_context!())
@@ -1776,6 +2812,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Read;
     use serde_json::json;
 
     fn unique_test_dir(name: &str) -> PathBuf {
@@ -1864,6 +2901,10 @@ mod tests {
         assert!(!forward.contains('\\'));
         assert!(!backward.contains('/'));
         assert!(!backward.contains('\\'));
+        assert!(!forward.contains('~'));
+        assert!(!backward.contains('~'));
+        assert!(forward.contains("%2F"));
+        assert!(backward.contains("%5C"));
         assert!(forward.ends_with(".json"));
         assert!(backward.ends_with(".json"));
     }
@@ -1899,6 +2940,18 @@ mod tests {
         let result = load_notebook_from_dir(&notebook_dir);
 
         assert!(result.is_err());
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn load_notebook_from_document_folder_reports_missing_metadata() {
+        let root = unique_test_dir("open-document-folder");
+        fs::write(root.join("Complaint.pdf"), b"%PDF-1.7").expect("write case document");
+
+        let message = load_notebook_from_dir(&root).expect_err("document folder should not open");
+
+        assert!(message.contains("missing notebook.json"), "{message}");
+        assert!(message.contains("Folder import"), "{message}");
         fs::remove_dir_all(root).expect("cleanup temp test dir");
     }
 
@@ -1975,6 +3028,902 @@ mod tests {
         assert!(imported.files.iter().any(|file| {
             file.relative_path == "Discovery/native-file.docx" && file.kind == "file"
         }));
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_export_creates_manifest_notebook_and_asset_files() {
+        let root = unique_test_dir("package-export");
+        let target = root.join("case.oneplace");
+        let notebook = json!({
+            "color": "#3784d6",
+            "icon": "folder",
+            "id": "notebook-1",
+            "name": "Case Notebook",
+            "sectionGroups": [{
+                "id": "group-1",
+                "isCollapsed": false,
+                "name": "Sections",
+                "sections": [{
+                    "color": "#3784d6",
+                    "id": "section-1",
+                    "name": "Pleadings",
+                    "pages": [{
+                        "accent": "#3784d6",
+                        "children": [],
+                        "content": "<p data-asset-id=\"asset-1\">Complaint</p>",
+                        "createdAt": "2026-06-27T00:00:00.000Z",
+                        "id": "page-1",
+                        "inkStrokes": [],
+                        "isCollapsed": false,
+                        "snippet": "Complaint",
+                        "tags": [],
+                        "task": null,
+                        "title": "Complaint",
+                        "updatedAt": "2026-06-27T00:00:00.000Z"
+                    }],
+                    "passwordHash": null,
+                    "passwordHint": ""
+                }]
+            }]
+        });
+        let assets = vec![PackageAssetInput {
+            created_at: "2026-06-27T00:00:00.000Z".to_string(),
+            data_url: "data:application/pdf;base64,JVBERi0xLjc=".to_string(),
+            id: "asset-1".to_string(),
+            kind: "printout".to_string(),
+            mime_type: "application/pdf".to_string(),
+            name: "Complaint.pdf".to_string(),
+            size_label: "8 KB".to_string(),
+        }];
+
+        export_oneplace_package_to_path(&target, &notebook, &assets, "0.1.13")
+            .expect("export package");
+
+        let file = File::open(&target).expect("open package");
+        let mut archive = ZipArchive::new(file).expect("read package");
+        assert!(archive.by_name("manifest.json").is_ok());
+        assert!(archive
+            .by_name("notebooks/notebook-1/notebook.json")
+            .is_ok());
+        assert!(archive.by_name("assets/asset-1.pdf").is_ok());
+
+        let mut manifest_text = String::new();
+        archive
+            .by_name("manifest.json")
+            .expect("manifest")
+            .read_to_string(&mut manifest_text)
+            .expect("read manifest");
+        assert!(manifest_text.contains("oneplace.package.v1"));
+        assert!(manifest_text.contains("assets/asset-1.pdf"));
+
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_export_allows_safely_downgraded_folder_html_assets() {
+        let root = unique_test_dir("package-export-downgraded-html");
+        let target = root.join("case.oneplace");
+        let notebook = json!({
+            "color": "#3784d6",
+            "icon": "folder",
+            "id": "notebook-1",
+            "name": "Case Notebook",
+            "sectionGroups": [{
+                "id": "group-1",
+                "isCollapsed": false,
+                "name": "Sections",
+                "sections": [{
+                    "color": "#3784d6",
+                    "id": "section-1",
+                    "name": "Pleadings",
+                    "pages": [{
+                        "accent": "#3784d6",
+                        "children": [],
+                        "content": "<p data-asset-id=\"asset-html\">Index</p>",
+                        "createdAt": "2026-06-27T00:00:00.000Z",
+                        "id": "page-1",
+                        "inkStrokes": [],
+                        "isCollapsed": false,
+                        "snippet": "Index",
+                        "tags": [],
+                        "task": null,
+                        "title": "Index",
+                        "updatedAt": "2026-06-27T00:00:00.000Z"
+                    }],
+                    "passwordHash": null,
+                    "passwordHint": ""
+                }]
+            }]
+        });
+        let assets = vec![PackageAssetInput {
+            created_at: "2026-06-27T00:00:00.000Z".to_string(),
+            data_url: "data:application/octet-stream;base64,PGh0bWw+PC9odG1sPg==".to_string(),
+            id: "asset-html".to_string(),
+            kind: "file".to_string(),
+            mime_type: "text/html".to_string(),
+            name: "index.html".to_string(),
+            size_label: "1 KB".to_string(),
+        }];
+
+        export_oneplace_package_to_path(&target, &notebook, &assets, "0.1.13")
+            .expect("export package");
+
+        let file = File::open(&target).expect("open package");
+        let mut archive = ZipArchive::new(file).expect("read package");
+        assert!(archive.by_name("assets/asset-html.html").is_ok());
+        let mut manifest_text = String::new();
+        archive
+            .by_name("manifest.json")
+            .expect("manifest")
+            .read_to_string(&mut manifest_text)
+            .expect("read manifest");
+        let manifest: Value = serde_json::from_str(&manifest_text).expect("manifest json");
+        assert_eq!(
+            manifest["assets"][0]["mimeType"],
+            "application/octet-stream"
+        );
+
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_export_rewrites_reserved_internal_names() {
+        let root = unique_test_dir("package-export-reserved-names");
+        let target = root.join("case.oneplace");
+        let notebook = json!({
+            "color": "#3784d6",
+            "icon": "folder",
+            "id": "CON",
+            "name": "Reserved Notebook",
+            "sectionGroups": [{
+                "id": "group-1",
+                "isCollapsed": false,
+                "name": "Sections",
+                "sections": [{
+                    "color": "#3784d6",
+                    "id": "section-1",
+                    "name": "Pleadings",
+                    "pages": [{
+                        "accent": "#3784d6",
+                        "children": [],
+                        "content": "<p data-asset-id=\"LPT1\">Attachment</p>",
+                        "createdAt": "2026-06-27T00:00:00.000Z",
+                        "id": "page-1",
+                        "inkStrokes": [],
+                        "isCollapsed": false,
+                        "snippet": "Attachment",
+                        "tags": [],
+                        "task": null,
+                        "title": "Attachment",
+                        "updatedAt": "2026-06-27T00:00:00.000Z"
+                    }],
+                    "passwordHash": null,
+                    "passwordHint": ""
+                }]
+            }]
+        });
+        let assets = vec![PackageAssetInput {
+            created_at: "2026-06-27T00:00:00.000Z".to_string(),
+            data_url: "data:text/plain;base64,UmVzZXJ2ZWQ=".to_string(),
+            id: "LPT1".to_string(),
+            kind: "file".to_string(),
+            mime_type: "text/plain".to_string(),
+            name: "reserved.txt".to_string(),
+            size_label: "1 KB".to_string(),
+        }];
+
+        export_oneplace_package_to_path(&target, &notebook, &assets, "0.1.13")
+            .expect("export package");
+
+        let file = File::open(&target).expect("open package");
+        let mut archive = ZipArchive::new(file).expect("read package");
+        let mut names = Vec::new();
+        for index in 0..archive.len() {
+            names.push(
+                archive
+                    .by_index(index)
+                    .expect("zip entry")
+                    .name()
+                    .to_string(),
+            );
+        }
+        assert!(names.iter().any(|name| name.starts_with("notebooks/notebook-")));
+        assert!(names.iter().any(|name| name.starts_with("assets/asset-")));
+        assert!(names.iter().all(|name| !name.contains("/CON/")));
+        assert!(names.iter().all(|name| !name.contains("/LPT1.")));
+
+        let imported = import_oneplace_package_from_path(&target).expect("import package");
+        assert_eq!(imported.notebooks[0]["id"], "CON");
+        assert_eq!(imported.assets[0].id, "LPT1");
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_import_round_trips_notebook_and_assets() {
+        let root = unique_test_dir("package-import");
+        let target = root.join("case.oneplace");
+        let notebook = sample_workspace()["notebooks"][0].clone();
+        let assets = vec![PackageAssetInput {
+            created_at: "2026-06-27T00:00:00.000Z".to_string(),
+            data_url: "data:text/plain;base64,Q2FzZSBub3Rl".to_string(),
+            id: "asset-note".to_string(),
+            kind: "file".to_string(),
+            mime_type: "text/plain".to_string(),
+            name: "note.txt".to_string(),
+            size_label: "1 KB".to_string(),
+        }];
+        export_oneplace_package_to_path(&target, &notebook, &assets, "0.1.13")
+            .expect("export package");
+
+        let imported = import_oneplace_package_from_path(&target).expect("import package");
+
+        assert_eq!(imported.notebooks.len(), 1);
+        assert_eq!(imported.notebooks[0]["id"], "notebook-1");
+        assert_eq!(imported.notebooks[0], notebook);
+        assert_eq!(imported.assets.len(), 1);
+        assert_eq!(imported.assets[0].id, "asset-note");
+        assert_eq!(
+            imported.assets[0].data_url,
+            "data:text/plain;base64,Q2FzZSBub3Rl"
+        );
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_import_rejects_manifest_paths_that_escape_package() {
+        let root = unique_test_dir("package-import-unsafe-path");
+        let target = root.join("unsafe.oneplace");
+        let package_root = root.join("package");
+        fs::create_dir_all(&package_root).expect("create package root");
+        write_pretty_json(
+            &package_root.join("manifest.json"),
+            &json!({
+                "appVersion": "0.1.13",
+                "assets": [],
+                "createdAt": "2026-06-27T00:00:00.000Z",
+                "format": "oneplace.package.v1",
+                "notebooks": [{
+                    "id": "notebook-1",
+                    "name": "Bad",
+                    "path": "../notebook.json"
+                }],
+                "packageId": "package-test",
+                "schemaVersion": 1
+            }),
+        )
+        .expect("write manifest");
+        zip_directory_to_file(&package_root, &target).expect("zip package");
+
+        let message =
+            import_oneplace_package_from_path(&target).expect_err("unsafe package should fail");
+
+        assert!(
+            message.contains("Stored path cannot contain parent"),
+            "{message}"
+        );
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_import_invalid_zip_removes_extract_dir() {
+        let root = unique_test_dir("package-import-invalid-zip");
+        let target = root.join("invalid.oneplace");
+        fs::write(&target, b"not a zip").expect("write invalid package");
+
+        let message = import_oneplace_package_from_path(&target).expect_err("invalid zip fails");
+
+        assert!(message.to_lowercase().contains("invalid"), "{message}");
+        assert!(
+            fs::read_dir(&root)
+                .expect("read temp root")
+                .filter_map(Result::ok)
+                .filter_map(|entry| entry.file_name().into_string().ok())
+                .all(|name| !name.starts_with(".invalid.oneplace.extract.")),
+            "hidden extract directory should be removed"
+        );
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_import_rejects_schema_version_zero() {
+        let root = unique_test_dir("package-import-schema-zero");
+        let target = root.join("schema-zero.oneplace");
+        let package_root = root.join("package");
+        fs::create_dir_all(&package_root).expect("create package root");
+        write_pretty_json(
+            &package_root.join("manifest.json"),
+            &json!({
+                "appVersion": "0.1.13",
+                "assets": [],
+                "createdAt": "2026-06-27T00:00:00.000Z",
+                "format": "oneplace.package.v1",
+                "notebooks": [],
+                "packageId": "package-test",
+                "schemaVersion": 0
+            }),
+        )
+        .expect("write manifest");
+        zip_directory_to_file(&package_root, &target).expect("zip package");
+
+        let message = import_oneplace_package_from_path(&target).expect_err("schema 0 fails");
+
+        assert!(message.contains("schema version: 0"), "{message}");
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_import_downgrades_unsafe_download_mime_types() {
+        let root = unique_test_dir("package-import-unsafe-mime");
+        let target = root.join("unsafe-mime.oneplace");
+        let package_root = root.join("package");
+        let assets_dir = package_root.join("assets");
+        fs::create_dir_all(&assets_dir).expect("create assets");
+        let comma_bytes = b"comma asset bytes";
+        let html_bytes = b"html asset bytes";
+        fs::write(assets_dir.join("comma.bin"), comma_bytes).expect("write comma asset");
+        fs::write(assets_dir.join("html.bin"), html_bytes).expect("write html asset");
+        write_pretty_json(
+            &package_root.join("manifest.json"),
+            &json!({
+                "appVersion": "0.1.13",
+                "assets": [{
+                    "createdAt": "2026-06-27T00:00:00.000Z",
+                    "id": "asset-comma",
+                    "kind": "file",
+                    "mimeType": "text/plain,SGVsbG8=",
+                    "name": "comma.bin",
+                    "path": "assets/comma.bin",
+                    "sha256": sha256_hex(comma_bytes),
+                    "size": comma_bytes.len(),
+                    "sizeLabel": "1 KB"
+                }, {
+                    "createdAt": "2026-06-27T00:00:00.000Z",
+                    "id": "asset-html",
+                    "kind": "file",
+                    "mimeType": "text/html",
+                    "name": "html.bin",
+                    "path": "assets/html.bin",
+                    "sha256": sha256_hex(html_bytes),
+                    "size": html_bytes.len(),
+                    "sizeLabel": "1 KB"
+                }],
+                "createdAt": "2026-06-27T00:00:00.000Z",
+                "format": "oneplace.package.v1",
+                "notebooks": [],
+                "packageId": "package-test",
+                "schemaVersion": 1
+            }),
+        )
+        .expect("write manifest");
+        zip_directory_to_file(&package_root, &target).expect("zip package");
+
+        let imported = import_oneplace_package_from_path(&target).expect("import package");
+
+        assert_eq!(imported.assets.len(), 2);
+        let comma_asset = imported
+            .assets
+            .iter()
+            .find(|asset| asset.id == "asset-comma")
+            .expect("comma asset");
+        assert_eq!(comma_asset.mime_type, "application/octet-stream");
+        assert_eq!(
+            comma_asset.data_url,
+            format!(
+                "data:application/octet-stream;base64,{}",
+                BASE64_STANDARD.encode(comma_bytes)
+            )
+        );
+        let html_asset = imported
+            .assets
+            .iter()
+            .find(|asset| asset.id == "asset-html")
+            .expect("html asset");
+        assert_eq!(html_asset.mime_type, "application/octet-stream");
+        assert_eq!(
+            html_asset.data_url,
+            format!(
+                "data:application/octet-stream;base64,{}",
+                BASE64_STANDARD.encode(html_bytes)
+            )
+        );
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_import_rejects_duplicate_zip_entry_paths() {
+        let root = unique_test_dir("package-import-duplicate-zip-entry");
+        let target = root.join("duplicate.oneplace");
+        let file = File::create(&target).expect("create package");
+        let mut archive = ZipWriter::new(file);
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        archive
+            .start_file("manifest.json", options)
+            .expect("start manifest");
+        std::io::Write::write_all(&mut archive, br#"{"format":"oneplace.package.v1"}"#)
+            .expect("write manifest");
+        archive
+            .start_file("MANIFEST.JSON", options)
+            .expect("start duplicate manifest");
+        std::io::Write::write_all(&mut archive, br#"{"format":"oneplace.package.v1"}"#)
+            .expect("write duplicate manifest");
+        archive.finish().expect("finish package");
+
+        let message =
+            import_oneplace_package_from_path(&target).expect_err("duplicate paths should fail");
+
+        assert!(message.contains("duplicate zip entry"), "{message}");
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_extracts_only_manifest_referenced_zip_entries() {
+        let root = unique_test_dir("package-import-allowed-only");
+        let target = root.join("allowed-only.oneplace");
+        let extract_root = root.join("extract");
+        let file = File::create(&target).expect("create package");
+        let mut archive = ZipWriter::new(file);
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        archive
+            .start_file("manifest.json", options)
+            .expect("start manifest");
+        std::io::Write::write_all(
+            &mut archive,
+            br#"{"format":"oneplace.package.v1","schemaVersion":1}"#,
+        )
+        .expect("write manifest");
+        archive
+            .start_file("assets/referenced.txt", options)
+            .expect("start referenced");
+        std::io::Write::write_all(&mut archive, b"referenced").expect("write referenced");
+        archive
+            .start_file("assets/unused.txt", options)
+            .expect("start unused");
+        std::io::Write::write_all(&mut archive, b"unused").expect("write unused");
+        archive.finish().expect("finish package");
+        let allowed_paths = HashMap::from([
+            ("manifest.json".to_string(), 1024),
+            ("assets/referenced.txt".to_string(), 1024),
+        ]);
+
+        extract_zip_to_dir(&target, &extract_root, &allowed_paths).expect("extract allowed files");
+
+        assert!(extract_root.join("manifest.json").is_file());
+        assert!(extract_root.join("assets").join("referenced.txt").is_file());
+        assert!(!extract_root.join("assets").join("unused.txt").exists());
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_manifest_scan_rejects_unused_oversized_entries() {
+        let root = unique_test_dir("package-import-unused-oversized");
+        let target = root.join("oversized.oneplace");
+        let file = File::create(&target).expect("create package");
+        let mut archive = ZipWriter::new(file);
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        archive
+            .start_file("manifest.json", options)
+            .expect("start manifest");
+        std::io::Write::write_all(
+            &mut archive,
+            br#"{"appVersion":"0.1.13","assets":[],"createdAt":"2026-06-27T00:00:00.000Z","format":"oneplace.package.v1","notebooks":[],"packageId":"package-test","schemaVersion":1}"#,
+        )
+        .expect("write manifest");
+        archive
+            .start_file("unused.bin", options)
+            .expect("start unused");
+        std::io::Write::write_all(&mut archive, &vec![b'x'; 2048]).expect("write unused");
+        archive.finish().expect("finish package");
+
+        let message = match read_package_manifest_from_zip_with_limits(
+            &target,
+            ZipImportLimits {
+                max_entries: 10,
+                max_entry_bytes: 1024,
+                max_json_bytes: 1024,
+                max_total_bytes: 4096,
+            },
+        ) {
+            Ok(_) => panic!("oversized unused entry should fail"),
+            Err(err) => err,
+        };
+
+        assert!(message.contains("too large"), "{message}");
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_manifest_scan_rejects_duplicate_referenced_paths() {
+        let root = unique_test_dir("package-import-duplicate-manifest-path");
+        let target = root.join("duplicate-path.oneplace");
+        let package_root = root.join("package");
+        let notebook_dir = package_root.join("notebooks").join("notebook-1");
+        fs::create_dir_all(&notebook_dir).expect("create notebook dir");
+        write_pretty_json(
+            &package_root.join("manifest.json"),
+            &json!({
+                "appVersion": "0.1.13",
+                "assets": [{
+                    "createdAt": "2026-06-27T00:00:00.000Z",
+                    "id": "asset-1",
+                    "kind": "file",
+                    "mimeType": "text/plain",
+                    "name": "shared.json",
+                    "path": "notebooks/notebook-1/sections/shared.json",
+                    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "size": 2,
+                    "sizeLabel": "1 KB"
+                }],
+                "createdAt": "2026-06-27T00:00:00.000Z",
+                "format": "oneplace.package.v1",
+                "notebooks": [{
+                    "id": "notebook-1",
+                    "name": "Notebook",
+                    "path": "notebooks/notebook-1/notebook.json"
+                }],
+                "packageId": "package-test",
+                "schemaVersion": 1
+            }),
+        )
+        .expect("write manifest");
+        write_pretty_json(
+            &notebook_dir.join("notebook.json"),
+            &json!({
+                "color": "#3784d6",
+                "icon": "folder",
+                "id": "notebook-1",
+                "name": "Notebook",
+                "sectionGroups": [{
+                    "id": "group-1",
+                    "isCollapsed": false,
+                    "name": "Sections",
+                    "sections": [{
+                        "color": "#3784d6",
+                        "id": "section-1",
+                        "name": "Section",
+                        "pagesFile": "sections/shared.json",
+                        "passwordHash": null,
+                        "passwordHint": ""
+                    }]
+                }]
+            }),
+        )
+        .expect("write notebook");
+        zip_directory_to_file(&package_root, &target).expect("zip package");
+
+        let message = match read_package_manifest_from_zip(&target) {
+            Ok(_) => panic!("duplicate manifest paths should fail"),
+            Err(err) => err,
+        };
+
+        assert!(message.contains("duplicate stored path"), "{message}");
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_import_rejects_duplicate_page_ids() {
+        let root = unique_test_dir("package-import-duplicate-page-id");
+        let target = root.join("duplicate-page-id.oneplace");
+        let package_root = root.join("package");
+        let notebook = json!({
+            "color": "#3784d6",
+            "icon": "folder",
+            "id": "notebook-1",
+            "name": "Notebook",
+            "sectionGroups": [{
+                "id": "group-1",
+                "isCollapsed": false,
+                "name": "Sections",
+                "sections": [{
+                    "color": "#3784d6",
+                    "id": "section-1",
+                    "name": "Section",
+                    "pages": [{
+                        "accent": "#3784d6",
+                        "children": [],
+                        "content": "<p>One</p>",
+                        "createdAt": "2026-06-27T00:00:00.000Z",
+                        "id": "page-1",
+                        "inkStrokes": [],
+                        "isCollapsed": false,
+                        "snippet": "One",
+                        "tags": [],
+                        "task": null,
+                        "title": "One",
+                        "updatedAt": "2026-06-27T00:00:00.000Z"
+                    }, {
+                        "accent": "#3784d6",
+                        "children": [],
+                        "content": "<p>Two</p>",
+                        "createdAt": "2026-06-27T00:00:00.000Z",
+                        "id": "page-1",
+                        "inkStrokes": [],
+                        "isCollapsed": false,
+                        "snippet": "Two",
+                        "tags": [],
+                        "task": null,
+                        "title": "Two",
+                        "updatedAt": "2026-06-27T00:00:00.000Z"
+                    }],
+                    "passwordHash": null,
+                    "passwordHint": ""
+                }]
+            }]
+        });
+        write_notebook_to_dir(
+            &notebook,
+            &package_root.join("notebooks").join("notebook-1"),
+        )
+        .expect("write notebook");
+        write_pretty_json(
+            &package_root.join("manifest.json"),
+            &json!({
+                "appVersion": "0.1.13",
+                "assets": [],
+                "createdAt": "2026-06-27T00:00:00.000Z",
+                "format": "oneplace.package.v1",
+                "notebooks": [{
+                    "id": "notebook-1",
+                    "name": "Notebook",
+                    "path": "notebooks/notebook-1/notebook.json"
+                }],
+                "packageId": "package-test",
+                "schemaVersion": 1
+            }),
+        )
+        .expect("write manifest");
+        zip_directory_to_file(&package_root, &target).expect("zip package");
+
+        let message = import_oneplace_package_from_path(&target)
+            .expect_err("duplicate page IDs should fail");
+
+        assert!(message.contains("duplicate page ID"), "{message}");
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_import_rejects_duplicate_asset_ids() {
+        let root = unique_test_dir("package-import-duplicate-asset-id");
+        let target = root.join("duplicate-asset-id.oneplace");
+        let package_root = root.join("package");
+        fs::create_dir_all(package_root.join("assets")).expect("create assets");
+        fs::write(package_root.join("assets").join("one.txt"), b"one").expect("write one");
+        fs::write(package_root.join("assets").join("two.txt"), b"two").expect("write two");
+        write_pretty_json(
+            &package_root.join("manifest.json"),
+            &json!({
+                "appVersion": "0.1.13",
+                "assets": [{
+                    "createdAt": "2026-06-27T00:00:00.000Z",
+                    "id": "asset-1",
+                    "kind": "file",
+                    "mimeType": "text/plain",
+                    "name": "one.txt",
+                    "path": "assets/one.txt",
+                    "sha256": sha256_hex(b"one"),
+                    "size": 3,
+                    "sizeLabel": "1 KB"
+                }, {
+                    "createdAt": "2026-06-27T00:00:00.000Z",
+                    "id": "asset-1",
+                    "kind": "file",
+                    "mimeType": "text/plain",
+                    "name": "two.txt",
+                    "path": "assets/two.txt",
+                    "sha256": sha256_hex(b"two"),
+                    "size": 3,
+                    "sizeLabel": "1 KB"
+                }],
+                "createdAt": "2026-06-27T00:00:00.000Z",
+                "format": "oneplace.package.v1",
+                "notebooks": [],
+                "packageId": "package-test",
+                "schemaVersion": 1
+            }),
+        )
+        .expect("write manifest");
+        zip_directory_to_file(&package_root, &target).expect("zip package");
+
+        let message = import_oneplace_package_from_path(&target)
+            .expect_err("duplicate asset IDs should fail");
+
+        assert!(message.contains("duplicate asset ID"), "{message}");
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn oneplace_package_rejects_non_ascii_internal_paths() {
+        let message = normalized_package_path("assets/café.txt")
+            .expect_err("non-ascii internal paths should fail");
+
+        assert!(message.contains("ASCII-only"), "{message}");
+    }
+
+    #[test]
+    fn oneplace_package_rejects_windows_alias_internal_paths() {
+        for path in [
+            "assets/section.json.",
+            "assets/section.json ",
+            "assets/CON.txt",
+            "assets/LPT1.txt",
+            "assets/LONGFI~1.JSON",
+        ] {
+            let message = normalized_package_path(path)
+                .expect_err("windows-alias internal path should fail");
+
+            assert!(
+                message.contains("dots or spaces")
+                    || message.contains("reserved Windows names")
+                    || message.contains("unsupported characters"),
+                "{message}"
+            );
+        }
+    }
+
+    #[test]
+    fn oneplace_package_allows_valid_percent_encoded_internal_paths() {
+        let path = normalized_package_path("notebooks/folder%3Atree/notebook.json")
+            .expect("percent-encoded internal path should be allowed");
+
+        assert_eq!(path, "notebooks/folder%3atree/notebook.json");
+    }
+
+    #[test]
+    fn oneplace_package_rejects_invalid_percent_encoded_internal_paths() {
+        let message = normalized_package_path("notebooks/folder%tree/notebook.json")
+            .expect_err("invalid percent escape should fail");
+
+        assert!(message.contains("invalid percent escapes"), "{message}");
+    }
+
+    #[test]
+    fn oneplace_package_read_limits_count_actual_total_bytes() {
+        let mut input = &b"prescan overflow"[..];
+        let mut total_read = 10_u64;
+
+        let message = read_limited_to_vec(
+            &mut input,
+            1024,
+            12,
+            &mut total_read,
+            "manifest",
+        )
+        .expect_err("actual pre-scan bytes should be limited");
+
+        assert!(message.contains("pre-scan"), "{message}");
+    }
+
+    #[test]
+    fn oneplace_package_copy_limits_count_actual_streamed_bytes() {
+        let mut input = &b"this entry is too large"[..];
+        let mut output = Vec::new();
+        let mut total_written = 0_u64;
+
+        let message = copy_zip_entry_with_limits(
+            &mut input,
+            &mut output,
+            "assets/large.bin",
+            8,
+            1024,
+            &mut total_written,
+        )
+        .expect_err("actual streamed bytes should be limited");
+
+        assert!(message.contains("too large"), "{message}");
+        assert!(output.is_empty());
+    }
+
+    #[test]
+    fn oneplace_package_copy_limits_count_actual_total_bytes() {
+        let mut input = &b"total overflow"[..];
+        let mut output = Vec::new();
+        let mut total_written = 10_u64;
+
+        let message = copy_zip_entry_with_limits(
+            &mut input,
+            &mut output,
+            "assets/large.bin",
+            1024,
+            12,
+            &mut total_written,
+        )
+        .expect_err("actual total streamed bytes should be limited");
+
+        assert!(message.contains("uncompressed size"), "{message}");
+        assert!(output.is_empty());
+    }
+
+    #[test]
+    fn oneplace_package_import_rejects_asset_hash_mismatch() {
+        let root = unique_test_dir("package-import-bad-hash");
+        let target = root.join("bad-hash.oneplace");
+        let package_root = root.join("package");
+        fs::create_dir_all(package_root.join("assets")).expect("create assets");
+        fs::create_dir_all(package_root.join("notebooks").join("notebook-1"))
+            .expect("create notebook dir");
+        write_notebook_to_dir(
+            &sample_workspace()["notebooks"][0],
+            &package_root.join("notebooks").join("notebook-1"),
+        )
+        .expect("write notebook");
+        fs::write(package_root.join("assets").join("asset.txt"), b"changed").expect("write asset");
+        write_pretty_json(
+            &package_root.join("manifest.json"),
+            &json!({
+                "appVersion": "0.1.13",
+                "assets": [{
+                    "createdAt": "2026-06-27T00:00:00.000Z",
+                    "id": "asset-1",
+                    "kind": "file",
+                    "mimeType": "text/plain",
+                    "name": "asset.txt",
+                    "path": "assets/asset.txt",
+                    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "size": 7,
+                    "sizeLabel": "1 KB"
+                }],
+                "createdAt": "2026-06-27T00:00:00.000Z",
+                "format": "oneplace.package.v1",
+                "notebooks": [{
+                    "id": "notebook-1",
+                    "name": "Notebook",
+                    "path": "notebooks/notebook-1/notebook.json"
+                }],
+                "packageId": "package-test",
+                "schemaVersion": 1
+            }),
+        )
+        .expect("write manifest");
+        zip_directory_to_file(&package_root, &target).expect("zip package");
+
+        let message = import_oneplace_package_from_path(&target).expect_err("bad hash should fail");
+
+        assert!(message.contains("hash"), "{message}");
+        fs::remove_dir_all(root).expect("cleanup temp test dir");
+    }
+
+    #[test]
+    fn failed_package_export_to_directory_removes_temp_zip() {
+        let root = unique_test_dir("package-export-target-dir");
+        let target = root.join("case.oneplace");
+        fs::create_dir_all(&target).expect("create conflicting package target dir");
+        let notebook = json!({
+            "color": "#3784d6",
+            "icon": "folder",
+            "id": "notebook-1",
+            "name": "Case Notebook",
+            "sectionGroups": [{
+                "id": "group-1",
+                "isCollapsed": false,
+                "name": "Sections",
+                "sections": [{
+                    "color": "#3784d6",
+                    "id": "section-1",
+                    "name": "Pleadings",
+                    "pages": [],
+                    "passwordHash": null,
+                    "passwordHint": ""
+                }]
+            }]
+        });
+
+        let message = match export_oneplace_package_to_path(&target, &notebook, &[], "0.1.13") {
+            Ok(_) => panic!("directory target should fail"),
+            Err(message) => message,
+        };
+
+        assert!(
+            message.contains("Cannot replace directory with file"),
+            "{message}"
+        );
+        assert!(
+            fs::read_dir(&root)
+                .expect("read temp root")
+                .filter_map(Result::ok)
+                .filter_map(|entry| entry.file_name().into_string().ok())
+                .all(|name| !name.starts_with(".case.oneplace.tmp.")),
+            "hidden temp package file should be removed"
+        );
         fs::remove_dir_all(root).expect("cleanup temp test dir");
     }
 

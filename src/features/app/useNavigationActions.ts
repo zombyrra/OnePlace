@@ -7,6 +7,8 @@ import {
   saveLastOpenedNotebookPath,
   saveRecentNotebookEntries,
 } from '../../app/appModel'
+import { shouldOfferFolderImportAfterOpenFailure } from './openNotebookRecovery'
+import type { FolderTreeImportFromPathOptions } from './useFolderTreeImport'
 import type {
   AppState,
   NavigationEntry,
@@ -24,6 +26,7 @@ const getErrorMessage = (error: unknown) => (error instanceof Error ? error.mess
 
 type UseNavigationActionsArgs = {
   appState: AppState
+  importFolderTreeFromPath?: (path: string, options?: FolderTreeImportFromPathOptions) => Promise<void>
   navigationHistory: NavigationEntry[]
   navigationIndex: number
   navigateToEntry: (entry: NavigationEntry, suppressHistory?: boolean) => void
@@ -40,6 +43,7 @@ type UseNavigationActionsArgs = {
 
 export const useNavigationActions = ({
   appState,
+  importFolderTreeFromPath,
   navigationHistory,
   navigationIndex,
   navigateToEntry,
@@ -161,6 +165,14 @@ export const useNavigationActions = ({
       setSaveLabel(`Opened ${openedNotebook.name}`)
     } catch (error) {
       const message = getErrorMessage(error)
+      if (importFolderTreeFromPath && shouldOfferFolderImportAfterOpenFailure(message)) {
+        setSaveLabel('Open needs a OnePlace notebook folder')
+        await importFolderTreeFromPath(path, {
+          intro:
+            'That folder is not a OnePlace notebook export. Open expects a folder that contains notebook.json; document folders can be imported instead.',
+        })
+        return
+      }
       setSaveLabel(`Open failed: ${message}`)
       window.alert(`That folder does not contain a valid notebook.\n\n${message}`)
     }

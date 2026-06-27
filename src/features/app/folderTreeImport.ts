@@ -27,11 +27,18 @@ const splitPath = (value: string) =>
     .map((segment) => segment.trim())
     .filter(Boolean)
 
-const sanitizeIdPart = (value: string) =>
-  (value.trim() || 'root')
-    .replace(/[^a-z0-9._/-]+/gi, '-')
-    .replace(/-+/g, '-')
-    .replace(/^[-/]+|[-/]+$/g, '') || 'root'
+const encodeIdPart = (value: string) => {
+  const normalized = value.trim() || 'root'
+  let encoded = ''
+  for (const char of new TextEncoder().encode(normalized)) {
+    const value = String.fromCharCode(char)
+    encoded += /[a-z0-9._/-]/i.test(value)
+      ? value
+      : `%${char.toString(16).toUpperCase().padStart(2, '0')}`
+  }
+
+  return encoded || 'root'
+}
 
 const formatSizeLabel = (size: number) => {
   if (size >= 1024 * 1024) {
@@ -55,11 +62,11 @@ const addPathAndParents = (paths: Set<string>, value: string) => {
 
 const buildAssetPrefix = (importId: string) => `${FOLDER_IMPORT_ASSET_PREFIX}${importId}:`
 const buildAssetId = (importId: string, relativePath: string) =>
-  `${buildAssetPrefix(importId)}${sanitizeIdPart(relativePath)}`
+  `${buildAssetPrefix(importId)}${encodeIdPart(relativePath)}`
 const buildPageId = (importId: string, relativePath: string) =>
-  `${FOLDER_IMPORT_PAGE_PREFIX}${importId}:${sanitizeIdPart(relativePath)}`
+  `${FOLDER_IMPORT_PAGE_PREFIX}${importId}:${encodeIdPart(relativePath)}`
 const buildSectionId = (importId: string, relativeDir: string) =>
-  `${FOLDER_IMPORT_SECTION_PREFIX}${importId}:${sanitizeIdPart(relativeDir || 'root')}`
+  `${FOLDER_IMPORT_SECTION_PREFIX}${importId}:${encodeIdPart(relativeDir || 'root')}`
 
 const createAttachmentCard = (asset: AppAsset) => `
   <div class="attachment-card" contenteditable="false" data-asset-id="${escapeAttribute(asset.id)}" data-download-url="${escapeAttribute(asset.dataUrl)}" data-file-name="${escapeAttribute(asset.name)}">
@@ -139,7 +146,7 @@ const createEmptyFolderPage = (importId: string, relativeDir: string, accent: st
     children: [],
     content,
     createdAt: now,
-    id: `${FOLDER_IMPORT_PAGE_PREFIX}${importId}:${sanitizeIdPart(relativeDir)}:empty`,
+    id: `${FOLDER_IMPORT_PAGE_PREFIX}${importId}:${encodeIdPart(relativeDir || 'root')}:empty`,
     inkStrokes: [],
     isCollapsed: false,
     snippet: buildSnippet(title, content, now),
@@ -151,7 +158,7 @@ const createEmptyFolderPage = (importId: string, relativeDir: string, accent: st
 }
 
 export const buildFolderTreeImport = (directory: ImportedFolderTreeDirectory): FolderTreeImportBuild => {
-  const importId = sanitizeIdPart(directory.path || directory.name)
+  const importId = encodeIdPart(directory.path || directory.name)
   const assetPrefix = buildAssetPrefix(importId)
   const files = [...directory.files].sort((left, right) => left.relativePath.localeCompare(right.relativePath))
   const paths = new Set<string>()

@@ -92,3 +92,48 @@ test('folder tree import preserves folders and embeds mixed file assets', () => 
   assert.equal(imported.assets.length, 4)
   assert.equal(imported.assets.some((asset) => asset.kind === 'printout' && asset.name === 'Complaint.pdf'), true)
 })
+
+test('folder tree import keeps distinct ids for punctuation-only filename differences', () => {
+  const imported = buildFolderTreeImport({
+    directories: [],
+    files: [
+      {
+        absolutePath: 'C:/Cases/Acme/a+b.pdf',
+        dataUrl: 'data:application/pdf;base64,JVBERi0x',
+        extension: 'pdf',
+        kind: 'printout',
+        mimeType: 'application/pdf',
+        modifiedAt: '2026-06-24T15:00:00.000Z',
+        name: 'a+b.pdf',
+        relativeDir: '',
+        relativePath: 'a+b.pdf',
+        size: 1024,
+      },
+      {
+        absolutePath: 'C:/Cases/Acme/a#b.pdf',
+        dataUrl: 'data:application/pdf;base64,JVBERi0y',
+        extension: 'pdf',
+        kind: 'printout',
+        mimeType: 'application/pdf',
+        modifiedAt: '2026-06-24T16:00:00.000Z',
+        name: 'a#b.pdf',
+        relativeDir: '',
+        relativePath: 'a#b.pdf',
+        size: 1024,
+      },
+    ],
+    name: 'Acme Legal Case',
+    path: 'C:/Cases/Acme',
+  })
+
+  const root = imported.notebook.sectionGroups[0].sections[0]
+  const assetIds = new Set(imported.assets.map((asset) => asset.id))
+  const pageIds = new Set(root.pages.map((page) => page.id))
+
+  assert.equal(imported.assets.length, 2)
+  assert.equal(assetIds.size, 2)
+  assert.equal(root.pages.length, 2)
+  assert.equal(pageIds.size, 2)
+  assert.equal([...assetIds].some((id) => id.includes('%2B')), true)
+  assert.equal([...assetIds].some((id) => id.includes('%23')), true)
+})
