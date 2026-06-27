@@ -57,7 +57,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE3NUMzNDVFM0E3QjQxQkIKUldTN1FYczZYalJjcHprZGVkd2RXMG81bEtGdHE4cTkvOFQvVGRkTWcxWHRDckpiaVUwWEZOa1AK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRCMjA0RDRCODc5QkMyMEEKUldRS3dwdUhTMDBnU3p2Znk0TlRPSWY4WVNQbytZRkZzNzFLckI0bkVpdEFLWGo0d0JnY3NNc2MK",
       "endpoints": [
         "https://github.com/zombyrra/OnePlace/releases/latest/download/latest.json"
       ]
