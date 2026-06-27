@@ -15,7 +15,20 @@ type UseFolderTreeImportArgs = {
   setSaveLabel: (value: string) => void
 }
 
+export type FolderTreeImportFromPathOptions = {
+  intro?: string
+}
+
 const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error))
+
+const buildFolderTreeImportPrompt = (intro?: string) =>
+  [
+    ...(intro ? [intro, ''] : []),
+    'Import this folder into OnePlace?',
+    '',
+    'OnePlace will copy the files into its workspace, preserve folder paths as sections, and leave the original folder unchanged.',
+    'This is not live sync with the original folder.',
+  ].join('\n')
 
 export const useFolderTreeImport = ({
   setActiveTab,
@@ -24,20 +37,13 @@ export const useFolderTreeImport = ({
 }: UseFolderTreeImportArgs) => {
   const [isImportingFolderTree, setIsImportingFolderTree] = useState(false)
 
-  const importFolderTree = async () => {
+  const importFolderTreeFromPath = async (
+    selectedPath: string,
+    options: FolderTreeImportFromPathOptions = {},
+  ) => {
     if (isImportingFolderTree) return
 
-    const selectedPath = await pickFolderTreeDirectory()
-    if (!selectedPath) return
-
-    const shouldImport = window.confirm(
-      [
-        'Import this folder into OnePlace?',
-        '',
-        'OnePlace will copy the files into its workspace, preserve folder paths as sections, and leave the original folder unchanged.',
-        'This is not live sync with the original folder.',
-      ].join('\n'),
-    )
+    const shouldImport = window.confirm(buildFolderTreeImportPrompt(options.intro))
     if (!shouldImport) return
 
     setIsImportingFolderTree(true)
@@ -60,8 +66,18 @@ export const useFolderTreeImport = ({
     }
   }
 
+  const importFolderTree = async () => {
+    if (isImportingFolderTree) return
+
+    const selectedPath = await pickFolderTreeDirectory()
+    if (!selectedPath) return
+
+    await importFolderTreeFromPath(selectedPath)
+  }
+
   return {
     importFolderTree,
+    importFolderTreeFromPath,
     isImportingFolderTree,
   }
 }

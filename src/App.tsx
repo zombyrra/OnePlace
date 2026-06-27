@@ -41,6 +41,7 @@ import { useNavigationActions } from './features/app/useNavigationActions'
 import { useNavigationHistory } from './features/app/useNavigationHistory'
 import { useNotebookPageActions } from './features/app/useNotebookPageActions'
 import { useFolderTreeImport } from './features/app/useFolderTreeImport'
+import { useOnePlacePackageActions } from './features/app/useOnePlacePackageActions'
 import { useOneNoteExportImport } from './features/app/useOneNoteExportImport'
 import { usePageAssistActions } from './features/app/usePageAssistActions'
 import { useReviewHistory } from './features/app/useReviewHistory'
@@ -246,7 +247,19 @@ function App() {
     setAppState,
     setSaveLabel,
   })
-  const { importFolderTree, isImportingFolderTree } = useFolderTreeImport({
+  const { importFolderTree, importFolderTreeFromPath, isImportingFolderTree } = useFolderTreeImport({
+    setActiveTab: () => setActiveTab('Home'),
+    setAppState,
+    setSaveLabel,
+  })
+  const {
+    exportCurrentNotebookPackage,
+    isExportingOnePlacePackage,
+    isOpeningOnePlacePackage,
+    openOnePlacePackage,
+  } = useOnePlacePackageActions({
+    appState,
+    notebook,
     setActiveTab: () => setActiveTab('Home'),
     setAppState,
     setSaveLabel,
@@ -297,6 +310,7 @@ function App() {
     setPageSortMode,
   } = useNavigationActions({
     appState,
+    importFolderTreeFromPath,
     navigationHistory,
     navigationIndex,
     navigateToEntry,
@@ -1391,6 +1405,7 @@ function App() {
         editorRef,
         editorZoom,
         emailCurrentPage,
+        exportCurrentNotebookPackage,
         exportCurrentPage,
         fontMenuPanelRef,
         fontMenuRef,
@@ -1411,6 +1426,8 @@ function App() {
         isHistoryPaneOpen,
         isImportingFolderTree,
         isImportingOneNoteExport,
+        isExportingOnePlacePackage,
+        isOpeningOnePlacePackage,
         isCurrentSectionLocked,
         isNotebookPaneVisible,
         isPagesPaneVisible,
@@ -1427,7 +1444,9 @@ function App() {
         openMeetingDetailsPane,
         openMarkmapPane,
         openNotebook,
+        openOnePlacePackage,
         openPrintoutPicker,
+        notebook,
         openShortcutHelp: () => setIsShortcutHelpOpen(true),
         page,
         pageSortMode,
@@ -1508,6 +1527,7 @@ function App() {
         onGoForward: goForward,
         onNewNotebook: createNotebook,
         onOpenNotebook: openNotebook,
+        onOpenOnePlacePackage: openOnePlacePackage,
         onSave: () => void saveNow(),
         onUndo: () => runEditorCommand('undo'),
         windowTitle,

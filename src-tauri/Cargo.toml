@@ -1,6 +1,6 @@
 [package]
 name = "oneplace"
-version = "0.1.13"
+version = "0.1.14"
 description = "OnePlace desktop shell built with Tauri"
 authors = ["OpenAI"]
 edition = "2021"
@@ -17,11 +17,13 @@ printpdf = "0.3.4"
 rand = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = "0.10"
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-process = "2"
 tauri-plugin-updater = "2"
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security_Cryptography"] }
+zip = { version = "4.6.1", default-features = false, features = ["deflate-flate2"] }
 
 [features]
 default = ["custom-protocol"]

@@ -7,6 +7,7 @@ import {
   ArrowRightIcon,
   BellIcon,
   ChevronDownIcon,
+  FileDownIcon,
   FilePlusIcon,
   FolderIcon,
   SaveIcon,
@@ -26,6 +27,7 @@ type TitleBarProps = {
   onGoForward: () => void
   onNewNotebook: () => void
   onOpenNotebook: () => void
+  onOpenOnePlacePackage: () => void
   showRuleLines: boolean
   onToggleRuleLines: () => void
   editorZoom: number
@@ -51,6 +53,7 @@ export function TitleBar(props: TitleBarProps) {
     onGoForward,
     onNewNotebook,
     onOpenNotebook,
+    onOpenOnePlacePackage,
     showRuleLines,
     onToggleRuleLines,
     editorZoom,
@@ -106,6 +109,9 @@ export function TitleBar(props: TitleBarProps) {
               </MenuItem>
               <MenuItem icon={<FolderIcon size={16} />} onSelect={onOpenNotebook}>
                 Open notebook
+              </MenuItem>
+              <MenuItem icon={<FileDownIcon size={16} />} onSelect={onOpenOnePlacePackage}>
+                Open package
               </MenuItem>
             </MenuContent>
           </Menu>

@@ -4,6 +4,8 @@ OnePlace saves desktop data under Tauri's per-user app data directory in a `work
 
 On Windows, OnePlace generates a 256-bit workspace key and protects that key with the current user's DPAPI profile. Workspace, notebook, section, rolling backup, and cloud-save package files are encrypted with AES-256-GCM before being written. Older plaintext workspace files are still readable for migration and are rewritten encrypted on the next save. User-triggered notebook exports remain normal JSON so they can be moved or inspected intentionally.
 
+OnePlace package exports use a `.oneplace` file. The file is a portable zip package with a versioned manifest, notebook JSON, section JSON, and copied asset files. Package exports are plain by default so they can move between machines and accounts intentionally; they are separate from the local encrypted workspace and cloud-save package.
+
 When importing an existing folder tree, OnePlace copies the selected folder's files into the workspace as OnePlace assets and preserves folder paths as notebook sections. The source folder is not changed and is not live-synced after import; imported files are protected by the same encrypted desktop workspace once saved.
 
 ## Save and Load Safety

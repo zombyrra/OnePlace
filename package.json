@@ -1,7 +1,7 @@
 {
   "name": "oneplace",
   "private": true,
-  "version": "0.1.13",
+  "version": "0.1.14",
   "type": "module",
   "scripts": {
     "dev": "tauri dev",
@@ -13,10 +13,12 @@
     "dist": "tauri build",
     "release:publish": "node scripts/publish-updater-release.mjs",
     "lint": "eslint .",
-    "test": "npm run test:css && npm run test:hierarchy && npm run test:folder-import && npm run test:shortcuts && npm run test:references && npm run test:markmap && npm run test:security",
+    "test": "npm run test:css && npm run test:hierarchy && npm run test:folder-import && npm run test:open-notebook && npm run test:package && npm run test:shortcuts && npm run test:references && npm run test:markmap && npm run test:security",
     "test:css": "node --test --experimental-strip-types scripts/cssStructure.test.ts",
     "test:hierarchy": "node --import tsx --test scripts/appModelHierarchy.test.ts",
     "test:folder-import": "node --import tsx --test scripts/folderTreeImport.test.ts",
+    "test:open-notebook": "node --import tsx --test scripts/openNotebookRecovery.test.ts",
+    "test:package": "node --import tsx --test scripts/onePlacePackage.test.ts",
     "test:shortcuts": "node --import tsx --test scripts/oneNoteShortcuts.test.ts",
     "test:references": "node --test --experimental-strip-types scripts/referenceManager.test.ts",
     "test:markmap": "node --test --experimental-strip-types scripts/markmapFeature.test.ts",

@@ -74,6 +74,21 @@ interface ImportedAssetData {
   size: number;
 }
 
+interface ImportedOnePlacePackageAsset {
+  createdAt: string;
+  dataUrl: string;
+  id: string;
+  kind: 'audio' | 'file' | 'image' | 'printout';
+  mimeType: string;
+  name: string;
+  sizeLabel: string;
+}
+
+interface ImportedOnePlacePackage {
+  assets: ImportedOnePlacePackageAsset[];
+  notebooks: unknown[];
+}
+
 interface SpeechRecognitionAlternative {
   transcript: string;
   confidence: number;
