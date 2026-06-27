@@ -1,5 +1,13 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  copyFileSync,
+  mkdtempSync,
+  existsSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -148,11 +156,25 @@ try {
   latest.version = version
   latest.notes = releaseNotes
   latest.pub_date = new Date().toISOString()
+  const updaterAssetName = (() => {
+    const name = path.basename(assetForCurrentPlatform.updater)
+    if (process.platform !== 'darwin' || name !== 'OnePlace.app.tar.gz') return name
+
+    const arch = platformKey === 'darwin-aarch64' ? 'aarch64' : 'x64'
+    return `OnePlace_${version}_${arch}.app.tar.gz`
+  })()
+
+  const signatureAssetName = `${updaterAssetName}.sig`
+  const uploadUpdaterPath = path.join(tempDir, updaterAssetName)
+  const uploadSignaturePath = path.join(tempDir, signatureAssetName)
+  copyFileSync(assetForCurrentPlatform.updater, uploadUpdaterPath)
+  copyFileSync(assetForCurrentPlatform.signature, uploadSignaturePath)
+
   latest.platforms = {
     ...latest.platforms,
     [platformKey]: {
       signature: readFileSync(assetForCurrentPlatform.signature, 'utf8').trim(),
-      url: `https://github.com/${repo}/releases/download/${tag}/${path.basename(assetForCurrentPlatform.updater)}`,
+      url: `https://github.com/${repo}/releases/download/${tag}/${updaterAssetName}`,
     },
   }
 
@@ -164,8 +186,8 @@ try {
     'upload',
     tag,
     assetForCurrentPlatform.installer,
-    assetForCurrentPlatform.updater,
-    assetForCurrentPlatform.signature,
+    uploadUpdaterPath,
+    uploadSignaturePath,
     latestJsonPath,
     '--repo',
     repo,
